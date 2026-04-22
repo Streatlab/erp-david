@@ -2,10 +2,17 @@
    DAVID ERP — DESIGN TOKENS CSS
    v1.0 — Marino + Fuego · Mediterráneo vivo
    ------------------------------------------------------------
-   FUENTE ÚNICA DE VERDAD para variables CSS del ERP David.
+   FUENTE ÚNICA DE VERDAD para variables CSS y mapeo Tailwind v4.
    NO MEZCLAR con estilos de Streat Lab / Binagre.
    Se importa en main.tsx ANTES de cualquier otro CSS.
    Conmuta tema vía [data-theme] en <html>.
+   ============================================================ */
+
+@import "tailwindcss";
+
+
+/* ============================================================
+   1 · CSS VARS — LIGHT (base)
    ============================================================ */
 
 :root,
@@ -113,71 +120,32 @@
   --op-dia-bg: rgba(201, 74, 44, 0.12);
   --op-dia-bd: rgba(201, 74, 44, 0.30);
 
-  /* ——— TIPOGRAFÍA ——— */
+  /* ——— TIPOGRAFÍA (familias) ——— */
   --font-sans: "Inter", "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  --fs-2xs: 10px;
-  --fs-xs:  11px;
-  --fs-sm:  13px;
-  --fs-base:14px;
-  --fs-md:  16px;
-  --fs-lg:  20px;
-  --fs-xl:  28px;
-  --fs-2xl: 40px;
-
-  --fw-regular: 400;
-  --fw-medium:  500;
-  --fw-bold:    700;
-
-  --tracking-tight:  -0.01em;
-  --tracking-normal: 0;
-  --tracking-wide:   0.08em;
-  --tracking-wider:  0.14em;
-
-  --leading-tight:  1.15;
-  --leading-snug:   1.35;
-  --leading-normal: 1.55;
-
-  /* ——— SPACING & LAYOUT ——— */
-  --space-1:  4px;
-  --space-2:  8px;
-  --space-3:  12px;
-  --space-4:  16px;
-  --space-5:  20px;
-  --space-6:  24px;
-  --space-8:  32px;
-  --space-10: 40px;
-  --space-12: 48px;
-
-  --radius-sm:   6px;
-  --radius-md:   10px;
-  --radius-lg:   14px;
-  --radius-xl:   20px;
-  --radius-pill: 999px;
-
-  --sidebar-w:           240px;
-  --sidebar-w-collapsed: 56px;
-  --container-pad:       24px;
-
-  /* ——— SOMBRAS (planas por diseño) ——— */
-  --shadow-none:  none;
+  /* ——— SOMBRAS ——— */
   --shadow-xs:    0 1px 2px rgba(22, 53, 92, 0.04);
   --shadow-sm:    0 2px 6px rgba(22, 53, 92, 0.06);
   --shadow-md:    0 8px 24px rgba(22, 53, 92, 0.10);
   --shadow-modal: 0 20px 48px rgba(12, 20, 30, 0.20);
 
-  /* ——— MOTION ——— */
-  --ease-out:    cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  /* ——— LAYOUT ——— */
+  --sidebar-w:           240px;
+  --sidebar-w-collapsed: 56px;
+  --container-pad:       24px;
+
+  /* ——— MOTION (alias semántico para inline-styles) ——— */
   --dur-fast:    120ms;
   --dur-base:    200ms;
   --dur-slow:    320ms;
+  --ease-out:    cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 }
 
 
 /* ============================================================
-   DARK MODE
+   2 · CSS VARS — DARK
    Marino → celeste · Naranja → avivado · Sand → off-black cálido
    ============================================================ */
 
@@ -225,13 +193,9 @@
   --oliva-700: #C8D98B;
   --oliva-900: #E0EBB5;
 
-  --bg-app:         var(--sand-200);
-  --bg-surface:     var(--sand-50);
-  --bg-surface-alt: var(--sand-100);
+  --bg-overlay: rgba(0, 0, 0, 0.75);
 
-  --text-primary:   var(--sand-900);
-  --text-secondary: var(--sand-700);
-  --text-tertiary:  #6E6250;
+  --text-tertiary:   #6E6250;
   --text-on-primary: var(--sand-200);
   --text-on-accent:  var(--sand-200);
 
@@ -239,15 +203,8 @@
   --border-default: rgba(255, 255, 255, 0.10);
   --border-strong:  rgba(255, 255, 255, 0.18);
 
-  --brand-primary:       var(--marino-500);
   --brand-primary-hover: var(--marino-300);
-  --brand-accent:        var(--naranja-500);
   --brand-accent-hover:  var(--naranja-300);
-
-  --success-text: var(--oliva-700);
-  --warning-text: var(--ambar-700);
-  --danger-text:  var(--terra-700);
-  --info-text:    var(--marino-700);
 
   --op-mercadona-fg: #FFB47A;
   --op-mercadona-bg: rgba(255, 138, 61, 0.14);
@@ -273,7 +230,190 @@
 
 
 /* ============================================================
-   UTILIDADES BASE
+   3 · @THEME INLINE — Tokens reactivos al tema
+   Sustitución directa en utilidades; resuelve runtime con [data-theme].
+   ============================================================ */
+
+@theme inline {
+  /* — Fondos — */
+  --color-bg-app:         var(--bg-app);
+  --color-bg-surface:     var(--bg-surface);
+  --color-bg-surface-alt: var(--bg-surface-alt);
+  --color-bg-overlay:     var(--bg-overlay);
+
+  /* — Texto — */
+  --color-text-primary:    var(--text-primary);
+  --color-text-secondary:  var(--text-secondary);
+  --color-text-tertiary:   var(--text-tertiary);
+  --color-text-on-primary: var(--text-on-primary);
+  --color-text-on-accent:  var(--text-on-accent);
+
+  /* — Bordes — */
+  --color-border-subtle:  var(--border-subtle);
+  --color-border-default: var(--border-default);
+  --color-border-strong:  var(--border-strong);
+
+  /* — Marca — */
+  --color-brand-primary:       var(--brand-primary);
+  --color-brand-primary-hover: var(--brand-primary-hover);
+  --color-brand-accent:        var(--brand-accent);
+  --color-brand-accent-hover:  var(--brand-accent-hover);
+
+  /* — Semánticos — */
+  --color-success:        var(--success);
+  --color-success-bg:     var(--success-bg);
+  --color-success-border: var(--success-border);
+  --color-success-text:   var(--success-text);
+
+  --color-warning:        var(--warning);
+  --color-warning-bg:     var(--warning-bg);
+  --color-warning-border: var(--warning-border);
+  --color-warning-text:   var(--warning-text);
+
+  --color-danger:         var(--danger);
+  --color-danger-bg:      var(--danger-bg);
+  --color-danger-border:  var(--danger-border);
+  --color-danger-text:    var(--danger-text);
+
+  --color-info:           var(--info);
+  --color-info-bg:        var(--info-bg);
+  --color-info-border:    var(--info-border);
+  --color-info-text:      var(--info-text);
+
+  /* — Operadores — */
+  --color-op-mercadona-fg: var(--op-mercadona-fg);
+  --color-op-mercadona-bg: var(--op-mercadona-bg);
+  --color-op-mercadona-bd: var(--op-mercadona-bd);
+
+  --color-op-carrefour-fg: var(--op-carrefour-fg);
+  --color-op-carrefour-bg: var(--op-carrefour-bg);
+  --color-op-carrefour-bd: var(--op-carrefour-bd);
+
+  --color-op-lidl-fg: var(--op-lidl-fg);
+  --color-op-lidl-bg: var(--op-lidl-bg);
+  --color-op-lidl-bd: var(--op-lidl-bd);
+
+  --color-op-dia-fg: var(--op-dia-fg);
+  --color-op-dia-bg: var(--op-dia-bg);
+  --color-op-dia-bd: var(--op-dia-bd);
+
+  /* — Ramps de paleta (acceso directo) — */
+  --color-sand-50:  var(--sand-50);
+  --color-sand-100: var(--sand-100);
+  --color-sand-200: var(--sand-200);
+  --color-sand-300: var(--sand-300);
+  --color-sand-400: var(--sand-400);
+  --color-sand-700: var(--sand-700);
+  --color-sand-900: var(--sand-900);
+
+  --color-marino-50:  var(--marino-50);
+  --color-marino-100: var(--marino-100);
+  --color-marino-300: var(--marino-300);
+  --color-marino-500: var(--marino-500);
+  --color-marino-700: var(--marino-700);
+  --color-marino-900: var(--marino-900);
+
+  --color-naranja-50:  var(--naranja-50);
+  --color-naranja-100: var(--naranja-100);
+  --color-naranja-300: var(--naranja-300);
+  --color-naranja-500: var(--naranja-500);
+  --color-naranja-700: var(--naranja-700);
+  --color-naranja-900: var(--naranja-900);
+
+  --color-terra-50:  var(--terra-50);
+  --color-terra-100: var(--terra-100);
+  --color-terra-300: var(--terra-300);
+  --color-terra-500: var(--terra-500);
+  --color-terra-700: var(--terra-700);
+  --color-terra-900: var(--terra-900);
+
+  --color-ambar-50:  var(--ambar-50);
+  --color-ambar-100: var(--ambar-100);
+  --color-ambar-300: var(--ambar-300);
+  --color-ambar-500: var(--ambar-500);
+  --color-ambar-700: var(--ambar-700);
+  --color-ambar-900: var(--ambar-900);
+
+  --color-oliva-50:  var(--oliva-50);
+  --color-oliva-100: var(--oliva-100);
+  --color-oliva-300: var(--oliva-300);
+  --color-oliva-500: var(--oliva-500);
+  --color-oliva-700: var(--oliva-700);
+  --color-oliva-900: var(--oliva-900);
+
+  /* — Familias tipográficas — */
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  /* — Sombras — */
+  --shadow-xs:    var(--shadow-xs);
+  --shadow-sm:    var(--shadow-sm);
+  --shadow-md:    var(--shadow-md);
+  --shadow-modal: var(--shadow-modal);
+}
+
+
+/* ============================================================
+   4 · @THEME — Tokens estáticos (no varían por tema)
+   Generan utilidades Tailwind v4: text-*, font-*, tracking-*,
+   leading-*, rounded-*, ease-*, duration-*
+   ============================================================ */
+
+@theme {
+  /* — Tamaños de fuente — */
+  --text-2xs: 10px;
+  --text-2xs--line-height: 1.35;
+  --text-xs: 11px;
+  --text-xs--line-height: 1.35;
+  --text-sm: 13px;
+  --text-sm--line-height: 1.55;
+  --text-base: 14px;
+  --text-base--line-height: 1.55;
+  --text-md: 16px;
+  --text-md--line-height: 1.55;
+  --text-lg: 20px;
+  --text-lg--line-height: 1.35;
+  --text-xl: 28px;
+  --text-xl--line-height: 1.15;
+  --text-2xl: 40px;
+  --text-2xl--line-height: 1.15;
+
+  /* — Pesos — */
+  --font-weight-regular: 400;
+  --font-weight-medium:  500;
+  --font-weight-bold:    700;
+
+  /* — Letter spacing — */
+  --tracking-tight:  -0.01em;
+  --tracking-normal: 0;
+  --tracking-wide:   0.08em;
+  --tracking-wider:  0.14em;
+
+  /* — Line height — */
+  --leading-tight:  1.15;
+  --leading-snug:   1.35;
+  --leading-normal: 1.55;
+
+  /* — Radios — */
+  --radius-sm:   6px;
+  --radius-md:   10px;
+  --radius-lg:   14px;
+  --radius-xl:   20px;
+  --radius-pill: 999px;
+
+  /* — Easing — */
+  --ease-out-soft:    cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out-soft: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* — Duración — */
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+}
+
+
+/* ============================================================
+   5 · BASE
    ============================================================ */
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -284,7 +424,7 @@ html { color-scheme: light dark; }
 
 body {
   font-family: var(--font-sans);
-  font-size: var(--fs-base);
+  font-size: 14px;
   line-height: var(--leading-normal);
   color: var(--text-primary);
   background: var(--bg-app);
