@@ -21,7 +21,12 @@ import { useTheme, getTokens, FONT, FS, FW, RADIUS, SPACE, TRACKING } from '@/st
 interface NavItem {
   path: string
   label: string
-  icon: React.ComponentType<{ size?: number; strokeWidth?: number; color?: string }>
+  icon: React.ComponentType<{
+    size?: number
+    strokeWidth?: number
+    color?: string
+    style?: React.CSSProperties
+  }>
   perfiles: string[]
 }
 
