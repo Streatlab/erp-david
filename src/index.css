@@ -1,0 +1,162 @@
+@import "tailwindcss";
+@import "./styles/design-system.css";
+
+:root,
+[data-theme="dark"] {
+  --sl-app:          #0d1120;
+  --sl-sidebar:      #131928;
+  --sl-card:         #1a1f32;
+  --sl-card-alt:     #1a1f32;
+  --sl-thead:        #131928;
+  --sl-modal-bg:     #1a1f32;
+  --sl-overlay:      rgba(0,0,0,0.7);
+  --sl-hover:        #2a3050;
+  --sl-input-edit:   #1a1f32;
+  --sl-input-ro:     #1a1f32;
+  --sl-input-calc:   #1a1f32;
+  --sl-select-bg:    #1a1f32;
+  --sl-border:         #2a3050;
+  --sl-border-strong:  #2a3050;
+  --sl-border-calc:    #FF4757;
+  --sl-border-focus:   #FF4757;
+  --sl-border-error:   #E24B4A;
+  --sl-border-success: #1D9E75;
+  --sl-text-primary:   #f0f0ff;
+  --sl-text-secondary: #9ba8c0;
+  --sl-text-muted:     #5a6880;
+  --sl-text-disabled:  #5a6880;
+  --sl-text-calc:      #FF4757;
+  --sl-text-nav:       #f0f0ff;
+  --sl-yellow:         #FF4757;
+  --sl-teja:           #7a2e10;
+  --sl-red:            #B01D23;
+  --sl-uber:           #06C167;
+  --sl-uber-text:      #06C167;
+  --sl-glovo-dot:      #e8f442;
+  --sl-glovo-text:     #aabc00;
+  --sl-je:             #f5a623;
+  --sl-je-text:        #f5a623;
+  --sl-web:            #B01D23;
+  --sl-web-dot:        #B01D23;
+  --sl-direct:         #66aaff;
+  --sl-direct-text:    #66aaff;
+  --sl-eps:            #66aaff;
+  --sl-rec:            #f5a623;
+  --sl-btn-save-bg:      #B01D23;
+  --sl-btn-save-text:    #ffffff;
+  --sl-btn-add-bg:       #7a2e10;
+  --sl-btn-add-text:     #ffffff;
+  --sl-btn-add-alt-bg:   #FF4757;
+  --sl-btn-add-alt-text: #ffffff;
+  --sl-btn-cancel-bg:    #2a3050;
+  --sl-btn-cancel-text:  #9ba8c0;
+  --sl-btn-cancel-border:#2a3050;
+  --sl-btn-danger-bg:    #E24B4A;
+  --sl-btn-danger-text:  #ffffff;
+  --sl-radius-sm:  5px;
+  --sl-radius-md:  7px;
+  --sl-radius-lg:  10px;
+  --sl-radius-pill:20px;
+  --sl-sidebar-width: 200px;
+  --sl-topbar-height: 57px;
+  --sl-shadow-sm: 0 1px 4px rgba(0,0,0,0.4);
+  --sl-shadow-md: 0 4px 16px rgba(0,0,0,0.5);
+}
+
+[data-theme="light"] {
+  --sl-app:          #f5f3ef;
+  --sl-sidebar:      #ebe8e2;
+  --sl-card:         #ffffff;
+  --sl-card-alt:     #ffffff;
+  --sl-thead:        #ebe8e2;
+  --sl-modal-bg:     #ffffff;
+  --sl-overlay:      rgba(0,0,0,0.4);
+  --sl-hover:        #ebe8e2;
+  --sl-input-edit:   #ffffff;
+  --sl-input-ro:     #ffffff;
+  --sl-input-calc:   #ffffff;
+  --sl-select-bg:    #ffffff;
+  --sl-border:         #d0c8bc;
+  --sl-border-strong:  #d0c8bc;
+  --sl-border-calc:    #B01D23;
+  --sl-border-focus:   #B01D23;
+  --sl-border-error:   #E24B4A;
+  --sl-border-success: #1D9E75;
+  --sl-text-primary:   #111111;
+  --sl-text-secondary: #3a4050;
+  --sl-text-muted:     #7a8090;
+  --sl-text-disabled:  #7a8090;
+  --sl-text-calc:      #B01D23;
+  --sl-text-nav:       #111111;
+  --sl-yellow:         #FF4757;
+  --sl-teja:           #7a2e10;
+  --sl-red:            #B01D23;
+  --sl-uber:           #06C167;
+  --sl-uber-text:      #1a6a30;
+  --sl-glovo-dot:      #c8900a;
+  --sl-glovo-text:     #7a5800;
+  --sl-je:             #d46010;
+  --sl-je-text:        #7a3800;
+  --sl-web:            #B01D23;
+  --sl-web-dot:        #B01D23;
+  --sl-direct:         #3a5aee;
+  --sl-direct-text:    #2a4aaa;
+  --sl-eps:            #2a4aaa;
+  --sl-rec:            #c8900a;
+  --sl-btn-save-bg:      #B01D23;
+  --sl-btn-save-text:    #ffffff;
+  --sl-btn-add-bg:       #7a2e10;
+  --sl-btn-add-text:     #ffffff;
+  --sl-btn-add-alt-bg:   #FF4757;
+  --sl-btn-add-alt-text: #ffffff;
+  --sl-btn-cancel-bg:    #d0c8bc;
+  --sl-btn-cancel-text:  #3a4050;
+  --sl-btn-cancel-border:#d0c8bc;
+  --sl-btn-danger-bg:    #E24B4A;
+  --sl-btn-danger-text:  #ffffff;
+  --sl-shadow-sm: 0 1px 4px rgba(100,60,20,0.12);
+  --sl-shadow-md: 0 4px 16px rgba(100,60,20,0.12);
+}
+
+@theme {
+  /* Puentes Tailwind → design system tokens */
+  --color-base:        #111111;
+  --color-card:        #1a1a1a;
+  --color-sidebar:     #000000;
+  --color-border:      #2a2a2a;
+  --color-accent:      #FF4757;
+  --color-accent-red:  #B01D23;
+  --color-eps:         #66aaff;
+  --color-rec:         #f5a623;
+  --color-text:        #ffffff;
+  --color-muted:       #999999;
+  --font-sans:         "Lexend", system-ui, sans-serif;
+  --font-ui:           "Oswald", system-ui, sans-serif;
+  --font-title:        "Impact", "Oswald", sans-serif;
+}
+
+[data-theme="light"] { color-scheme: light; }
+[data-theme="dark"]  { color-scheme: dark; }
+
+html { background: var(--sl-app) !important; }
+body {
+  background: var(--sl-app) !important;
+  color: var(--sl-text-primary) !important;
+}
+
+/* Filas tabla por defecto (puente Tailwind cuando no usan clase .ds-table) */
+tbody tr:nth-child(odd)  { background: var(--sl-card); }
+tbody tr:nth-child(even) { background: var(--sl-card-alt); }
+tbody tr:hover { background: var(--sl-hover) !important; }
+
+.modal-merma { background-color: var(--sl-modal-bg) !important; }
+
+/* Transición suave al cambiar de tema */
+*, *::before, *::after {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.15s ease;
+}
+
+/* Excepciones — sin transición larga en elementos interactivos */
+button, input, select, textarea {
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
