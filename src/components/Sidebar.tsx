@@ -11,43 +11,41 @@ import {
   Calculator,
   Landmark,
   Settings,
+  LogOut,
 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { useSidebarState } from '@/hooks/useSidebarState'
 import { ThemeToggle } from './ThemeToggle'
-import { useTheme, FONT } from '@/styles/tokens'
+import { useTheme, getTokens, FONT, FS, FW, RADIUS, SPACE, TRACKING } from '@/styles/tokens'
 
 interface NavItem {
   path: string
   label: string
   icon: React.ComponentType<{ size?: number; strokeWidth?: number; color?: string }>
-  color: string
   perfiles: string[]
 }
 
 const ITEMS: NavItem[] = [
-  { path: '/entregas',         label: 'Entregas',         icon: Truck,          color: '#06C167', perfiles: ['admin'] },
-  { path: '/personal',         label: 'Personal',         icon: Users,          color: '#66aaff', perfiles: ['admin'] },
-  { path: '/flota',            label: 'Flota',            icon: RouteIcon,      color: '#f5a623', perfiles: ['admin'] },
-  { path: '/liquidacion-cade', label: 'Liquidación Cade', icon: Wallet,         color: '#B01D23', perfiles: ['admin'] },
-  { path: '/conciliacion',     label: 'Conciliación',     icon: Scale,          color: '#FF4757', perfiles: ['admin'] },
-  { path: '/running',          label: 'Running',          icon: ClipboardList,  color: '#06C167', perfiles: ['admin'] },
-  { path: '/punto-equilibrio', label: 'Punto Equilibrio', icon: Building2,      color: '#66aaff', perfiles: ['admin'] },
-  { path: '/contabilidad',     label: 'Contabilidad',     icon: Calculator,     color: '#f5a623', perfiles: ['admin'] },
-  { path: '/hacienda',         label: 'Hacienda',         icon: Landmark,       color: '#B01D23', perfiles: ['admin'] },
-  { path: '/operativa',        label: 'Operativa',        icon: Settings,       color: '#9ba8c0', perfiles: ['admin'] },
+  { path: '/entregas',         label: 'Entregas',         icon: Truck,         perfiles: ['admin'] },
+  { path: '/personal',         label: 'Personal',         icon: Users,         perfiles: ['admin'] },
+  { path: '/flota',            label: 'Flota',            icon: RouteIcon,     perfiles: ['admin'] },
+  { path: '/liquidacion-cade', label: 'Liquidación Cade', icon: Wallet,        perfiles: ['admin'] },
+  { path: '/conciliacion',     label: 'Conciliación',     icon: Scale,         perfiles: ['admin'] },
+  { path: '/running',          label: 'Running',          icon: ClipboardList, perfiles: ['admin'] },
+  { path: '/punto-equilibrio', label: 'Punto equilibrio', icon: Building2,     perfiles: ['admin'] },
+  { path: '/contabilidad',     label: 'Contabilidad',     icon: Calculator,    perfiles: ['admin'] },
+  { path: '/hacienda',         label: 'Hacienda',         icon: Landmark,      perfiles: ['admin'] },
+  { path: '/operativa',        label: 'Operativa',        icon: Settings,      perfiles: ['admin'] },
 ]
 
 export default function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { usuario, logout } = useAuth()
   const { collapsed, toggle } = useSidebarState()
-  const { T, isDark } = useTheme()
+  const theme = useTheme()
+  const t = getTokens(theme)
   const perfil = usuario?.perfil ?? ''
 
-  const activeTextColor = '#ffffff'
-  const hoverBg = isDark ? T.card : T.group
-
-  const sidebarWidth = collapsed ? 56 : 220
+  const sidebarWidth = collapsed ? 56 : 240
 
   const visibleItems = ITEMS.filter(i => i.perfiles.includes(perfil))
 
@@ -56,43 +54,78 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
     alignItems: 'center',
     gap: 10,
     padding: '10px 14px 10px 12px',
-    margin: '1px 8px',
-    borderRadius: 6,
-    fontFamily: FONT.body,
-    fontSize: 14,
-    color: isActive ? activeTextColor : T.pri,
-    background: isActive ? '#FF4757' : 'transparent',
+    margin: '2px 8px',
+    borderRadius: RADIUS.md,
+    fontFamily: FONT.sans,
+    fontSize: FS.sm,
+    fontWeight: isActive ? FW.medium : FW.regular,
+    color: isActive ? t.textOnPrimary : t.textPrimary,
+    background: isActive ? t.brandPrimary : 'transparent',
     textDecoration: 'none',
     cursor: 'pointer',
-    transition: 'background 150ms',
+    transition: 'background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out)',
     whiteSpace: 'nowrap' as const,
     overflow: 'hidden',
   })
 
   return (
     <>
-      {open && <div className="fixed inset-0 bg-black/60 z-30 lg:hidden" onClick={onClose} />}
+      {open && <div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={onClose} />}
 
       <aside
-        style={{ background: T.group, borderRadius: 16, width: sidebarWidth, minWidth: sidebarWidth, maxWidth: sidebarWidth }}
+        style={{
+          background: t.bgSurface,
+          borderRight: `0.5px solid ${t.borderDefault}`,
+          width: sidebarWidth,
+          minWidth: sidebarWidth,
+          maxWidth: sidebarWidth,
+        }}
         className={`
-          fixed top-0 left-0 z-40 h-full border-r border-[var(--sl-border)]
+          fixed top-0 left-0 z-40 h-full
           flex flex-col transition-all duration-200 overflow-hidden
           lg:translate-x-0 lg:static lg:z-auto
           ${open ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
         {collapsed ? (
-          <div style={{ borderBottom: `1px solid ${T.brd}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 64, padding: '6px 0', gap: 4 }}>
-            <button onClick={toggle} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 2 }} title="Expandir">
+          <div style={{
+            borderBottom: `0.5px solid ${t.borderSubtle}`,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            minHeight: 64, padding: '6px 0', gap: 4,
+          }}>
+            <button
+              onClick={toggle}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 2 }}
+              title="Expandir"
+            >
               <img src="/logo-davidreparte.svg" alt="David Reparte" style={{ height: 32, width: 'auto', display: 'block' }} />
             </button>
           </div>
         ) : (
-          <div style={{ padding: 12, borderBottom: `1px solid ${T.brd}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 88, position: 'relative' }}>
+          <div style={{
+            padding: SPACE[3],
+            borderBottom: `0.5px solid ${t.borderSubtle}`,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            minHeight: 88, position: 'relative',
+          }}>
             <img src="/logo-davidreparte.svg" alt="David Reparte" style={{ height: 44, width: 'auto', display: 'block' }} />
-            <span style={{ fontFamily: FONT.heading, fontSize: 9, color: T.mut, letterSpacing: '3px', textTransform: 'uppercase', marginTop: 6 }}>David Reparte</span>
-            <button onClick={toggle} style={{ color: T.mut, background: 'none', border: 'none', cursor: 'pointer', padding: 6, position: 'absolute', top: 8, right: 8 }} className="hover:text-[var(--sl-text-primary)] transition-colors hidden lg:block" title="Colapsar">«</button>
+            <span style={{
+              fontFamily: FONT.sans,
+              fontSize: FS['2xs'],
+              color: t.textSecondary,
+              letterSpacing: TRACKING.wider,
+              textTransform: 'uppercase',
+              fontWeight: FW.medium,
+              marginTop: 6,
+            }}>
+              David Reparte
+            </span>
+            <button
+              onClick={toggle}
+              style={{ color: t.textSecondary, background: 'none', border: 'none', cursor: 'pointer', padding: 6, position: 'absolute', top: 8, right: 8 }}
+              className="hidden lg:block"
+              title="Colapsar"
+            >«</button>
           </div>
         )}
 
@@ -103,8 +136,8 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
               end
               onClick={onClose}
               style={({ isActive }) => ({
-                width: '100%',
-                background: isActive ? '#FF4757' : 'none',
+                width: 'auto',
+                background: isActive ? t.brandPrimary : 'transparent',
                 border: 'none',
                 cursor: 'pointer',
                 display: 'flex',
@@ -112,19 +145,22 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
                 justifyContent: 'flex-start',
                 gap: 10,
                 padding: '10px 14px 10px 12px',
-                fontFamily: FONT.heading,
-                fontSize: 13,
+                margin: '2px 8px',
+                borderRadius: RADIUS.md,
+                fontFamily: FONT.sans,
+                fontSize: FS.xs,
                 textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                color: isActive ? '#ffffff' : T.pri,
+                letterSpacing: TRACKING.wide,
+                fontWeight: FW.bold,
+                color: isActive ? t.textOnPrimary : t.brandPrimary,
                 textDecoration: 'none',
-                transition: 'background 150ms',
+                transition: 'background var(--dur-fast) var(--ease-out)',
               })}
             >
               {({ isActive }) => (
                 <>
-                  <LayoutDashboard size={18} strokeWidth={1.8} color={isActive ? '#ffffff' : '#FF4757'} style={{ flexShrink: 0 }} />
-                  <span>Panel Global</span>
+                  <LayoutDashboard size={18} strokeWidth={1.5} color={isActive ? t.textOnPrimary : t.brandPrimary} style={{ flexShrink: 0 }} />
+                  <span>Panel global</span>
                 </>
               )}
             </NavLink>
@@ -135,10 +171,12 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
               to="/"
               end
               onClick={onClose}
-              title="Panel Global"
+              title="Panel global"
               style={{ width: '100%', height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}
             >
-              <LayoutDashboard size={20} strokeWidth={1.8} color="#FF4757" />
+              {({ isActive }) => (
+                <LayoutDashboard size={20} strokeWidth={1.5} color={isActive ? t.brandPrimary : t.textSecondary} />
+              )}
             </NavLink>
           )}
 
@@ -153,7 +191,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
                 style={{ width: '100%', height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}
               >
                 {({ isActive }) => (
-                  <Icon size={20} strokeWidth={1.8} color={isActive ? '#ffffff' : item.color} />
+                  <Icon size={20} strokeWidth={1.5} color={isActive ? t.brandPrimary : t.textSecondary} />
                 )}
               </NavLink>
             ) : (
@@ -162,12 +200,11 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
                 to={item.path}
                 onClick={onClose}
                 style={({ isActive }) => itemStyle(isActive)}
-                className={({ isActive }) => isActive ? '' : `hover:!bg-[${hoverBg}] hover:!text-[${T.pri}]`}
               >
                 {({ isActive }) => (
                   <>
-                    <Icon size={18} strokeWidth={1.8} color={isActive ? '#ffffff' : item.color} />
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: isActive ? activeTextColor : T.pri }}>{item.label}</span>
+                    <Icon size={18} strokeWidth={1.5} color={isActive ? t.textOnPrimary : t.textSecondary} style={{ flexShrink: 0 }} />
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
                   </>
                 )}
               </NavLink>
@@ -175,20 +212,42 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
           })}
         </nav>
 
-        <div style={{ padding: collapsed ? '8px' : '12px', borderTop: `1px solid ${T.brd}`, display: 'flex', justifyContent: 'center' }}>
+        <div style={{
+          padding: collapsed ? '8px' : '12px',
+          borderTop: `0.5px solid ${t.borderSubtle}`,
+          display: 'flex', justifyContent: 'center',
+        }}>
           <ThemeToggle />
         </div>
 
-        <div style={{ padding: 12, borderTop: `1px solid ${T.brd}`, fontFamily: FONT.body, fontSize: 12, color: T.mut, textAlign: collapsed ? 'center' : 'left' }}>
+        <div style={{
+          padding: SPACE[3],
+          borderTop: `0.5px solid ${t.borderSubtle}`,
+          fontFamily: FONT.sans,
+          fontSize: FS.xs,
+          color: t.textSecondary,
+          textAlign: collapsed ? 'center' : 'left',
+        }}>
           {!collapsed ? (
             <>
-              <div style={{ marginBottom: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: T.sec }}>
-                {usuario?.nombre} — <span style={{ color: '#FF4757' }}>{usuario?.perfil}</span>
+              <div style={{ marginBottom: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: t.textPrimary }}>
+                {usuario?.nombre} — <span style={{ color: t.brandAccent, fontWeight: FW.medium }}>{usuario?.perfil}</span>
               </div>
-              <button onClick={logout} style={{ color: T.mut, fontSize: 12, background: 'none', border: 'none', cursor: 'pointer' }}>Cerrar sesión</button>
+              <button
+                onClick={logout}
+                style={{ color: t.textSecondary, fontSize: FS.xs, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: FONT.sans }}
+              >
+                Cerrar sesión
+              </button>
             </>
           ) : (
-            <button onClick={logout} style={{ color: T.mut, background: 'none', border: 'none', cursor: 'pointer', fontSize: 14 }} title="Cerrar sesión">⏏</button>
+            <button
+              onClick={logout}
+              style={{ color: t.textSecondary, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              title="Cerrar sesión"
+            >
+              <LogOut size={16} strokeWidth={1.5} />
+            </button>
           )}
         </div>
       </aside>

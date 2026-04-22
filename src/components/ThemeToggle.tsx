@@ -9,21 +9,21 @@ export function ThemeToggle() {
       onClick={toggleTheme}
       title={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
       style={{
-        background: 'none',
-        border: '1px solid var(--sl-border)',
-        borderRadius: 999,
+        background: 'transparent',
+        border: '0.5px solid var(--border-default)',
+        borderRadius: 'var(--radius-pill)',
         padding: 8,
         cursor: 'pointer',
-        color: '#FF4757',
+        color: 'var(--brand-primary)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         width: 36,
         height: 36,
-        transition: 'border-color 0.15s',
+        transition: 'border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out)',
       }}
     >
-      {isDark ? <Sun size={18} strokeWidth={1.8} /> : <Moon size={18} strokeWidth={1.8} />}
+      {isDark ? <Sun size={18} strokeWidth={1.5} /> : <Moon size={18} strokeWidth={1.5} />}
     </button>
   )
 }

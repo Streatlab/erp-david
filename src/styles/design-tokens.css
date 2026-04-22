@@ -1,0 +1,301 @@
+/* ============================================================
+   DAVID ERP — DESIGN TOKENS CSS
+   v1.0 — Marino + Fuego · Mediterráneo vivo
+   ------------------------------------------------------------
+   FUENTE ÚNICA DE VERDAD para variables CSS del ERP David.
+   NO MEZCLAR con estilos de Streat Lab / Binagre.
+   Se importa en main.tsx ANTES de cualquier otro CSS.
+   Conmuta tema vía [data-theme] en <html>.
+   ============================================================ */
+
+:root,
+[data-theme="light"] {
+
+  /* ——— CROMÁTICA BASE ——— */
+  --sand-50:  #FDF8EC;
+  --sand-100: #F9F1DE;
+  --sand-200: #F5ECD9;
+  --sand-300: #EDE1C4;
+  --sand-400: #D9C9A3;
+  --sand-700: #7A5A3A;
+  --sand-900: #1C1A14;
+
+  --marino-50:  #E6ECF4;
+  --marino-100: #C2CFE0;
+  --marino-300: #4D6A92;
+  --marino-500: #16355C;
+  --marino-700: #0D2340;
+  --marino-900: #061428;
+
+  --naranja-50:  #FDE8D5;
+  --naranja-100: #FBD2AD;
+  --naranja-300: #F7A668;
+  --naranja-500: #F26B1F;
+  --naranja-700: #B84A0E;
+  --naranja-900: #7A3008;
+
+  --terra-50:  #FBE4DD;
+  --terra-100: #F5C1B0;
+  --terra-300: #E48369;
+  --terra-500: #C94A2C;
+  --terra-700: #8F2E17;
+  --terra-900: #5C1C0D;
+
+  --ambar-50:  #FDF1D5;
+  --ambar-100: #FBE3A8;
+  --ambar-300: #F8CA6E;
+  --ambar-500: #F5B84A;
+  --ambar-700: #A87A1E;
+  --ambar-900: #6E4E10;
+
+  --oliva-50:  #EEF1DC;
+  --oliva-100: #D8DFA9;
+  --oliva-300: #A3B268;
+  --oliva-500: #7A8C3E;
+  --oliva-700: #53621F;
+  --oliva-900: #334010;
+
+  /* ——— SEMÁNTICOS ——— */
+  --bg-app:         var(--sand-200);
+  --bg-surface:     var(--sand-50);
+  --bg-surface-alt: var(--sand-100);
+  --bg-overlay:     rgba(12, 20, 30, 0.55);
+
+  --text-primary:    var(--sand-900);
+  --text-secondary:  var(--sand-700);
+  --text-tertiary:   #A89472;
+  --text-on-primary: var(--sand-50);
+  --text-on-accent:  var(--sand-50);
+
+  --border-subtle:  rgba(22, 53, 92, 0.08);
+  --border-default: rgba(22, 53, 92, 0.14);
+  --border-strong:  rgba(22, 53, 92, 0.28);
+
+  --brand-primary:       var(--marino-500);
+  --brand-primary-hover: var(--marino-700);
+  --brand-accent:        var(--naranja-500);
+  --brand-accent-hover:  var(--naranja-700);
+
+  --success:        var(--oliva-500);
+  --success-bg:     var(--oliva-50);
+  --success-border: var(--oliva-300);
+  --success-text:   var(--oliva-700);
+
+  --warning:        var(--ambar-500);
+  --warning-bg:     var(--ambar-50);
+  --warning-border: var(--ambar-300);
+  --warning-text:   var(--ambar-700);
+
+  --danger:         var(--terra-500);
+  --danger-bg:      var(--terra-50);
+  --danger-border:  var(--terra-300);
+  --danger-text:    var(--terra-700);
+
+  --info:           var(--marino-500);
+  --info-bg:        var(--marino-50);
+  --info-border:    var(--marino-300);
+  --info-text:      var(--marino-700);
+
+  /* ——— OPERADORES (Mercadona, Carrefour, Lidl, Día) ——— */
+  --op-mercadona-fg: var(--naranja-700);
+  --op-mercadona-bg: rgba(242, 107, 31, 0.12);
+  --op-mercadona-bd: rgba(242, 107, 31, 0.30);
+
+  --op-carrefour-fg: var(--oliva-700);
+  --op-carrefour-bg: rgba(122, 140, 62, 0.14);
+  --op-carrefour-bd: rgba(122, 140, 62, 0.30);
+
+  --op-lidl-fg: var(--ambar-700);
+  --op-lidl-bg: rgba(245, 184, 74, 0.18);
+  --op-lidl-bd: rgba(245, 184, 74, 0.40);
+
+  --op-dia-fg: var(--terra-700);
+  --op-dia-bg: rgba(201, 74, 44, 0.12);
+  --op-dia-bd: rgba(201, 74, 44, 0.30);
+
+  /* ——— TIPOGRAFÍA ——— */
+  --font-sans: "Inter", "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --fs-2xs: 10px;
+  --fs-xs:  11px;
+  --fs-sm:  13px;
+  --fs-base:14px;
+  --fs-md:  16px;
+  --fs-lg:  20px;
+  --fs-xl:  28px;
+  --fs-2xl: 40px;
+
+  --fw-regular: 400;
+  --fw-medium:  500;
+  --fw-bold:    700;
+
+  --tracking-tight:  -0.01em;
+  --tracking-normal: 0;
+  --tracking-wide:   0.08em;
+  --tracking-wider:  0.14em;
+
+  --leading-tight:  1.15;
+  --leading-snug:   1.35;
+  --leading-normal: 1.55;
+
+  /* ——— SPACING & LAYOUT ——— */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  --radius-sm:   6px;
+  --radius-md:   10px;
+  --radius-lg:   14px;
+  --radius-xl:   20px;
+  --radius-pill: 999px;
+
+  --sidebar-w:           240px;
+  --sidebar-w-collapsed: 56px;
+  --container-pad:       24px;
+
+  /* ——— SOMBRAS (planas por diseño) ——— */
+  --shadow-none:  none;
+  --shadow-xs:    0 1px 2px rgba(22, 53, 92, 0.04);
+  --shadow-sm:    0 2px 6px rgba(22, 53, 92, 0.06);
+  --shadow-md:    0 8px 24px rgba(22, 53, 92, 0.10);
+  --shadow-modal: 0 20px 48px rgba(12, 20, 30, 0.20);
+
+  /* ——— MOTION ——— */
+  --ease-out:    cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast:    120ms;
+  --dur-base:    200ms;
+  --dur-slow:    320ms;
+}
+
+
+/* ============================================================
+   DARK MODE
+   Marino → celeste · Naranja → avivado · Sand → off-black cálido
+   ============================================================ */
+
+[data-theme="dark"] {
+  --sand-50:  #19222E;
+  --sand-100: #141C26;
+  --sand-200: #0F1620;
+  --sand-300: #232D3A;
+  --sand-400: #2E3A4A;
+  --sand-700: #A89878;
+  --sand-900: #F5ECD9;
+
+  --marino-50:  #1A2B42;
+  --marino-100: #264062;
+  --marino-300: #4F7AAD;
+  --marino-500: #6FA8E0;
+  --marino-700: #A5CAEA;
+  --marino-900: #D4E3F2;
+
+  --naranja-50:  #3A1F0C;
+  --naranja-100: #5A2F10;
+  --naranja-300: #C76624;
+  --naranja-500: #FF8A3D;
+  --naranja-700: #FFB47A;
+  --naranja-900: #FDD4B0;
+
+  --terra-50:  #3A1812;
+  --terra-100: #5A2418;
+  --terra-300: #B4543A;
+  --terra-500: #E8765C;
+  --terra-700: #F0A090;
+  --terra-900: #F7CDC1;
+
+  --ambar-50:  #3A2A0C;
+  --ambar-100: #5A3F12;
+  --ambar-300: #C79332;
+  --ambar-500: #F5C56D;
+  --ambar-700: #F5D78C;
+  --ambar-900: #F7E5B4;
+
+  --oliva-50:  #1F2810;
+  --oliva-100: #2F3C17;
+  --oliva-300: #7F9040;
+  --oliva-500: #A8B86B;
+  --oliva-700: #C8D98B;
+  --oliva-900: #E0EBB5;
+
+  --bg-app:         var(--sand-200);
+  --bg-surface:     var(--sand-50);
+  --bg-surface-alt: var(--sand-100);
+
+  --text-primary:   var(--sand-900);
+  --text-secondary: var(--sand-700);
+  --text-tertiary:  #6E6250;
+  --text-on-primary: var(--sand-200);
+  --text-on-accent:  var(--sand-200);
+
+  --border-subtle:  rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.10);
+  --border-strong:  rgba(255, 255, 255, 0.18);
+
+  --brand-primary:       var(--marino-500);
+  --brand-primary-hover: var(--marino-300);
+  --brand-accent:        var(--naranja-500);
+  --brand-accent-hover:  var(--naranja-300);
+
+  --success-text: var(--oliva-700);
+  --warning-text: var(--ambar-700);
+  --danger-text:  var(--terra-700);
+  --info-text:    var(--marino-700);
+
+  --op-mercadona-fg: #FFB47A;
+  --op-mercadona-bg: rgba(255, 138, 61, 0.14);
+  --op-mercadona-bd: rgba(255, 138, 61, 0.35);
+
+  --op-carrefour-fg: #C8D98B;
+  --op-carrefour-bg: rgba(168, 184, 107, 0.14);
+  --op-carrefour-bd: rgba(168, 184, 107, 0.35);
+
+  --op-lidl-fg: #F5D78C;
+  --op-lidl-bg: rgba(245, 197, 109, 0.16);
+  --op-lidl-bd: rgba(245, 197, 109, 0.40);
+
+  --op-dia-fg: #F0A090;
+  --op-dia-bg: rgba(232, 118, 92, 0.14);
+  --op-dia-bd: rgba(232, 118, 92, 0.35);
+
+  --shadow-xs:    0 1px 2px rgba(0, 0, 0, 0.25);
+  --shadow-sm:    0 2px 6px rgba(0, 0, 0, 0.35);
+  --shadow-md:    0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-modal: 0 20px 48px rgba(0, 0, 0, 0.65);
+}
+
+
+/* ============================================================
+   UTILIDADES BASE
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { color-scheme: light dark; }
+[data-theme="light"] { color-scheme: light; }
+[data-theme="dark"]  { color-scheme: dark; }
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--fs-base);
+  line-height: var(--leading-normal);
+  color: var(--text-primary);
+  background: var(--bg-app);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  margin: 0;
+}
+
+::-webkit-scrollbar        { width: 10px; height: 10px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: var(--border-default); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
+
+::selection { background: var(--naranja-100); color: var(--naranja-900); }

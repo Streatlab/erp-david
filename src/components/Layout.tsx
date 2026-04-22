@@ -1,25 +1,45 @@
 import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
+import { Menu } from 'lucide-react'
 import Sidebar from '@/components/Sidebar'
 
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    <div className="flex h-screen bg-[var(--sl-app)] text-[var(--sl-text-primary)] font-sans">
+    <div
+      className="flex h-screen font-sans"
+      style={{ background: 'var(--bg-app)', color: 'var(--text-primary)' }}
+    >
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-12 flex items-center px-4 border-b border-[var(--sl-border)] bg-[var(--sl-sidebar)] lg:hidden">
+        <header
+          className="h-12 flex items-center px-4 lg:hidden"
+          style={{
+            background: 'var(--bg-surface)',
+            borderBottom: '0.5px solid var(--border-default)',
+          }}
+        >
           <button
             onClick={() => setSidebarOpen(true)}
-            className="text-[var(--sl-text-muted)] hover:text-[var(--sl-text-primary)]"
+            style={{ color: 'var(--text-primary)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            aria-label="Abrir menú"
           >
-            <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
+            <Menu size={20} strokeWidth={1.5} />
           </button>
-          <span className="ml-3 text-[var(--sl-text-primary)] text-sm" style={{ fontFamily: 'Oswald, sans-serif', letterSpacing: '0.08em' }}>STREAT LAB · ERP</span>
+          <span
+            className="ml-3 text-xs"
+            style={{
+              color: 'var(--text-primary)',
+              fontFamily: 'var(--font-sans)',
+              letterSpacing: 'var(--tracking-wide)',
+              textTransform: 'uppercase',
+              fontWeight: 500,
+            }}
+          >
+            David Reparte
+          </span>
         </header>
 
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
