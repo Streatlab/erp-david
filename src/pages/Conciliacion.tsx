@@ -55,10 +55,10 @@ function fmtFecha(iso: string): string {
 
 function colorContraparte(nombre: string): string | null {
   const n = nombre.toLowerCase().trim()
-  if (n.includes('uber')) return '#06C167'
-  if (n.includes('glovo')) return '#e8f442'
-  if (n.includes('just eat') || n === 'just eat' || n.includes('justeat')) return '#f5a623'
-  if (n.includes('rushour') || n.includes('web') || n.includes('tienda')) return 'var(--terra-500)'
+  if (n.includes('mercadona')) return 'var(--brand-accent)'
+  if (n.includes('carrefour')) return '#1D9E75'
+  if (n.includes('lidl')) return '#F59E0B'
+  if (n.includes('día') || n === 'dia' || n.includes(' dia ') || n.startsWith('dia ') || n.endsWith(' dia')) return '#D4537E'
   return null
 }
 
@@ -459,7 +459,7 @@ export default function Conciliacion() {
                 }}
               >
                 <option value="todas">Todas</option>
-                {CATEGORIAS.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                {categoriasBD.map(c => <option key={c.codigo} value={c.codigo}>{c.nombre}</option>)}
               </select>
             </div>
             <div>
@@ -469,7 +469,7 @@ export default function Conciliacion() {
                 <input
                   value={busqueda}
                   onChange={e => setBusqueda(e.target.value)}
-                  placeholder="Ej: Uber, Alcampo..."
+                  placeholder="Ej: Iberdrola, Mercadona..."
                   style={{ ...inputStyle, paddingLeft: 32 }}
                 />
               </div>

@@ -6,6 +6,7 @@ import {
 } from 'recharts'
 import { fmtEur } from '@/utils/format'
 import { useTheme, FONT, kpiValueStyle } from '@/styles/tokens'
+import { supabase } from '@/lib/supabase'
 import type { Movimiento, Categoria } from '@/types/conciliacion'
 
 /* ═══════════════════════════════════════════════════════════
@@ -36,16 +37,20 @@ const COLOR_CANAL: Record<string, string> = {
 }
 
 const COLOR_CATEGORIA: Record<string, string> = {
-  'Nóminas':                      'var(--terra-500)',
-  'Combustible/Energía vehículo': 'var(--brand-accent)',
-  'Combustible':                  'var(--brand-accent)',
-  'Leasing furgonetas':           '#D85A30',
-  'Seguros':                      '#F59E0B',
-  'Suministros':                  '#7F77DD',
-  'Mantenimiento vehículos':      '#BA7517',
-  'Proveedores':                  '#D4537E',
-  'Impuestos':                    '#9E9588',
-  'Otros':                        '#888780',
+  'nominas':                  'var(--terra-500)',
+  'recargas-electricas':      'var(--brand-accent)',
+  'combustible':              '#E05A27',
+  'leasing-furgonetas':       '#D85A30',
+  'seguros':                  '#F59E0B',
+  'suministros':              '#7F77DD',
+  'mantenimiento-vehiculos':  '#BA7517',
+  'proveedores':              '#D4537E',
+  'impuestos':                '#9E9588',
+  'alquiler':                 '#0C447C',
+  'telefonia':                '#1D9E75',
+  'seguridad-social':         '#5D4E96',
+  'movimientos-internos':     '#888780',
+  'Otros':                    '#888780',
 }
 
 const CANALES_DAVID = ['Mercadona', 'Carrefour', 'Lidl', 'Día'] as const
@@ -64,14 +69,30 @@ const MOCK_PRESUPUESTOS = [
   { categoria: 'suministros', nombre: 'SUMINISTROS', consumido: 1028, tope: 1000 },
 ] as const
 
-const MOCK_TESORERIA = {
-  balanceActual: 16254.18,
-  balanceHace30d: 14890.00,
-  cajaLiquida: 12450,
-  cobrosPendientes: 5340,
-  pagosPendientes: 2100,
-  proyeccion7d: 15690,
-  proyeccion30d: 18200,
+interface TesoreriaData {
+  balanceActual: number
+  balanceHace30d: number
+  cajaLiquida: number
+  cobrosPendientes: number
+  pagosPendientes: number
+  cobros7d: number
+  pagos7d: number
+  cobros30d: number
+  pagos30d: number
+  hayProvisiones: boolean
+}
+
+const TESORERIA_VACIA: TesoreriaData = {
+  balanceActual: 0,
+  balanceHace30d: 0,
+  cajaLiquida: 0,
+  cobrosPendientes: 0,
+  pagosPendientes: 0,
+  cobros7d: 0,
+  pagos7d: 0,
+  cobros30d: 0,
+  pagos30d: 0,
+  hayProvisiones: false,
 }
 
 const PALETA_PRESUPUESTO = {
@@ -265,36 +286,85 @@ export function ResumenDashboard({
   const { T } = useTheme()
   const isMobile = useIsMobile()
 
+  /* — Tesorería real desde conciliacion + provisiones — */
+  const [tesoreria, setTesoreria] = useState<TesoreriaData>(TESORERIA_VACIA)
+  const [categoriasLookup, setCategoriasLookup] = useState<Record<string, { nombre: string; grupo?: string | null }>>({})
+
+  useEffect(() => {
+    let cancel = false
+    ;(async () => {
+      const hoy = new Date()
+      const hoyISO = hoy.toISOString().slice(0, 10)
+      const en7d = new Date(hoy.getTime() + 7 * 86400000).toISOString().slice(0, 10)
+      const en30d = new Date(hoy.getTime() + 30 * 86400000).toISOString().slice(0, 10)
+      const hace30d = new Date(hoy.getTime() - 30 * 86400000).toISOString().slice(0, 10)
+
+      const [mov, movAnt, provAll, cIng, cGas] = await Promise.all([
+        supabase.from('conciliacion').select('importe'),
+        supabase.from('conciliacion').select('importe').lte('fecha', hace30d),
+        supabase.from('provisiones').select('tipo, importe, estado, fecha_fin'),
+        supabase.from('categorias_contables_ingresos').select('codigo, nombre'),
+        supabase.from('categorias_contables_gastos').select('codigo, nombre, grupo'),
+      ])
+      if (cancel) return
+
+      const cajaLiquida = (mov.data ?? []).reduce((s: number, r: any) => s + Number(r.importe || 0), 0)
+      const balanceHace30d = (movAnt.data ?? []).reduce((s: number, r: any) => s + Number(r.importe || 0), 0)
+
+      const provisiones = (provAll.data ?? []) as { tipo: string; importe: number; estado: string; fecha_fin: string | null }[]
+      const cobrosPend = provisiones.filter(p => p.tipo === 'cobro' && p.estado === 'pendiente')
+      const pagosPend  = provisiones.filter(p => p.tipo === 'pago'  && p.estado === 'pendiente')
+      const cobrosPendientes = cobrosPend.reduce((s, p) => s + Number(p.importe || 0), 0)
+      const pagosPendientes  = pagosPend.reduce((s, p) => s + Number(p.importe || 0), 0)
+
+      const cobros7d = cobrosPend.filter(p => p.fecha_fin && p.fecha_fin <= en7d && p.fecha_fin >= hoyISO).reduce((s, p) => s + Number(p.importe || 0), 0)
+      const pagos7d  = pagosPend .filter(p => p.fecha_fin && p.fecha_fin <= en7d && p.fecha_fin >= hoyISO).reduce((s, p) => s + Number(p.importe || 0), 0)
+      const cobros30d = cobrosPend.filter(p => p.fecha_fin && p.fecha_fin <= en30d && p.fecha_fin >= hoyISO).reduce((s, p) => s + Number(p.importe || 0), 0)
+      const pagos30d  = pagosPend .filter(p => p.fecha_fin && p.fecha_fin <= en30d && p.fecha_fin >= hoyISO).reduce((s, p) => s + Number(p.importe || 0), 0)
+
+      setTesoreria({
+        balanceActual: cajaLiquida,
+        balanceHace30d,
+        cajaLiquida,
+        cobrosPendientes,
+        pagosPendientes,
+        cobros7d,
+        pagos7d,
+        cobros30d,
+        pagos30d,
+        hayProvisiones: provisiones.length > 0,
+      })
+
+      const lookup: Record<string, { nombre: string; grupo?: string | null }> = {}
+      for (const c of (cIng.data ?? []) as any[]) lookup[c.codigo] = { nombre: c.nombre }
+      for (const c of (cGas.data ?? []) as any[]) lookup[c.codigo] = { nombre: c.nombre, grupo: c.grupo }
+      setCategoriasLookup(lookup)
+    })()
+    return () => { cancel = true }
+  }, [movimientos.length])
+
   /* — STYLE_NUM_GIGANTE_DASHBOARD (FIX 1): copia literal de Dashboard card VENTAS — */
   const STYLE_NUM_GIGANTE_DASHBOARD: CSSProperties = {
     ...kpiValueStyle(T),
     marginBottom: 4,
   }
 
-  /* — Ingresos por canal (David: Mercadona/Carrefour/Lidl/Día) — */
-  const canalesActual = useMemo(() => {
+  /* — Ingresos por canal (David: Mercadona/Carrefour/Lidl/Día) — match sobre proveedor + concepto — */
+  const sumarPorCanal = (lista: Movimiento[]) => {
     const base = CANALES_DAVID.map(c => ({ canal: c as string, importe: 0 }))
-    for (const m of movimientos) {
+    for (const m of lista) {
       if (m.importe <= 0) continue
       const cp = normTxt(m.contraparte ?? '')
-      if (!cp) continue
-      const slot = base.find(s => cp.includes(normTxt(s.canal)))
+      const concepto = normTxt(m.concepto ?? '')
+      const haystack = `${cp} ${concepto}`.trim()
+      if (!haystack) continue
+      const slot = base.find(s => haystack.includes(normTxt(s.canal)))
       if (slot) slot.importe += m.importe
     }
     return base
-  }, [movimientos])
-
-  const canalesAnterior = useMemo(() => {
-    const base = CANALES_DAVID.map(c => ({ canal: c as string, importe: 0 }))
-    for (const m of movimientosAnterior) {
-      if (m.importe <= 0) continue
-      const cp = normTxt(m.contraparte ?? '')
-      if (!cp) continue
-      const slot = base.find(s => cp.includes(normTxt(s.canal)))
-      if (slot) slot.importe += m.importe
-    }
-    return base
-  }, [movimientosAnterior])
+  }
+  const canalesActual = useMemo(() => sumarPorCanal(movimientos), [movimientos])
+  const canalesAnterior = useMemo(() => sumarPorCanal(movimientosAnterior), [movimientosAnterior])
 
   /* — Gastos por categoría (top 6 + Otros) — */
   const categoriasActual = useMemo(() => {
@@ -343,12 +413,15 @@ export function ResumenDashboard({
   const gstDeltaColor = gstDeltaPct > 0 ? ROJO : gstDeltaPct < 0 ? VERDE_OK : T.mut
   const gstDeltaTxt = `${gstDeltaSym} ${Math.abs(Math.round(gstDeltaPct))}% vs período anterior`
 
-  const tesDeltaPct = MOCK_TESORERIA.balanceHace30d !== 0
-    ? ((MOCK_TESORERIA.balanceActual - MOCK_TESORERIA.balanceHace30d) / MOCK_TESORERIA.balanceHace30d) * 100
+  const tesDeltaPct = tesoreria.balanceHace30d !== 0
+    ? ((tesoreria.balanceActual - tesoreria.balanceHace30d) / tesoreria.balanceHace30d) * 100
     : 0
   const tesDeltaSym = tesDeltaPct > 0 ? '▲' : tesDeltaPct < 0 ? '▼' : '='
   const tesDeltaColor = tesDeltaPct > 0 ? VERDE_OK : tesDeltaPct < 0 ? ROJO : T.mut
   const tesDeltaTxt = `${tesDeltaSym} ${Math.abs(Math.round(tesDeltaPct))}%`
+
+  const proyeccion7d = tesoreria.cajaLiquida + tesoreria.cobros7d - tesoreria.pagos7d
+  const proyeccion30d = tesoreria.cajaLiquida + tesoreria.cobros30d - tesoreria.pagos30d
 
   const balanceDeltaPct = balanceAnt !== 0
     ? ((balance - balanceAnt) / Math.abs(balanceAnt)) * 100
@@ -378,7 +451,8 @@ export function ResumenDashboard({
       const ant = categoriasAnterior.find(x => x.categoria === c.categoria)?.importe ?? 0
       const deltaPct = ant !== 0 ? ((c.importe - ant) / ant) * 100 : null
       const porcentaje = sumGst > 0 ? Math.round((c.importe / sumGst) * 100) : 0
-      return { ...c, color: COLOR_CATEGORIA[c.categoria] ?? '#888', deltaPct, porcentaje }
+      const nombre = categoriasLookup[c.categoria]?.nombre ?? c.categoria
+      return { ...c, nombre, color: COLOR_CATEGORIA[c.categoria] ?? '#888', deltaPct, porcentaje }
     })
     .sort((a, b) => b.importe - a.importe)
 
@@ -387,10 +461,10 @@ export function ResumenDashboard({
   const posicionIndicador = calcularPosicionIndicador(ratio)
 
   /* — Proyección Tesorería — */
-  const minVal = Math.min(MOCK_TESORERIA.cajaLiquida, MOCK_TESORERIA.proyeccion30d, 0)
-  const maxVal = Math.max(MOCK_TESORERIA.cajaLiquida, MOCK_TESORERIA.proyeccion30d)
+  const minVal = Math.min(tesoreria.cajaLiquida, proyeccion30d, 0)
+  const maxVal = Math.max(tesoreria.cajaLiquida, proyeccion30d)
   const rango = maxVal - minVal || 1
-  const porcentajeProyeccion = ((MOCK_TESORERIA.proyeccion30d - minVal) / rango) * 100
+  const porcentajeProyeccion = ((proyeccion30d - minVal) / rango) * 100
 
   /* — Dataset semanas desde movimientos (prop real) — */
   const datosSemanales = useMemo(() => {
@@ -505,7 +579,7 @@ export function ResumenDashboard({
               <FilaDistribucion
                 key={f.categoria}
                 color={f.color}
-                nombre={f.categoria}
+                nombre={f.nombre}
                 importe={f.importe}
                 deltaPct={f.deltaPct}
                 porcentaje={f.porcentaje}
@@ -516,13 +590,15 @@ export function ResumenDashboard({
           </div>
         </div>
 
-        {/* CARD TESORERÍA (FIX 7) */}
+        {/* CARD TESORERÍA — datos reales (conciliacion + provisiones) */}
         <div style={cardBase}>
           <div style={labelCard}>TESORERÍA · HOY</div>
-          <div style={STYLE_NUM_GIGANTE_DASHBOARD}>{fmtEur(MOCK_TESORERIA.balanceActual)}</div>
-          <div style={{ fontFamily: FONT.body, fontSize: 12, color: tesDeltaColor, marginTop: 4, fontWeight: 500 }}>
-            {tesDeltaTxt} vs hace 30 días
-          </div>
+          <div style={STYLE_NUM_GIGANTE_DASHBOARD}>{fmtEur(tesoreria.balanceActual)}</div>
+          {tesoreria.balanceHace30d !== 0 && (
+            <div style={{ fontFamily: FONT.body, fontSize: 12, color: tesDeltaColor, marginTop: 4, fontWeight: 500 }}>
+              {tesDeltaTxt} vs hace 30 días
+            </div>
+          )}
           <div style={divider} />
 
           {/* Caja líquida destacada */}
@@ -537,53 +613,61 @@ export function ResumenDashboard({
               Caja líquida
             </span>
             <span style={{ fontFamily: FONT.heading, fontSize: 18, color: T.pri, fontWeight: 500 }}>
-              {fmtEur(MOCK_TESORERIA.cajaLiquida)}
+              {fmtEur(tesoreria.cajaLiquida)}
             </span>
           </div>
 
-          {/* Filas normales */}
-          {[
-            { label: 'Cobros pendientes', valor: MOCK_TESORERIA.cobrosPendientes, color: VERDE_OK, prefijo: '+' },
-            { label: 'Pagos pendientes',  valor: MOCK_TESORERIA.pagosPendientes,  color: ROJO,     prefijo: '−' },
-            { label: 'Proyección 7d',     valor: MOCK_TESORERIA.proyeccion7d,     color: T.pri,    prefijo: '' },
-            { label: 'Proyección 30d',    valor: MOCK_TESORERIA.proyeccion30d,    color: T.pri,    prefijo: '' },
-          ].map(item => (
-            <div key={item.label} style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '8px 0',
-            }}>
-              <span style={{ fontFamily: FONT.body, fontSize: 13, color: T.pri }}>{item.label}</span>
-              <span style={{ fontFamily: FONT.body, fontSize: 13, color: item.color, fontWeight: 500 }}>
-                {item.prefijo}{fmtEur(Math.abs(item.valor))}
-              </span>
-            </div>
-          ))}
+          {/* Filas — solo si hay provisiones cargadas */}
+          {tesoreria.hayProvisiones ? (
+            <>
+              {[
+                { label: 'Cobros pendientes', valor: tesoreria.cobrosPendientes, color: VERDE_OK, prefijo: '+' },
+                { label: 'Pagos pendientes',  valor: tesoreria.pagosPendientes,  color: ROJO,     prefijo: '−' },
+                { label: 'Proyección 7d',     valor: proyeccion7d,               color: T.pri,    prefijo: '' },
+                { label: 'Proyección 30d',    valor: proyeccion30d,              color: T.pri,    prefijo: '' },
+              ].map(item => (
+                <div key={item.label} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '8px 0',
+                }}>
+                  <span style={{ fontFamily: FONT.body, fontSize: 13, color: T.pri }}>{item.label}</span>
+                  <span style={{ fontFamily: FONT.body, fontSize: 13, color: item.color, fontWeight: 500 }}>
+                    {item.prefijo}{fmtEur(Math.abs(item.valor))}
+                  </span>
+                </div>
+              ))}
 
-          {/* Relleno altura - mini-barra proyección */}
-          <div style={{ marginTop: 'auto', paddingTop: 14, borderTop: `1px solid ${T.brd}` }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: FONT.body, fontSize: 11, color: T.mut, marginBottom: 6 }}>
-              <span>Hoy</span>
-              <span>30d</span>
+              {/* Mini-barra proyección */}
+              <div style={{ marginTop: 'auto', paddingTop: 14, borderTop: `1px solid ${T.brd}` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: FONT.body, fontSize: 11, color: T.mut, marginBottom: 6 }}>
+                  <span>Hoy</span>
+                  <span>30d</span>
+                </div>
+                <div style={{ height: 6, backgroundColor: T.bg, borderRadius: 3, position: 'relative', overflow: 'hidden' }}>
+                  <div style={{
+                    position: 'absolute',
+                    left: 0,
+                    top: 0,
+                    height: '100%',
+                    width: `${porcentajeProyeccion}%`,
+                    backgroundColor: proyeccion30d >= tesoreria.cajaLiquida ? VERDE_OK : ROJO,
+                  }} />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: FONT.body, fontSize: 12, marginTop: 6 }}>
+                  <span style={{ color: T.pri, fontWeight: 500 }}>{fmtEur(tesoreria.cajaLiquida)}</span>
+                  <span style={{ color: proyeccion30d >= tesoreria.cajaLiquida ? VERDE_OK : ROJO, fontWeight: 500 }}>
+                    {fmtEur(proyeccion30d)}
+                  </span>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div style={{ marginTop: 'auto', paddingTop: 16, fontFamily: FONT.body, fontSize: 12, color: T.mut, textAlign: 'center', fontStyle: 'italic' }}>
+              Sin provisiones registradas — proyecciones disponibles al cargar cobros/pagos futuros.
             </div>
-            <div style={{ height: 6, backgroundColor: T.bg, borderRadius: 3, position: 'relative', overflow: 'hidden' }}>
-              <div style={{
-                position: 'absolute',
-                left: 0,
-                top: 0,
-                height: '100%',
-                width: `${porcentajeProyeccion}%`,
-                backgroundColor: MOCK_TESORERIA.proyeccion30d >= MOCK_TESORERIA.cajaLiquida ? VERDE_OK : ROJO,
-              }} />
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: FONT.body, fontSize: 12, marginTop: 6 }}>
-              <span style={{ color: T.pri, fontWeight: 500 }}>{fmtEur(MOCK_TESORERIA.cajaLiquida)}</span>
-              <span style={{ color: MOCK_TESORERIA.proyeccion30d >= MOCK_TESORERIA.cajaLiquida ? VERDE_OK : ROJO, fontWeight: 500 }}>
-                {fmtEur(MOCK_TESORERIA.proyeccion30d)}
-              </span>
-            </div>
-          </div>
+          )}
         </div>
       </div>
 

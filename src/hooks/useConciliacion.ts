@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { categoriaToSubcategoria, grupoFromCategoria } from '@/lib/categoriaMapping'
+import { categoriaToSubcategoria, grupoFromCategoria, mapSlugToCategoria } from '@/lib/categoriaMapping'
 import { normalizarConcepto, matchPatron } from '@/lib/normalizarConcepto'
 
 export interface Movimiento {
@@ -224,9 +224,10 @@ export function useConciliacion() {
    * Retorna gasto_id actualizado (o null).
    */
   async function syncGasto(mov: Movimiento, codigo_categoria: string | null, tipo: 'ingreso' | 'gasto' | null): Promise<string | null> {
-    const esGasto = tipo === 'gasto' && !!codigo_categoria
+    const categoriaEnum = mapSlugToCategoria(codigo_categoria)
+    const esGasto = tipo === 'gasto' && !!codigo_categoria && categoriaEnum !== null
 
-    // Caso 1: ya no es gasto → borrar gasto existente
+    // Caso 1: ya no es gasto computable en Running → borrar gasto existente
     if (!esGasto) {
       if (mov.gasto_id) {
         await supabase.from('gastos').delete().eq('id', mov.gasto_id)
@@ -241,7 +242,7 @@ export function useConciliacion() {
 
     const payload = {
       fecha: mov.fecha,
-      categoria: codigo_categoria,
+      categoria: categoriaEnum,
       grupo,
       subcategoria,
       proveedor: mov.proveedor,
@@ -276,15 +277,9 @@ export function useConciliacion() {
       console.error('syncGasto failed:', e?.message ?? e)
     }
 
-    // 2. Resolver nombre legible de la categoría para guardarlo en conciliacion.categoria
-    const catRef = codigo_categoria
-      ? categorias.find(c => c.codigo === codigo_categoria)
-      : null
-    const valorCategoria = catRef?.nombre ?? codigo_categoria
-
-    // 3. Actualizar la fila de conciliación
+    // 2. Guardar SIEMPRE el codigo en conciliacion.categoria para consistencia con reglas
     const { error } = await supabase.from('conciliacion')
-      .update({ categoria: valorCategoria, tipo, gasto_id: nuevoGastoId })
+      .update({ categoria: codigo_categoria, tipo, gasto_id: nuevoGastoId })
       .eq('id', id)
     if (error) throw error
 

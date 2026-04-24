@@ -483,7 +483,7 @@ function ReglaModal({
   return (
     <ConfigModal title={`${editing ? 'Editar' : 'Nueva'} regla de conciliación`} onClose={onClose}>
       <ConfigField label="Si concepto bancario contiene">
-        <input value={patron} onChange={e => setPatron(e.target.value)} style={inputStyle} placeholder='p.ej. "Uber Eats", "Mercadona", "Nómina"' />
+        <input value={patron} onChange={e => setPatron(e.target.value)} style={inputStyle} placeholder='p.ej. "Iberdrola", "Mercadona", "Nómina"' />
       </ConfigField>
       <ConfigField label="Tipo">
         <select value={tipo} onChange={e => { setTipo(e.target.value as 'ingreso' | 'gasto'); setCategoriaId('') }} style={inputStyle}>
