@@ -420,7 +420,7 @@ export default function Conciliacion() {
             style={btnPrimary}
           >
             <Upload size={14} />
-            {importando ? 'Importando…' : 'Importar CSV'}
+            {importando ? 'Importando…' : 'Importar extracto'}
           </button>
         </div>
       </div>

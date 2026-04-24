@@ -84,11 +84,33 @@ async function armarMovimiento(fecha: string, fechaValor: string | null, concept
   }
 }
 
-async function parseFilas(filas: { fecha: string; fechaValor: string | null; concepto: string; importe: number; saldo: number | null }[]): Promise<MovimientoImportado[]> {
+function combinarConceptoYObservaciones(concepto: string, observaciones: string | null): string {
+  const c = (concepto ?? '').trim()
+  const o = (observaciones ?? '').trim()
+  if (!o) return c
+  if (!c) return o
+  // Evitar duplicar si observaciones es prefijo/sufijo o ya está contenido
+  const cNorm = normalizarConcepto(c)
+  const oNorm = normalizarConcepto(o)
+  if (cNorm.includes(oNorm) || oNorm.includes(cNorm)) return cNorm.length >= oNorm.length ? c : o
+  return `${c} | ${o}`
+}
+
+async function parseFilas(
+  filas: {
+    fecha: string
+    fechaValor: string | null
+    concepto: string
+    observaciones?: string | null
+    importe: number
+    saldo: number | null
+  }[],
+): Promise<MovimientoImportado[]> {
   const out: MovimientoImportado[] = []
   for (const r of filas) {
-    if (!r.fecha || !r.concepto || isNaN(r.importe)) continue
-    out.push(await armarMovimiento(r.fecha, r.fechaValor, r.concepto, r.importe, r.saldo))
+    const conceptoFinal = combinarConceptoYObservaciones(r.concepto, r.observaciones ?? null)
+    if (!r.fecha || !conceptoFinal || isNaN(r.importe)) continue
+    out.push(await armarMovimiento(r.fecha, r.fechaValor, conceptoFinal, r.importe, r.saldo))
   }
   return out
 }
@@ -121,6 +143,7 @@ export async function parseCSV(text: string): Promise<MovimientoImportado[]> {
   const idxFecha    = find('fecha')
   const idxFvalor   = find('f.valor', 'f. valor', 'fecha valor')
   const idxConcepto = find('concepto', 'descripcion', 'descripción')
+  const idxObserv   = find('observaciones', 'observ')
   const idxImporte  = find('importe', 'amount')
   const idxSaldo    = find('saldo', 'disponible')
 
@@ -128,12 +151,14 @@ export async function parseCSV(text: string): Promise<MovimientoImportado[]> {
     const fecha = parseFechaISO(idxFecha >= 0 ? row[idxFecha] : '')
     const fechaValor = idxFvalor >= 0 ? parseFechaISO(row[idxFvalor]) : ''
     const concepto = idxConcepto >= 0 ? row[idxConcepto] ?? '' : ''
+    const observaciones = idxObserv >= 0 ? row[idxObserv] ?? '' : ''
     const importe = idxImporte >= 0 ? parseNumero(row[idxImporte]) : NaN
     const saldoN = idxSaldo >= 0 ? parseNumero(row[idxSaldo]) : NaN
     return {
       fecha,
       fechaValor: fechaValor || null,
       concepto,
+      observaciones,
       importe,
       saldo: isNaN(saldoN) ? null : saldoN,
     }
@@ -154,10 +179,11 @@ export async function parseXLSX(buffer: ArrayBuffer): Promise<MovimientoImportad
   const idxFvalor   = find('f.valor', 'f. valor', 'fecha valor')
   const idxConcepto = find('concepto', 'descripcion', 'descripción')
   const idxMovim    = find('movimiento')
+  const idxObserv   = find('observaciones', 'observ')
   const idxImporte  = find('importe', 'amount')
   const idxSaldo    = find('saldo', 'disponible')
 
-  const filas: { fecha: string; fechaValor: string | null; concepto: string; importe: number; saldo: number | null }[] = []
+  const filas: { fecha: string; fechaValor: string | null; concepto: string; observaciones: string; importe: number; saldo: number | null }[] = []
   for (let i = headerIdx + 1; i < rows.length; i++) {
     const row = rows[i] || []
     const fecha = parseFechaISO(row[idxFecha])
@@ -166,12 +192,14 @@ export async function parseXLSX(buffer: ArrayBuffer): Promise<MovimientoImportad
       (idxConcepto >= 0 && row[idxConcepto] != null && row[idxConcepto] !== '' ? row[idxConcepto] :
        idxMovim >= 0 ? row[idxMovim] : '') ?? ''
     )
+    const observaciones = String(idxObserv >= 0 ? row[idxObserv] ?? '' : '')
     const importe = idxImporte >= 0 ? parseNumero(row[idxImporte]) : NaN
     const saldoN = idxSaldo >= 0 ? parseNumero(row[idxSaldo]) : NaN
     filas.push({
       fecha,
       fechaValor: fechaValor || null,
       concepto,
+      observaciones,
       importe,
       saldo: isNaN(saldoN) ? null : saldoN,
     })
