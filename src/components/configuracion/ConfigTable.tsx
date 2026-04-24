@@ -1,5 +1,5 @@
 import type { ReactNode, CSSProperties } from 'react'
-import { useThemeMode, getTokens, FONT } from '@/styles/tokens'
+import { useIsDark } from '@/hooks/useIsDark'
 
 export function Table({ children }: { children: ReactNode }) {
   return (
@@ -8,7 +8,7 @@ export function Table({ children }: { children: ReactNode }) {
         width: '100%',
         fontSize: 13.5,
         borderCollapse: 'collapse',
-        fontFamily: FONT.sans,
+        fontFamily: 'Lexend, sans-serif',
       }}
     >
       {children}
@@ -33,20 +33,21 @@ export function TH({
   num?: boolean
   style?: CSSProperties
 }) {
-  const theme = useThemeMode()
-  const t = getTokens(theme)
+  const isDark = useIsDark()
+  const mut = isDark ? '#777777' : '#9E9588'
+  const border = isDark ? '#2a2a2a' : '#DDD4BF'
   return (
     <th
       style={{
         fontSize: 11,
         letterSpacing: '0.14em',
         textTransform: 'uppercase',
-        color: t.textTertiary,
+        color: mut,
         padding: 14,
-        fontFamily: FONT.sans,
+        fontFamily: 'Oswald, sans-serif',
         fontWeight: 500,
         textAlign: num ? 'right' : 'left',
-        borderBottom: `1px solid ${t.borderDefault}`,
+        borderBottom: `1px solid ${border}`,
         whiteSpace: 'nowrap',
         ...style,
       }}
@@ -87,15 +88,17 @@ export function TD({
   style?: CSSProperties
   colSpan?: number
 }) {
-  const theme = useThemeMode()
-  const t = getTokens(theme)
+  const isDark = useIsDark()
+  const border = isDark ? '#2a2a2a' : '#F0E8D5'
+  const pri = isDark ? '#ffffff' : '#1A1A1A'
+  const mut = isDark ? '#777777' : '#9E9588'
   return (
     <td
       colSpan={colSpan}
       style={{
         padding: 14,
-        borderBottom: `1px solid ${t.borderSubtle}`,
-        color: muted ? t.textTertiary : t.textPrimary,
+        borderBottom: `1px solid ${border}`,
+        color: muted ? mut : pri,
         fontWeight: bold ? 700 : 500,
         textAlign: num ? 'right' : 'left',
         fontVariantNumeric: num ? 'tabular-nums' : 'normal',
@@ -108,10 +111,10 @@ export function TD({
 }
 
 export function TotalTR({ children }: { children: ReactNode }) {
-  const theme = useThemeMode()
-  const t = getTokens(theme)
+  const isDark = useIsDark()
+  const border = isDark ? '#383838' : '#DDD4BF'
   return (
-    <tr style={{ borderTop: `2px solid ${t.borderStrong}`, fontWeight: 700 }}>
+    <tr style={{ borderTop: `2px solid ${border}`, fontWeight: 700 }}>
       {children}
     </tr>
   )

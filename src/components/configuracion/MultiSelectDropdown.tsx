@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { useThemeMode, getTokens, FONT } from '@/styles/tokens'
-import { useIsDark } from '@/hooks/useIsDark'
+import { useTheme, FONT } from '@/styles/tokens'
 
 interface Opt { value: string; label: string }
 
@@ -12,9 +11,7 @@ interface Props {
 }
 
 export function MultiSelectDropdown({ label, options, selected, onChange }: Props) {
-  const theme = useThemeMode()
-  const T = getTokens(theme)
-  const isDark = useIsDark()
+  const { T, isDark } = useTheme()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -46,11 +43,11 @@ export function MultiSelectDropdown({ label, options, selected, onChange }: Prop
         onClick={() => setOpen(o => !o)}
         style={{
           padding: '8px 14px',
-          border: `1px solid ${selected.length > 0 ? T.brandAccent : T.borderDefault}`,
+          border: `1px solid ${selected.length > 0 ? 'var(--terra-500)' : T.brd}`,
           borderRadius: 8,
-          background: selected.length > 0 ? activeBg : T.bgSurface,
-          color: selected.length > 0 ? T.brandAccent : T.textPrimary,
-          fontFamily: FONT.sans,
+          background: selected.length > 0 ? activeBg : T.card,
+          color: selected.length > 0 ? 'var(--terra-500)' : T.pri,
+          fontFamily: FONT.heading,
           fontSize: 12,
           letterSpacing: '0.5px',
           textTransform: 'uppercase',
@@ -64,7 +61,7 @@ export function MultiSelectDropdown({ label, options, selected, onChange }: Prop
         }}
       >
         {summary}
-        <span style={{ fontSize: 9, color: T.textTertiary }}>▾</span>
+        <span style={{ fontSize: 9, color: T.mut }}>▾</span>
       </button>
       {open && (
         <div
@@ -75,8 +72,8 @@ export function MultiSelectDropdown({ label, options, selected, onChange }: Prop
             width: 260,
             maxHeight: 320,
             overflowY: 'auto',
-            background: T.bgSurface,
-            border: `1px solid ${T.borderDefault}`,
+            background: T.card,
+            border: `1px solid ${T.brd}`,
             borderRadius: 10,
             boxShadow: isDark ? '0 12px 24px rgba(0,0,0,0.5)' : '0 12px 24px rgba(0,0,0,0.12)',
             zIndex: 20,
@@ -84,7 +81,7 @@ export function MultiSelectDropdown({ label, options, selected, onChange }: Prop
           }}
         >
           {options.length === 0 && (
-            <div style={{ padding: 12, fontSize: 12, color: T.textTertiary, fontFamily: FONT.sans }}>Sin opciones</div>
+            <div style={{ padding: 12, fontSize: 12, color: T.mut, fontFamily: FONT.body }}>Sin opciones</div>
           )}
           {options.map(o => {
             const on = selected.includes(o.value)
@@ -103,8 +100,8 @@ export function MultiSelectDropdown({ label, options, selected, onChange }: Prop
                   borderRadius: 6,
                   background: 'transparent',
                   border: 'none',
-                  color: T.textPrimary,
-                  fontFamily: FONT.sans,
+                  color: T.pri,
+                  fontFamily: FONT.body,
                   textAlign: 'left',
                   cursor: 'pointer',
                   transition: 'background 0.1s',
@@ -120,8 +117,8 @@ export function MultiSelectDropdown({ label, options, selected, onChange }: Prop
                     width: 16,
                     height: 16,
                     borderRadius: 3,
-                    border: `1px solid ${on ? T.brandAccent : T.borderDefault}`,
-                    background: on ? T.brandAccent : 'transparent',
+                    border: `1px solid ${on ? 'var(--terra-500)' : T.brd}`,
+                    background: on ? 'var(--terra-500)' : 'transparent',
                     color: '#ffffff',
                     fontSize: 10,
                     lineHeight: 1,
@@ -134,7 +131,7 @@ export function MultiSelectDropdown({ label, options, selected, onChange }: Prop
             )
           })}
           {selected.length > 0 && (
-            <div style={{ borderTop: `1px solid ${T.borderDefault}`, marginTop: 4, paddingTop: 4 }}>
+            <div style={{ borderTop: `1px solid ${T.brd}`, marginTop: 4, paddingTop: 4 }}>
               <button
                 type="button"
                 onClick={() => onChange([])}
@@ -142,11 +139,11 @@ export function MultiSelectDropdown({ label, options, selected, onChange }: Prop
                   width: '100%',
                   padding: '7px 12px',
                   fontSize: 11,
-                  color: T.brandAccent,
+                  color: 'var(--terra-500)',
                   background: 'transparent',
                   border: 'none',
                   borderRadius: 6,
-                  fontFamily: FONT.sans,
+                  fontFamily: FONT.heading,
                   letterSpacing: '0.5px',
                   textTransform: 'uppercase',
                   fontWeight: 600,

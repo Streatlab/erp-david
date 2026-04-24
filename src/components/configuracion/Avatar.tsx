@@ -1,5 +1,3 @@
-import { useThemeMode, getTokens, FONT } from '@/styles/tokens'
-
 export function Avatar({
   letter,
   color,
@@ -7,9 +5,6 @@ export function Avatar({
   letter: string
   color?: string | null
 }) {
-  const theme = useThemeMode()
-  const t = getTokens(theme)
-
   return (
     <span
       style={{
@@ -19,13 +14,13 @@ export function Avatar({
         borderRadius: '50%',
         alignItems: 'center',
         justifyContent: 'center',
-        color: t.textOnAccent,
+        color: '#ffffff',
         fontWeight: 700,
         fontSize: 12,
         marginRight: 10,
         verticalAlign: 'middle',
-        background: color ?? t.brandAccent,
-        fontFamily: FONT.sans,
+        background: color ?? 'var(--terra-500)',
+        fontFamily: 'Lexend, sans-serif',
       }}
     >
       {letter}

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { useThemeMode, getTokens, FONT, PALETTE } from '@/styles/tokens'
+import { useIsDark } from '@/hooks/useIsDark'
 
 type Variant =
   | 'ok' | 'off'
@@ -13,20 +13,18 @@ export function StatusTag({
   variant: Variant
   children: ReactNode
 }) {
-  const theme = useThemeMode()
-  const t = getTokens(theme)
-  const p = PALETTE[theme]
+  const isDark = useIsDark()
 
   const styles: Record<Variant, { bg: string; color: string }> = {
-    ok:     { bg: t.successBg,   color: t.successText },
-    off:    { bg: t.bgSurfaceAlt, color: t.textTertiary },
-    admin:  { bg: t.dangerBg,    color: t.dangerText },
-    gestor: { bg: t.infoBg,      color: t.infoText },
-    cocina: { bg: t.warningBg,   color: t.warningText },
-    fijo:   { bg: p.marino[50],  color: p.marino[700] },
-    var:    { bg: p.naranja[50], color: p.naranja[700] },
-    pers:   { bg: t.infoBg,      color: t.infoText },
-    mkt:    { bg: p.terra[50],   color: p.terra[700] },
+    ok:     { bg: isDark ? 'rgba(29,158,117,0.22)' : '#D4F0E0', color: isDark ? '#5DCAA5' : '#027b4b' },
+    off:    { bg: isDark ? 'rgba(255,255,255,0.08)' : '#ebe5d8', color: isDark ? '#9ba8c0' : '#9E9588' },
+    admin:  { bg: isDark ? 'rgba(176,29,35,0.28)'  : '#FCEBEB', color: isDark ? '#F09595' : '#A32D2D' },
+    gestor: { bg: isDark ? 'rgba(12,68,124,0.30)'  : '#E6F1FB', color: isDark ? '#89B5DF' : '#0C447C' },
+    cocina: { bg: isDark ? 'rgba(186,117,23,0.26)' : '#FAEEDA', color: isDark ? '#F5C36B' : '#854F0B' },
+    fijo:   { bg: isDark ? 'rgba(90,74,191,0.26)'  : '#E6DFFF', color: isDark ? '#B7A8F5' : '#5A4ABF' },
+    var:    { bg: isDark ? 'rgba(184,86,31,0.22)'  : '#FFE6D9', color: isDark ? '#F5A983' : '#B8561F' },
+    pers:   { bg: isDark ? 'rgba(31,108,184,0.26)' : '#D9EFFF', color: isDark ? '#89BFF0' : '#1F6CB8' },
+    mkt:    { bg: isDark ? 'rgba(184,38,110,0.22)' : '#FFD9E9', color: isDark ? '#F092B6' : '#B8266E' },
   }
   const s = styles[variant]
 
@@ -42,7 +40,7 @@ export function StatusTag({
         textTransform: 'uppercase',
         background: s.bg,
         color: s.color,
-        fontFamily: FONT.sans,
+        fontFamily: 'Oswald, sans-serif',
       }}
     >
       {children}

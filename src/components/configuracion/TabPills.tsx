@@ -1,4 +1,4 @@
-import { useThemeMode, getTokens, FONT } from '@/styles/tokens'
+import { useTheme, FONT } from '@/styles/tokens'
 
 interface Tab {
   id: string
@@ -14,8 +14,7 @@ export function TabPills({
   active: string
   onChange: (id: string) => void
 }) {
-  const theme = useThemeMode()
-  const T = getTokens(theme)
+  const { T } = useTheme()
 
   return (
     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 20 }}>
@@ -30,13 +29,13 @@ export function TabPills({
               padding: '8px 20px',
               borderRadius: 8,
               fontSize: 13,
-              fontFamily: FONT.sans,
+              fontFamily: FONT.heading,
               letterSpacing: '0.06em',
               textTransform: 'uppercase',
               fontWeight: isActive ? 600 : 500,
-              background: isActive ? T.brandAccent : T.bgSurface,
-              color: isActive ? '#ffffff' : T.textSecondary,
-              border: `0.5px solid ${isActive ? T.brandAccent : T.borderDefault}`,
+              background: isActive ? 'var(--terra-500)' : T.card,
+              color: isActive ? '#ffffff' : T.sec,
+              border: `0.5px solid ${isActive ? 'var(--terra-500)' : T.brd}`,
               cursor: 'pointer',
               transition: 'all 0.15s ease',
             }}

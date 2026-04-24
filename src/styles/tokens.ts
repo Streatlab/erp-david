@@ -529,13 +529,24 @@ export function semaforoColor(theme: Theme, valor: number): string {
   return t.info;
 }
 
-/** Group style — separador visual entre secciones */
-export function groupStyle(theme: Theme): CSSProperties {
-  const t = getTokens(theme);
+/** Group style — separador visual entre secciones.
+ *  Polimórfico: acepta Theme (David) o TokenSet (Binagre compat). */
+export function groupStyle(theme: Theme): CSSProperties;
+export function groupStyle(T: TokenSet): CSSProperties;
+export function groupStyle(arg: Theme | TokenSet): CSSProperties {
+  if (typeof arg === "string") {
+    const t = getTokens(arg);
+    return {
+      borderTop: `0.5px solid ${t.borderSubtle}`,
+      paddingTop: SPACE[6],
+      marginTop: SPACE[6],
+    };
+  }
   return {
-    borderTop: `0.5px solid ${t.borderSubtle}`,
-    paddingTop: SPACE[6],
-    marginTop: SPACE[6],
+    background: arg.group,
+    border: `0.5px solid ${arg.brd}`,
+    borderRadius: 16,
+    padding: "24px 28px",
   };
 }
 
@@ -648,3 +659,40 @@ export const tabInactiveStyle = (T: TokenSet): CSSProperties => ({
   cursor: "pointer",
   transition: "background 150ms",
 });
+
+export const sectionLabelStyle = (T: TokenSet): CSSProperties => ({
+  fontFamily: FONT.heading,
+  fontSize: 12,
+  letterSpacing: "2px",
+  textTransform: "uppercase",
+  color: T.mut,
+});
+
+export const dividerStyle = (T: TokenSet): CSSProperties => ({
+  height: 1,
+  background: T.brd,
+  margin: "12px 0",
+});
+
+// ——————————————————————————————————————————————————————
+// CANALES (compat Binagre) — datos estáticos para pantallas
+// de configuración portadas desde Binagre
+// ——————————————————————————————————————————————————————
+
+export interface CanalConfig {
+  id: string;
+  label: string;
+  color: string;
+  pedKey: string;
+  bruKey: string;
+  comisionPct: number;
+  comisionFijo: number;
+}
+
+export const CANALES: CanalConfig[] = [
+  { id: "uber",  label: "Uber Eats", color: "#06C167", pedKey: "uber_pedidos",    bruKey: "uber_bruto",    comisionPct: 0.30, comisionFijo: 0.82 },
+  { id: "glovo", label: "Glovo",     color: "#e8f442", pedKey: "glovo_pedidos",   bruKey: "glovo_bruto",   comisionPct: 0.25, comisionFijo: 0.75 },
+  { id: "je",    label: "Just Eat",  color: "#f5a623", pedKey: "je_pedidos",      bruKey: "je_bruto",      comisionPct: 0.20, comisionFijo: 0.75 },
+  { id: "web",   label: "Web",       color: "var(--terra-500)", pedKey: "web_pedidos", bruKey: "web_bruto", comisionPct: 0.07, comisionFijo: 0.50 },
+  { id: "dir",   label: "Directa",   color: "#66aaff", pedKey: "directa_pedidos", bruKey: "directa_bruto", comisionPct: 0.00, comisionFijo: 0.00 },
+];

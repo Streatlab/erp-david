@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { useThemeMode, getTokens, FONT } from '@/styles/tokens'
+import { useIsDark } from '@/hooks/useIsDark'
 
 type SubTone = 'pos' | 'neg' | 'muted'
 
@@ -16,31 +16,34 @@ export function KpiCard({
   sub?: string
   subTone?: SubTone
 }) {
-  const theme = useThemeMode()
-  const t = getTokens(theme)
+  const isDark = useIsDark()
+  const cardBg = isDark ? '#141414' : '#ffffff'
+  const border = isDark ? '#2a2a2a' : '#E9E1D0'
+  const labelColor = isDark ? '#777777' : '#9E9588'
+  const valueColor = isDark ? '#ffffff' : '#1A1A1A'
 
   const subColor =
-    subTone === 'pos' ? t.success :
-    subTone === 'neg' ? t.danger :
-    t.textTertiary
+    subTone === 'pos' ? '#22B573' :
+    subTone === 'neg' ? 'var(--terra-500)' :
+    labelColor
   const subPrefix = subTone === 'pos' ? '▲ ' : subTone === 'neg' ? '▼ ' : ''
 
   return (
     <div
       style={{
-        background: t.bgSurface,
-        border: `1px solid ${t.borderDefault}`,
+        background: cardBg,
+        border: `1px solid ${border}`,
         borderRadius: 12,
         padding: '24px 26px',
       }}
     >
       <div
         style={{
-          fontFamily: FONT.sans,
+          fontFamily: 'Oswald, sans-serif',
           fontSize: 11,
           letterSpacing: '0.14em',
           textTransform: 'uppercase',
-          color: t.textTertiary,
+          color: labelColor,
           fontWeight: 500,
           marginBottom: 12,
         }}
@@ -49,17 +52,17 @@ export function KpiCard({
       </div>
       <div
         style={{
-          fontFamily: FONT.sans,
+          fontFamily: 'Oswald, sans-serif',
           fontSize: 38,
           fontWeight: 700,
-          color: t.textPrimary,
+          color: valueColor,
           lineHeight: 1,
           letterSpacing: '-0.02em',
         }}
       >
         {value}
         {unit && (
-          <span style={{ fontSize: 24, fontWeight: 700, color: t.textPrimary, marginLeft: 4 }}>
+          <span style={{ fontSize: 24, fontWeight: 700, color: valueColor, marginLeft: 4 }}>
             {unit}
           </span>
         )}
@@ -67,7 +70,7 @@ export function KpiCard({
       {sub && (
         <div
           style={{
-            fontFamily: FONT.sans,
+            fontFamily: 'Lexend, sans-serif',
             fontSize: 12,
             color: subColor,
             marginTop: 10,

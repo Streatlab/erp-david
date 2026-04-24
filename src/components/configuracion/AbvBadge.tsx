@@ -1,27 +1,22 @@
-import { useThemeMode, getTokens, FONT } from '@/styles/tokens'
-
 export function AbvBadge({
   abv,
-  bg,
+  bg = '#1A1A1A',
 }: {
   abv: string
   bg?: string
 }) {
-  const theme = useThemeMode()
-  const t = getTokens(theme)
-
   return (
     <span
       style={{
         display: 'inline-block',
         padding: '3px 8px',
-        background: bg ?? t.brandPrimary,
-        color: t.textOnPrimary,
+        background: bg,
+        color: '#ffffff',
         borderRadius: 4,
         fontSize: 10,
         letterSpacing: '0.04em',
         fontWeight: 700,
-        fontFamily: FONT.sans,
+        fontFamily: 'Oswald, sans-serif',
         textTransform: 'uppercase',
       }}
     >

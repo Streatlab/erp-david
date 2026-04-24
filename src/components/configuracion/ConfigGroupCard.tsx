@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { useThemeMode, getTokens, groupStyle, FONT } from '@/styles/tokens'
+import { useTheme, groupStyle, FONT } from '@/styles/tokens'
 
 interface Props {
   title?: ReactNode
@@ -11,10 +11,9 @@ interface Props {
 }
 
 export default function ConfigGroupCard({ title, subtitle, right, children, padded = false, style }: Props) {
-  const theme = useThemeMode()
-  const T = getTokens(theme)
+  const { T } = useTheme()
   return (
-    <div style={{ ...groupStyle(theme), padding: padded ? '18px 22px' : 0, marginBottom: 14, overflow: 'hidden', ...style }}>
+    <div style={{ ...groupStyle(T), padding: padded ? '18px 22px' : 0, marginBottom: 14, overflow: 'hidden', ...style }}>
       {(title || right) && (
         <div
           style={{
@@ -28,16 +27,16 @@ export default function ConfigGroupCard({ title, subtitle, right, children, padd
           {title && (
             <div
               style={{
-                fontFamily: FONT.sans,
+                fontFamily: FONT.heading,
                 fontSize: 11,
                 letterSpacing: '2px',
                 textTransform: 'uppercase',
-                color: T.textTertiary,
+                color: T.mut,
               }}
             >
               {title}
               {subtitle != null && (
-                <span style={{ color: T.textPrimary, letterSpacing: '0.04em', textTransform: 'none', marginLeft: 6 }}>
+                <span style={{ color: T.pri, letterSpacing: '0.04em', textTransform: 'none', marginLeft: 6 }}>
                   · {subtitle}
                 </span>
               )}

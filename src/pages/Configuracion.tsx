@@ -1,5 +1,4 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { FONT } from '@/styles/tokens'
 import { supabase } from '@/lib/supabase'
 
 /* ═══════ TYPES ═══════ */
@@ -52,9 +51,9 @@ export default function Configuracion() {
   const accentFg  = isDark ? '#111' : '#fff'
 
   return (
-    <div style={{ fontFamily: FONT.sans, color: textPri }}>
+    <div style={{ fontFamily: 'Lexend, sans-serif', color: textPri }}>
       <h1 style={{
-        fontFamily: FONT.sans,
+        fontFamily: 'Oswald, sans-serif',
         fontSize: '1.1rem',
         letterSpacing: '3px',
         color: textSec,
@@ -71,7 +70,7 @@ export default function Configuracion() {
               key={s.key}
               onClick={() => setSection(s.key)}
               style={{
-                fontFamily: FONT.sans,
+                fontFamily: 'Oswald, sans-serif',
                 fontSize: '0.72rem',
                 letterSpacing: '1px',
                 backgroundColor: active ? accent : 'transparent',
@@ -188,12 +187,12 @@ function SecPlataformas() {
           onClick={handleGuardar}
           disabled={saving}
           style={{
-            background: guardado ? 'var(--success)' : 'var(--brand-accent)',
-            color: 'var(--text-on-accent)',
+            background: guardado ? '#16a34a' : 'var(--terra-500)',
+            color: '#fff',
             border: 'none',
             padding: '10px 24px',
             borderRadius: '5px',
-            fontFamily: FONT.sans,
+            fontFamily: 'Oswald, sans-serif',
             fontSize: '.78rem',
             letterSpacing: '1px',
             cursor: saving ? 'default' : 'pointer',
@@ -202,7 +201,7 @@ function SecPlataformas() {
         >
           {saving ? 'GUARDANDO…' : guardado ? 'GUARDADO ✓' : 'GUARDAR'}
         </button>
-        {err && <span className="text-xs" style={{ color: 'var(--danger)' }}>{err}</span>}
+        {err && <span className="text-xs text-[#dc2626]">{err}</span>}
       </div>
     </div>
   )
@@ -260,12 +259,12 @@ function SecCostes() {
           onClick={handleGuardar}
           disabled={saving}
           style={{
-            background: guardado ? 'var(--success)' : 'var(--brand-accent)',
-            color: 'var(--text-on-accent)',
+            background: guardado ? '#16a34a' : 'var(--terra-500)',
+            color: '#fff',
             border: 'none',
             padding: '10px 24px',
             borderRadius: '5px',
-            fontFamily: FONT.sans,
+            fontFamily: 'Oswald, sans-serif',
             fontSize: '.78rem',
             letterSpacing: '1px',
             cursor: saving ? 'default' : 'pointer',
@@ -274,7 +273,7 @@ function SecCostes() {
         >
           {saving ? 'GUARDANDO…' : guardado ? 'GUARDADO ✓' : 'GUARDAR'}
         </button>
-        {err && <span className="text-xs" style={{ color: 'var(--danger)' }}>{err}</span>}
+        {err && <span className="text-xs text-[#dc2626]">{err}</span>}
       </div>
     </div>
   )

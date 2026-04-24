@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 interface Usuario {
   nombre: string
   perfil: 'admin' | 'cocina'
+  rol?: 'admin' | 'cocina' | null
 }
 
 interface AuthContextType {

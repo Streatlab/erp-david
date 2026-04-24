@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { useThemeMode, getTokens, FONT } from '@/styles/tokens'
+import { useIsDark } from '@/hooks/useIsDark'
 
 export function ConfigModal({
   title,
@@ -10,8 +10,10 @@ export function ConfigModal({
   onClose: () => void
   children: ReactNode
 }) {
-  const theme = useThemeMode()
-  const t = getTokens(theme)
+  const isDark = useIsDark()
+  const bg = isDark ? '#141414' : '#ffffff'
+  const border = isDark ? '#2a2a2a' : '#E9E1D0'
+  const titleColor = isDark ? '#ffffff' : '#1A1A1A'
 
   return (
     <div
@@ -19,7 +21,7 @@ export function ConfigModal({
       style={{
         position: 'fixed',
         inset: 0,
-        background: t.bgOverlay,
+        background: 'rgba(0, 0, 0, 0.5)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -30,24 +32,23 @@ export function ConfigModal({
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          background: t.bgSurface,
-          border: `1px solid ${t.borderDefault}`,
+          background: bg,
+          border: `1px solid ${border}`,
           borderRadius: 12,
           padding: 24,
           width: 480,
           maxWidth: '90vw',
           maxHeight: '90vh',
           overflowY: 'auto',
-          boxShadow: t.shadowModal,
         }}
       >
         <h2
           style={{
             fontSize: 16,
             fontWeight: 700,
-            color: t.textPrimary,
+            color: titleColor,
             marginBottom: 16,
-            fontFamily: FONT.sans,
+            fontFamily: 'Oswald, sans-serif',
             letterSpacing: '0.08em',
             textTransform: 'uppercase',
           }}
@@ -61,8 +62,8 @@ export function ConfigModal({
 }
 
 export function ConfigField({ label, children }: { label: string; children: ReactNode }) {
-  const theme = useThemeMode()
-  const t = getTokens(theme)
+  const isDark = useIsDark()
+  const labelColor = isDark ? '#777777' : '#9E9588'
   return (
     <div style={{ marginBottom: 12 }}>
       <label
@@ -71,10 +72,10 @@ export function ConfigField({ label, children }: { label: string; children: Reac
           fontSize: 11,
           letterSpacing: '0.14em',
           textTransform: 'uppercase',
-          color: t.textTertiary,
+          color: labelColor,
           marginBottom: 6,
           fontWeight: 500,
-          fontFamily: FONT.sans,
+          fontFamily: 'Oswald, sans-serif',
         }}
       >
         {label}
@@ -85,17 +86,16 @@ export function ConfigField({ label, children }: { label: string; children: Reac
 }
 
 export function useInputStyle() {
-  const theme = useThemeMode()
-  const t = getTokens(theme)
+  const isDark = useIsDark()
   return {
     width: '100%',
     padding: '8px 12px',
-    border: `1px solid ${t.borderDefault}`,
+    border: `1px solid ${isDark ? '#2a2a2a' : '#E9E1D0'}`,
     borderRadius: 8,
     fontSize: 13,
-    background: t.bgSurfaceAlt,
-    color: t.textPrimary,
-    fontFamily: FONT.sans,
+    background: isDark ? '#1e1e1e' : '#ffffff',
+    color: isDark ? '#ffffff' : '#1A1A1A',
+    fontFamily: 'Lexend, sans-serif',
     outline: 'none',
   } as const
 }
@@ -111,8 +111,7 @@ export function ModalActions({
   saving?: boolean
   disabled?: boolean
 }) {
-  const theme = useThemeMode()
-  const t = getTokens(theme)
+  const isDark = useIsDark()
   return (
     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 20 }}>
       <button
@@ -126,10 +125,10 @@ export function ModalActions({
           letterSpacing: '0.04em',
           textTransform: 'uppercase',
           background: 'transparent',
-          color: t.textSecondary,
+          color: isDark ? '#cccccc' : '#6E6656',
           border: 'none',
           cursor: 'pointer',
-          fontFamily: FONT.sans,
+          fontFamily: 'Oswald, sans-serif',
         }}
       >
         Cancelar
@@ -145,12 +144,12 @@ export function ModalActions({
           fontWeight: 600,
           letterSpacing: '0.04em',
           textTransform: 'uppercase',
-          background: t.brandAccent,
-          color: t.textOnAccent,
+          background: 'var(--terra-500)',
+          color: '#ffffff',
           border: 'none',
           cursor: (saving || disabled) ? 'not-allowed' : 'pointer',
           opacity: (saving || disabled) ? 0.5 : 1,
-          fontFamily: FONT.sans,
+          fontFamily: 'Oswald, sans-serif',
         }}
       >
         {saving ? 'Guardando…' : 'Guardar'}

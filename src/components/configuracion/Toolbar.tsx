@@ -1,6 +1,6 @@
 import type { ReactNode, InputHTMLAttributes, ButtonHTMLAttributes } from 'react'
-import { useThemeMode, getTokens, FONT } from '@/styles/tokens'
 import { Search } from 'lucide-react'
+import { useIsDark } from '@/hooks/useIsDark'
 
 export function Toolbar({ children }: { children: ReactNode }) {
   return (
@@ -23,8 +23,6 @@ export function Spacer() {
 }
 
 export function BtnRed({ children, ...rest }: ButtonHTMLAttributes<HTMLButtonElement>) {
-  const theme = useThemeMode()
-  const t = getTokens(theme)
   return (
     <button
       {...rest}
@@ -34,11 +32,11 @@ export function BtnRed({ children, ...rest }: ButtonHTMLAttributes<HTMLButtonEle
         fontSize: 12,
         fontWeight: 600,
         letterSpacing: '0.04em',
-        background: t.brandAccent,
-        color: t.textOnAccent,
+        background: 'var(--terra-500)',
+        color: '#ffffff',
         border: 'none',
         cursor: 'pointer',
-        fontFamily: FONT.sans,
+        fontFamily: 'Oswald, sans-serif',
         textTransform: 'uppercase',
         transition: 'filter 0.15s',
         ...rest.style,
@@ -52,8 +50,7 @@ export function BtnRed({ children, ...rest }: ButtonHTMLAttributes<HTMLButtonEle
 }
 
 export function BtnGhost({ children, ...rest }: ButtonHTMLAttributes<HTMLButtonElement>) {
-  const theme = useThemeMode()
-  const t = getTokens(theme)
+  const isDark = useIsDark()
   return (
     <button
       {...rest}
@@ -63,11 +60,11 @@ export function BtnGhost({ children, ...rest }: ButtonHTMLAttributes<HTMLButtonE
         fontSize: 12,
         fontWeight: 600,
         letterSpacing: '0.04em',
-        background: t.bgSurface,
-        color: t.textPrimary,
-        border: `1px solid ${t.borderDefault}`,
+        background: isDark ? '#141414' : '#ffffff',
+        color: isDark ? '#ffffff' : '#1A1A1A',
+        border: `1px solid ${isDark ? '#2a2a2a' : '#E9E1D0'}`,
         cursor: 'pointer',
-        fontFamily: FONT.sans,
+        fontFamily: 'Oswald, sans-serif',
         textTransform: 'uppercase',
         transition: 'filter 0.15s',
         ...rest.style,
@@ -79,8 +76,7 @@ export function BtnGhost({ children, ...rest }: ButtonHTMLAttributes<HTMLButtonE
 }
 
 export function SearchInput(props: InputHTMLAttributes<HTMLInputElement>) {
-  const theme = useThemeMode()
-  const t = getTokens(theme)
+  const isDark = useIsDark()
   return (
     <div
       style={{
@@ -91,19 +87,19 @@ export function SearchInput(props: InputHTMLAttributes<HTMLInputElement>) {
     >
       <Search
         size={14}
-        color={t.textTertiary}
+        color={isDark ? '#777777' : '#9E9588'}
         style={{ position: 'absolute', left: 10, pointerEvents: 'none' }}
       />
       <input
         {...props}
         style={{
-          background: t.bgSurfaceAlt,
-          border: `1px solid ${t.borderDefault}`,
+          background: isDark ? '#1e1e1e' : '#ffffff',
+          border: `1px solid ${isDark ? '#2a2a2a' : '#E9E1D0'}`,
           borderRadius: 8,
           padding: '8px 12px 8px 30px',
           fontSize: 13,
-          color: t.textPrimary,
-          fontFamily: FONT.sans,
+          color: isDark ? '#ffffff' : '#1A1A1A',
+          fontFamily: 'Lexend, sans-serif',
           outline: 'none',
           minWidth: 260,
           ...props.style,
