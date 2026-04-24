@@ -40,9 +40,9 @@ export default function BancosPage() {
                 letterSpacing: '1.5px',
                 textTransform: 'uppercase',
                 fontWeight: isActive ? 600 : 500,
-                background: isActive ? 'var(--terra-500)' : T.card,
+                background: isActive ? 'var(--brand-accent)' : T.card,
                 color: isActive ? '#ffffff' : T.sec,
-                border: `0.5px solid ${isActive ? 'var(--terra-500)' : T.brd}`,
+                border: `0.5px solid ${isActive ? 'var(--brand-accent)' : T.brd}`,
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',
               }}
