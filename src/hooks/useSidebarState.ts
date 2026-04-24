@@ -4,10 +4,7 @@ const KEY = 'sidebar_collapsed'
 const EVT = 'sidebar-toggle'
 
 export function useSidebarState() {
-  const [collapsed, setCollapsed] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false
-    return localStorage.getItem(KEY) === 'true'
-  })
+  const [collapsed, setCollapsed] = useState<boolean>(false)
 
   useEffect(() => {
     const h = () => setCollapsed(localStorage.getItem(KEY) === 'true')
