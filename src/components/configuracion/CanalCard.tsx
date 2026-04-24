@@ -1,12 +1,7 @@
 import { fmtEur } from '@/lib/format'
+import { useTheme, getTokens, PALETTE } from '@/styles/tokens'
 
 type CanalColor = 'ue' | 'gl' | 'je'
-
-const COLORS: Record<CanalColor, { bg: string; border: string; text: string; val: string }> = {
-  ue: { bg: '#DCEFE0', border: '#22B573', text: '#027b4b', val: '#22B573' },
-  gl: { bg: '#F4EEBC', border: '#DCCF2A', text: '#5c550d', val: '#8a7d00' },
-  je: { bg: '#F9E8CC', border: '#E89A2B', text: '#B8561F', val: '#E89A2B' },
-}
 
 export function CanalCard({
   color, label, bruto, pedidos,
@@ -16,6 +11,17 @@ export function CanalCard({
   bruto: number
   pedidos: number
 }) {
+  const theme = useTheme()
+  const t = getTokens(theme)
+  const p = PALETTE[theme]
+
+  // Mapeo a familias David — oliva (success), ambar (warning), naranja (accent)
+  const COLORS = {
+    ue: { bg: t.successBg, border: t.successBorder, text: t.successText, val: t.success },
+    gl: { bg: t.warningBg, border: t.warningBorder, text: t.warningText, val: t.warning },
+    je: { bg: p.naranja[50], border: p.naranja[300], text: p.naranja[700], val: p.naranja[500] },
+  } as const
+
   const c = COLORS[color]
   return (
     <div className="rounded-xl p-5 border-2" style={{ backgroundColor: c.bg, borderColor: c.border }}>

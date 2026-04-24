@@ -1,7 +1,6 @@
 import type { ReactNode, InputHTMLAttributes, ButtonHTMLAttributes } from 'react'
-import { FONT } from '@/styles/tokens'
+import { useTheme, getTokens, FONT } from '@/styles/tokens'
 import { Search } from 'lucide-react'
-import { useIsDark } from '@/hooks/useIsDark'
 
 export function Toolbar({ children }: { children: ReactNode }) {
   return (
@@ -24,6 +23,8 @@ export function Spacer() {
 }
 
 export function BtnRed({ children, ...rest }: ButtonHTMLAttributes<HTMLButtonElement>) {
+  const theme = useTheme()
+  const t = getTokens(theme)
   return (
     <button
       {...rest}
@@ -33,8 +34,8 @@ export function BtnRed({ children, ...rest }: ButtonHTMLAttributes<HTMLButtonEle
         fontSize: 12,
         fontWeight: 600,
         letterSpacing: '0.04em',
-        background: '#B01D23',
-        color: '#ffffff',
+        background: t.brandAccent,
+        color: t.textOnAccent,
         border: 'none',
         cursor: 'pointer',
         fontFamily: FONT.sans,
@@ -51,7 +52,8 @@ export function BtnRed({ children, ...rest }: ButtonHTMLAttributes<HTMLButtonEle
 }
 
 export function BtnGhost({ children, ...rest }: ButtonHTMLAttributes<HTMLButtonElement>) {
-  const isDark = useIsDark()
+  const theme = useTheme()
+  const t = getTokens(theme)
   return (
     <button
       {...rest}
@@ -61,9 +63,9 @@ export function BtnGhost({ children, ...rest }: ButtonHTMLAttributes<HTMLButtonE
         fontSize: 12,
         fontWeight: 600,
         letterSpacing: '0.04em',
-        background: isDark ? '#141414' : '#ffffff',
-        color: isDark ? '#ffffff' : '#1A1A1A',
-        border: `1px solid ${isDark ? '#2a2a2a' : '#E9E1D0'}`,
+        background: t.bgSurface,
+        color: t.textPrimary,
+        border: `1px solid ${t.borderDefault}`,
         cursor: 'pointer',
         fontFamily: FONT.sans,
         textTransform: 'uppercase',
@@ -77,7 +79,8 @@ export function BtnGhost({ children, ...rest }: ButtonHTMLAttributes<HTMLButtonE
 }
 
 export function SearchInput(props: InputHTMLAttributes<HTMLInputElement>) {
-  const isDark = useIsDark()
+  const theme = useTheme()
+  const t = getTokens(theme)
   return (
     <div
       style={{
@@ -88,18 +91,18 @@ export function SearchInput(props: InputHTMLAttributes<HTMLInputElement>) {
     >
       <Search
         size={14}
-        color={isDark ? '#777777' : '#9E9588'}
+        color={t.textTertiary}
         style={{ position: 'absolute', left: 10, pointerEvents: 'none' }}
       />
       <input
         {...props}
         style={{
-          background: isDark ? '#1e1e1e' : '#ffffff',
-          border: `1px solid ${isDark ? '#2a2a2a' : '#E9E1D0'}`,
+          background: t.bgSurfaceAlt,
+          border: `1px solid ${t.borderDefault}`,
           borderRadius: 8,
           padding: '8px 12px 8px 30px',
           fontSize: 13,
-          color: isDark ? '#ffffff' : '#1A1A1A',
+          color: t.textPrimary,
           fontFamily: FONT.sans,
           outline: 'none',
           minWidth: 260,

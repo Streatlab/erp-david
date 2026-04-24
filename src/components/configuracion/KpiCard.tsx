@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react'
-import { FONT } from '@/styles/tokens'
-import { useIsDark } from '@/hooks/useIsDark'
+import { useTheme, getTokens, FONT } from '@/styles/tokens'
 
 type SubTone = 'pos' | 'neg' | 'muted'
 
@@ -17,23 +16,20 @@ export function KpiCard({
   sub?: string
   subTone?: SubTone
 }) {
-  const isDark = useIsDark()
-  const cardBg = isDark ? '#141414' : '#ffffff'
-  const border = isDark ? '#2a2a2a' : '#E9E1D0'
-  const labelColor = isDark ? '#777777' : '#9E9588'
-  const valueColor = isDark ? '#ffffff' : '#1A1A1A'
+  const theme = useTheme()
+  const t = getTokens(theme)
 
   const subColor =
-    subTone === 'pos' ? '#22B573' :
-    subTone === 'neg' ? '#B01D23' :
-    labelColor
+    subTone === 'pos' ? t.success :
+    subTone === 'neg' ? t.danger :
+    t.textTertiary
   const subPrefix = subTone === 'pos' ? '▲ ' : subTone === 'neg' ? '▼ ' : ''
 
   return (
     <div
       style={{
-        background: cardBg,
-        border: `1px solid ${border}`,
+        background: t.bgSurface,
+        border: `1px solid ${t.borderDefault}`,
         borderRadius: 12,
         padding: '24px 26px',
       }}
@@ -44,7 +40,7 @@ export function KpiCard({
           fontSize: 11,
           letterSpacing: '0.14em',
           textTransform: 'uppercase',
-          color: labelColor,
+          color: t.textTertiary,
           fontWeight: 500,
           marginBottom: 12,
         }}
@@ -56,14 +52,14 @@ export function KpiCard({
           fontFamily: FONT.sans,
           fontSize: 38,
           fontWeight: 700,
-          color: valueColor,
+          color: t.textPrimary,
           lineHeight: 1,
           letterSpacing: '-0.02em',
         }}
       >
         {value}
         {unit && (
-          <span style={{ fontSize: 24, fontWeight: 700, color: valueColor, marginLeft: 4 }}>
+          <span style={{ fontSize: 24, fontWeight: 700, color: t.textPrimary, marginLeft: 4 }}>
             {unit}
           </span>
         )}

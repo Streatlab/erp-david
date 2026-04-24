@@ -1,6 +1,5 @@
 import type { ReactNode, CSSProperties } from 'react'
-import { FONT } from '@/styles/tokens'
-import { useIsDark } from '@/hooks/useIsDark'
+import { useTheme, getTokens, FONT } from '@/styles/tokens'
 
 export function Table({ children }: { children: ReactNode }) {
   return (
@@ -34,21 +33,20 @@ export function TH({
   num?: boolean
   style?: CSSProperties
 }) {
-  const isDark = useIsDark()
-  const mut = isDark ? '#777777' : '#9E9588'
-  const border = isDark ? '#2a2a2a' : '#DDD4BF'
+  const theme = useTheme()
+  const t = getTokens(theme)
   return (
     <th
       style={{
         fontSize: 11,
         letterSpacing: '0.14em',
         textTransform: 'uppercase',
-        color: mut,
+        color: t.textTertiary,
         padding: 14,
         fontFamily: FONT.sans,
         fontWeight: 500,
         textAlign: num ? 'right' : 'left',
-        borderBottom: `1px solid ${border}`,
+        borderBottom: `1px solid ${t.borderDefault}`,
         whiteSpace: 'nowrap',
         ...style,
       }}
@@ -89,17 +87,15 @@ export function TD({
   style?: CSSProperties
   colSpan?: number
 }) {
-  const isDark = useIsDark()
-  const border = isDark ? '#2a2a2a' : '#F0E8D5'
-  const pri = isDark ? '#ffffff' : '#1A1A1A'
-  const mut = isDark ? '#777777' : '#9E9588'
+  const theme = useTheme()
+  const t = getTokens(theme)
   return (
     <td
       colSpan={colSpan}
       style={{
         padding: 14,
-        borderBottom: `1px solid ${border}`,
-        color: muted ? mut : pri,
+        borderBottom: `1px solid ${t.borderSubtle}`,
+        color: muted ? t.textTertiary : t.textPrimary,
         fontWeight: bold ? 700 : 500,
         textAlign: num ? 'right' : 'left',
         fontVariantNumeric: num ? 'tabular-nums' : 'normal',
@@ -112,10 +108,10 @@ export function TD({
 }
 
 export function TotalTR({ children }: { children: ReactNode }) {
-  const isDark = useIsDark()
-  const border = isDark ? '#383838' : '#DDD4BF'
+  const theme = useTheme()
+  const t = getTokens(theme)
   return (
-    <tr style={{ borderTop: `2px solid ${border}`, fontWeight: 700 }}>
+    <tr style={{ borderTop: `2px solid ${t.borderStrong}`, fontWeight: 700 }}>
       {children}
     </tr>
   )

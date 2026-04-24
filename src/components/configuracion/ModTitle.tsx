@@ -1,7 +1,10 @@
 import type { ReactNode } from 'react'
-import { FONT } from '@/styles/tokens'
+import { useTheme, getTokens, FONT } from '@/styles/tokens'
 
 export function ModTitle({ children }: { children: ReactNode }) {
+  const theme = useTheme()
+  const t = getTokens(theme)
+
   return (
     <h1
       style={{
@@ -9,7 +12,7 @@ export function ModTitle({ children }: { children: ReactNode }) {
         fontSize: 22,
         fontWeight: 700,
         letterSpacing: '0.22em',
-        color: '#B01D23',
+        color: t.brandAccent,
         textTransform: 'uppercase',
         marginBottom: 26,
       }}

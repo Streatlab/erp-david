@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react'
-import { FONT } from '@/styles/tokens'
-import { useIsDark } from '@/hooks/useIsDark'
+import { useTheme, getTokens, FONT } from '@/styles/tokens'
 
 export function ConfigModal({
   title,
@@ -11,10 +10,8 @@ export function ConfigModal({
   onClose: () => void
   children: ReactNode
 }) {
-  const isDark = useIsDark()
-  const bg = isDark ? '#141414' : '#ffffff'
-  const border = isDark ? '#2a2a2a' : '#E9E1D0'
-  const titleColor = isDark ? '#ffffff' : '#1A1A1A'
+  const theme = useTheme()
+  const t = getTokens(theme)
 
   return (
     <div
@@ -22,7 +19,7 @@ export function ConfigModal({
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'rgba(0, 0, 0, 0.5)',
+        background: t.bgOverlay,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -33,21 +30,22 @@ export function ConfigModal({
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          background: bg,
-          border: `1px solid ${border}`,
+          background: t.bgSurface,
+          border: `1px solid ${t.borderDefault}`,
           borderRadius: 12,
           padding: 24,
           width: 480,
           maxWidth: '90vw',
           maxHeight: '90vh',
           overflowY: 'auto',
+          boxShadow: t.shadowModal,
         }}
       >
         <h2
           style={{
             fontSize: 16,
             fontWeight: 700,
-            color: titleColor,
+            color: t.textPrimary,
             marginBottom: 16,
             fontFamily: FONT.sans,
             letterSpacing: '0.08em',
@@ -63,8 +61,8 @@ export function ConfigModal({
 }
 
 export function ConfigField({ label, children }: { label: string; children: ReactNode }) {
-  const isDark = useIsDark()
-  const labelColor = isDark ? '#777777' : '#9E9588'
+  const theme = useTheme()
+  const t = getTokens(theme)
   return (
     <div style={{ marginBottom: 12 }}>
       <label
@@ -73,7 +71,7 @@ export function ConfigField({ label, children }: { label: string; children: Reac
           fontSize: 11,
           letterSpacing: '0.14em',
           textTransform: 'uppercase',
-          color: labelColor,
+          color: t.textTertiary,
           marginBottom: 6,
           fontWeight: 500,
           fontFamily: FONT.sans,
@@ -87,15 +85,16 @@ export function ConfigField({ label, children }: { label: string; children: Reac
 }
 
 export function useInputStyle() {
-  const isDark = useIsDark()
+  const theme = useTheme()
+  const t = getTokens(theme)
   return {
     width: '100%',
     padding: '8px 12px',
-    border: `1px solid ${isDark ? '#2a2a2a' : '#E9E1D0'}`,
+    border: `1px solid ${t.borderDefault}`,
     borderRadius: 8,
     fontSize: 13,
-    background: isDark ? '#1e1e1e' : '#ffffff',
-    color: isDark ? '#ffffff' : '#1A1A1A',
+    background: t.bgSurfaceAlt,
+    color: t.textPrimary,
     fontFamily: FONT.sans,
     outline: 'none',
   } as const
@@ -112,7 +111,8 @@ export function ModalActions({
   saving?: boolean
   disabled?: boolean
 }) {
-  const isDark = useIsDark()
+  const theme = useTheme()
+  const t = getTokens(theme)
   return (
     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 20 }}>
       <button
@@ -126,7 +126,7 @@ export function ModalActions({
           letterSpacing: '0.04em',
           textTransform: 'uppercase',
           background: 'transparent',
-          color: isDark ? '#cccccc' : '#6E6656',
+          color: t.textSecondary,
           border: 'none',
           cursor: 'pointer',
           fontFamily: FONT.sans,
@@ -145,8 +145,8 @@ export function ModalActions({
           fontWeight: 600,
           letterSpacing: '0.04em',
           textTransform: 'uppercase',
-          background: '#B01D23',
-          color: '#ffffff',
+          background: t.brandAccent,
+          color: t.textOnAccent,
           border: 'none',
           cursor: (saving || disabled) ? 'not-allowed' : 'pointer',
           opacity: (saving || disabled) ? 0.5 : 1,

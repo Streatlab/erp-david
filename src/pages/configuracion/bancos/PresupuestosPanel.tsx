@@ -231,7 +231,7 @@ function CellEditable({
     padding: '6px 8px', fontFamily: FONT.sans, fontSize: 12, color: T.textPrimary,
     borderBottom: `0.5px solid ${T.borderDefault}`, textAlign: 'right', fontVariantNumeric: 'tabular-nums',
     transition: 'background 250ms',
-    background: flash ? '#06C16722' : 'transparent',
+    background: flash ? T.successBg : 'transparent',
     cursor: editing ? 'text' : 'pointer',
   }
 
@@ -258,7 +258,7 @@ function CellEditable({
           style={{
             width: '100%', padding: '3px 6px',
             background: T.bgSurfaceAlt, color: T.textPrimary,
-            border: `1px solid #B01D23`, borderRadius: 4,
+            border: `1px solid ${T.brandAccent}`, borderRadius: 4,
             fontFamily: FONT.sans, fontSize: 12,
             textAlign: 'right', outline: 'none',
           }}

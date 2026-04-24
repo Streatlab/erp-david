@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react'
-import { FONT } from '@/styles/tokens'
-import { useIsDark } from '@/hooks/useIsDark'
+import { useTheme, getTokens, FONT } from '@/styles/tokens'
 
 export function BigCard({
   title,
@@ -11,17 +10,14 @@ export function BigCard({
   count?: ReactNode
   children: ReactNode
 }) {
-  const isDark = useIsDark()
-  const bg = isDark ? '#141414' : '#ffffff'
-  const border = isDark ? '#2a2a2a' : '#E9E1D0'
-  const titleColor = isDark ? '#777777' : '#9E9588'
-  const countColor = isDark ? '#cccccc' : '#1A1A1A'
+  const theme = useTheme()
+  const t = getTokens(theme)
 
   return (
     <div
       style={{
-        background: bg,
-        border: `1px solid ${border}`,
+        background: t.bgSurface,
+        border: `1px solid ${t.borderDefault}`,
         borderRadius: 12,
         padding: '24px 26px',
         marginBottom: 14,
@@ -33,7 +29,7 @@ export function BigCard({
           fontSize: 11,
           letterSpacing: '0.16em',
           textTransform: 'uppercase',
-          color: titleColor,
+          color: t.textTertiary,
           fontWeight: 500,
           marginBottom: 20,
         }}
@@ -42,7 +38,7 @@ export function BigCard({
         {count != null && (
           <span
             style={{
-              color: countColor,
+              color: t.textPrimary,
               fontWeight: 400,
               marginLeft: 6,
               letterSpacing: '0.04em',

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { fmtEur } from '@/utils/format'
-import { useIsDark } from '@/hooks/useIsDark'
+import { useTheme, getTokens, FONT } from '@/styles/tokens'
 import { KpiCard, KpiGrid } from '@/components/configuracion/KpiCard'
 import { BigCard } from '@/components/configuracion/BigCard'
 import { Toolbar, Spacer, BtnRed } from '@/components/configuracion/Toolbar'
@@ -9,7 +9,8 @@ import { Table, THead, TBody, TH, TR, TD } from '@/components/configuracion/Conf
 import type { CuentaBancaria } from '@/types/configuracion'
 
 export default function TabInformacion() {
-  const isDark = useIsDark()
+  const theme = useTheme()
+  const t = getTokens(theme)
   const [cuentas, setCuentas] = useState<CuentaBancaria[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -47,12 +48,10 @@ export default function TabInformacion() {
 
   const handleNueva = () => alert('Pendiente: formulario "Nueva cuenta"')
 
-  const muted = isDark ? '#777' : '#9E9588'
-
-  if (loading) return <div style={{ padding: 24, color: muted }}>Cargando cuentas…</div>
+  if (loading) return <div style={{ padding: 24, color: t.textTertiary }}>Cargando cuentas…</div>
   if (error) {
     return (
-      <div style={{ padding: 16, background: isDark ? '#3a1a1a' : '#FCE0E2', color: isDark ? '#ff8080' : '#B01D23', borderRadius: 12 }}>
+      <div style={{ padding: 16, background: t.dangerBg, color: t.dangerText, borderRadius: 12 }}>
         {error}
       </div>
     )
@@ -75,7 +74,7 @@ export default function TabInformacion() {
 
       <BigCard title="Cuentas bancarias" count={`${cuentas.length}`}>
         {cuentas.length === 0 ? (
-          <div style={{ padding: 24, color: muted, textAlign: 'center' }}>
+          <div style={{ padding: 24, color: t.textTertiary, textAlign: 'center' }}>
             Sin cuentas registradas.
           </div>
         ) : (
@@ -96,13 +95,13 @@ export default function TabInformacion() {
                   <TD bold={c.es_principal}>
                     {c.alias}
                     {c.es_principal && (
-                      <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 400, color: muted }}>
+                      <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 400, color: t.textTertiary }}>
                         · principal
                       </span>
                     )}
                   </TD>
                   <TD muted>{c.banco}</TD>
-                  <TD style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: 13 }}>
+                  <TD style={{ fontFamily: FONT.mono, fontSize: 13 }}>
                     {c.iban_mask}
                   </TD>
                   <TD muted>{c.uso_principal ?? '—'}</TD>
@@ -114,7 +113,7 @@ export default function TabInformacion() {
                       aria-label={c.activa ? 'Desactivar cuenta' : 'Activar cuenta'}
                       style={{
                         width: 36, height: 20, borderRadius: 10,
-                        background: c.activa ? '#06C167' : (isDark ? '#2a2a2a' : '#E9E1D0'),
+                        background: c.activa ? t.success : t.bgSurfaceAlt,
                         border: 'none', cursor: 'pointer',
                         position: 'relative', transition: 'background 0.15s', padding: 0,
                       }}
@@ -124,7 +123,7 @@ export default function TabInformacion() {
                           position: 'absolute', top: 2,
                           left: c.activa ? 18 : 2,
                           width: 16, height: 16, borderRadius: '50%',
-                          background: '#ffffff', transition: 'left 0.15s',
+                          background: t.bgSurface, transition: 'left 0.15s',
                         }}
                       />
                     </button>

@@ -1,4 +1,4 @@
-import { FONT } from '@/styles/tokens'
+import { useTheme, getTokens, FONT } from '@/styles/tokens'
 
 export function Avatar({
   letter,
@@ -7,6 +7,9 @@ export function Avatar({
   letter: string
   color?: string | null
 }) {
+  const theme = useTheme()
+  const t = getTokens(theme)
+
   return (
     <span
       style={{
@@ -16,12 +19,12 @@ export function Avatar({
         borderRadius: '50%',
         alignItems: 'center',
         justifyContent: 'center',
-        color: '#ffffff',
+        color: t.textOnAccent,
         fontWeight: 700,
         fontSize: 12,
         marginRight: 10,
         verticalAlign: 'middle',
-        background: color ?? '#B01D23',
+        background: color ?? t.brandAccent,
         fontFamily: FONT.sans,
       }}
     >

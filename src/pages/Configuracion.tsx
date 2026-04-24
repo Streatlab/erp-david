@@ -188,8 +188,8 @@ function SecPlataformas() {
           onClick={handleGuardar}
           disabled={saving}
           style={{
-            background: guardado ? '#16a34a' : '#B01D23',
-            color: '#fff',
+            background: guardado ? 'var(--success)' : 'var(--brand-accent)',
+            color: 'var(--text-on-accent)',
             border: 'none',
             padding: '10px 24px',
             borderRadius: '5px',
@@ -202,7 +202,7 @@ function SecPlataformas() {
         >
           {saving ? 'GUARDANDO…' : guardado ? 'GUARDADO ✓' : 'GUARDAR'}
         </button>
-        {err && <span className="text-xs text-[#dc2626]">{err}</span>}
+        {err && <span className="text-xs" style={{ color: 'var(--danger)' }}>{err}</span>}
       </div>
     </div>
   )
@@ -260,8 +260,8 @@ function SecCostes() {
           onClick={handleGuardar}
           disabled={saving}
           style={{
-            background: guardado ? '#16a34a' : '#B01D23',
-            color: '#fff',
+            background: guardado ? 'var(--success)' : 'var(--brand-accent)',
+            color: 'var(--text-on-accent)',
             border: 'none',
             padding: '10px 24px',
             borderRadius: '5px',
@@ -274,7 +274,7 @@ function SecCostes() {
         >
           {saving ? 'GUARDANDO…' : guardado ? 'GUARDADO ✓' : 'GUARDAR'}
         </button>
-        {err && <span className="text-xs text-[#dc2626]">{err}</span>}
+        {err && <span className="text-xs" style={{ color: 'var(--danger)' }}>{err}</span>}
       </div>
     </div>
   )

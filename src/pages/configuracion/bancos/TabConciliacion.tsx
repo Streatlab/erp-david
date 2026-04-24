@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
-import { FONT } from '@/styles/tokens'
+import { useTheme, getTokens, FONT, PALETTE } from '@/styles/tokens'
 import { supabase } from '@/lib/supabase'
-import { useIsDark } from '@/hooks/useIsDark'
 import { BigCard } from '@/components/configuracion/BigCard'
 import { StatusTag } from '@/components/configuracion/StatusTag'
 import { AbvBadge } from '@/components/configuracion/AbvBadge'
@@ -15,23 +14,34 @@ import type {
 
 type SubPill = 'categorias' | 'reglas'
 
-const CANAL_BG: Record<string, string> = {
-  UE: '#06C167', GL: '#a89a20', JE: '#f5a623', WEB: '#B01D23', DIR: '#66aaff',
+function canalBg(theme: 'light' | 'dark'): Record<string, string> {
+  const t = getTokens(theme)
+  const p = PALETTE[theme]
+  return {
+    UE:  t.success,
+    GL:  t.warning,
+    JE:  p.naranja[500],
+    WEB: t.danger,
+    DIR: t.info,
+  }
 }
+
 const TIPO_LABEL: Record<'fijo' | 'var' | 'pers' | 'mkt', string> = {
   fijo: 'Fijo', var: 'Var', pers: 'Pers', mkt: 'Mkt',
 }
 
 export default function TabConciliacion() {
-  const isDark = useIsDark()
+  const theme = useTheme()
+  const t = getTokens(theme)
+  const p = PALETTE[theme]
   const [pill, setPill] = useState<SubPill>('categorias')
 
   const subPillStyle = (active: boolean): React.CSSProperties => ({
     padding: '7px 14px',
     borderRadius: 6,
-    background: active ? (isDark ? '#2a2600' : '#FFF3B8') : (isDark ? '#1e1e1e' : '#ffffff'),
-    border: `1px solid ${active ? (isDark ? '#4a4000' : '#E8D066') : (isDark ? '#2a2a2a' : '#E9E1D0')}`,
-    color: active ? (isDark ? '#e8f442' : '#5a4d0a') : (isDark ? '#cccccc' : '#555555'),
+    background: active ? p.ambar[50] : t.bgSurface,
+    border: `1px solid ${active ? p.ambar[300] : t.borderDefault}`,
+    color: active ? p.ambar[700] : t.textSecondary,
     fontSize: 12,
     fontWeight: active ? 600 : 500,
     fontFamily: FONT.sans,
@@ -56,10 +66,10 @@ export default function TabConciliacion() {
   )
 }
 
-/* ═══════ PANEL CATEGORÍAS ═══════ */
-
 function PanelCategorias() {
-  const isDark = useIsDark()
+  const theme = useTheme()
+  const t = getTokens(theme)
+  const CANAL_BG = canalBg(theme)
   const [catsIng, setCatsIng] = useState<CategoriaContableIngreso[]>([])
   const [catsGas, setCatsGas] = useState<CategoriaContableGasto[]>([])
   const [loading, setLoading] = useState(true)
@@ -100,13 +110,10 @@ function PanelCategorias() {
     await refetch()
   }
 
-  const mut = isDark ? '#777' : '#9E9588'
-  const actionColor = '#B01D23'
-
-  if (loading) return <div style={{ padding: 24, color: mut }}>Cargando categorías…</div>
+  if (loading) return <div style={{ padding: 24, color: t.textTertiary }}>Cargando categorías…</div>
   if (error) {
     return (
-      <div style={{ padding: 16, background: isDark ? '#3a1a1a' : '#FCE0E2', color: isDark ? '#ff8080' : '#B01D23', borderRadius: 12 }}>
+      <div style={{ padding: 16, background: t.dangerBg, color: t.dangerText, borderRadius: 12 }}>
         {error}
       </div>
     )
@@ -129,13 +136,13 @@ function PanelCategorias() {
               {catsIng.map(c => (
                 <TR key={c.id}>
                   <TD>
-                    <AbvBadge abv={c.codigo} bg={c.canal_abv ? (CANAL_BG[c.canal_abv] ?? '#1A1A1A') : '#1A1A1A'} />
+                    <AbvBadge abv={c.codigo} bg={c.canal_abv ? (CANAL_BG[c.canal_abv] ?? t.brandPrimary) : t.brandPrimary} />
                   </TD>
                   <TD bold>{c.nombre}</TD>
                   <TD muted>{c.canal_abv ?? '—'}</TD>
                   <TD num>
-                    <button onClick={() => setModal({ tipo: 'ingreso', editing: c })} style={actionBtn(actionColor)}>Editar</button>
-                    <button onClick={() => handleDeleteIngreso(c)} style={actionBtn(mut, true)}>Eliminar</button>
+                    <button onClick={() => setModal({ tipo: 'ingreso', editing: c })} style={actionBtn(t.brandAccent)}>Editar</button>
+                    <button onClick={() => handleDeleteIngreso(c)} style={actionBtn(t.textTertiary, true)}>Eliminar</button>
                   </TD>
                 </TR>
               ))}
@@ -143,7 +150,7 @@ function PanelCategorias() {
           </Table>
           <button
             onClick={() => setModal({ tipo: 'ingreso', editing: null })}
-            style={addBtn(isDark)}
+            style={addBtn(theme)}
           >
             + Nueva categoría ingreso
           </button>
@@ -166,8 +173,8 @@ function PanelCategorias() {
                   <TD bold>{c.nombre}</TD>
                   <TD><StatusTag variant={c.tipo}>{TIPO_LABEL[c.tipo]}</StatusTag></TD>
                   <TD num>
-                    <button onClick={() => setModal({ tipo: 'gasto', editing: c })} style={actionBtn(actionColor)}>Editar</button>
-                    <button onClick={() => handleDeleteGasto(c)} style={actionBtn(mut, true)}>Eliminar</button>
+                    <button onClick={() => setModal({ tipo: 'gasto', editing: c })} style={actionBtn(t.brandAccent)}>Editar</button>
+                    <button onClick={() => handleDeleteGasto(c)} style={actionBtn(t.textTertiary, true)}>Eliminar</button>
                   </TD>
                 </TR>
               ))}
@@ -175,7 +182,7 @@ function PanelCategorias() {
           </Table>
           <button
             onClick={() => setModal({ tipo: 'gasto', editing: null })}
-            style={addBtn(isDark)}
+            style={addBtn(theme)}
           >
             + Nueva categoría gasto
           </button>
@@ -210,7 +217,8 @@ function actionBtn(color: string, danger = false): React.CSSProperties {
   }
 }
 
-function addBtn(isDark: boolean): React.CSSProperties {
+function addBtn(theme: 'light' | 'dark'): React.CSSProperties {
+  const p = PALETTE[theme]
   return {
     marginTop: 12,
     padding: '8px 14px',
@@ -219,15 +227,13 @@ function addBtn(isDark: boolean): React.CSSProperties {
     fontWeight: 600,
     letterSpacing: '0.04em',
     textTransform: 'uppercase',
-    background: isDark ? '#2a2600' : '#FFF3B8',
-    color: isDark ? '#e8f442' : '#5a4d0a',
-    border: `1px solid ${isDark ? '#4a4000' : '#E8D066'}`,
+    background: p.ambar[50],
+    color: p.ambar[700],
+    border: `1px solid ${p.ambar[300]}`,
     cursor: 'pointer',
     fontFamily: FONT.sans,
   }
 }
-
-/* ═══════ MODAL CATEGORÍA ═══════ */
 
 function CategoriaModal({
   tipo, editing, onClose, onSaved,
@@ -237,6 +243,8 @@ function CategoriaModal({
   onClose: () => void
   onSaved: () => Promise<void>
 }) {
+  const theme = useTheme()
+  const t = getTokens(theme)
   const inputStyle = useInputStyle()
   const [codigo, setCodigo] = useState(editing?.codigo ?? '')
   const [nombre, setNombre] = useState(editing?.nombre ?? '')
@@ -271,7 +279,7 @@ function CategoriaModal({
         <input
           value={codigo}
           onChange={e => setCodigo(e.target.value)}
-          style={{ ...inputStyle, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}
+          style={{ ...inputStyle, fontFamily: FONT.mono }}
           placeholder={tipo === 'ingreso' ? 'ING-XXX' : 'GAS-XXX'}
         />
       </ConfigField>
@@ -297,7 +305,7 @@ function CategoriaModal({
         </ConfigField>
       )}
       {error && (
-        <div style={{ marginTop: 12, padding: 8, background: '#FCE0E2', color: '#B01D23', fontSize: 12, borderRadius: 6 }}>
+        <div style={{ marginTop: 12, padding: 8, background: t.dangerBg, color: t.dangerText, fontSize: 12, borderRadius: 6 }}>
           {error}
         </div>
       )}
@@ -311,10 +319,9 @@ function CategoriaModal({
   )
 }
 
-/* ═══════ PANEL REGLAS ═══════ */
-
 function PanelReglas() {
-  const isDark = useIsDark()
+  const theme = useTheme()
+  const t = getTokens(theme)
   const [reglas, setReglas] = useState<ReglaConciliacion[]>([])
   const [catsIng, setCatsIng] = useState<CategoriaContableIngreso[]>([])
   const [catsGas, setCatsGas] = useState<CategoriaContableGasto[]>([])
@@ -360,13 +367,10 @@ function PanelReglas() {
     await refetch()
   }
 
-  const mut = isDark ? '#777' : '#9E9588'
-  const subtle = isDark ? '#aaa' : '#6E6656'
-
-  if (loading) return <div style={{ padding: 24, color: mut }}>Cargando reglas…</div>
+  if (loading) return <div style={{ padding: 24, color: t.textTertiary }}>Cargando reglas…</div>
   if (error) {
     return (
-      <div style={{ padding: 16, background: isDark ? '#3a1a1a' : '#FCE0E2', color: isDark ? '#ff8080' : '#B01D23', borderRadius: 12 }}>
+      <div style={{ padding: 16, background: t.dangerBg, color: t.dangerText, borderRadius: 12 }}>
         {error}
       </div>
     )
@@ -384,11 +388,11 @@ function PanelReglas() {
   return (
     <>
       <BigCard title="Reglas de asignación automática" count={`${reglas.length} reglas`}>
-        <p style={{ fontSize: 12.5, color: subtle, marginBottom: 16, fontFamily: FONT.sans }}>
+        <p style={{ fontSize: 12.5, color: t.textSecondary, marginBottom: 16, fontFamily: FONT.sans }}>
           Cuando llega un movimiento del banco, el sistema busca si su concepto contiene el patrón de alguna regla activa y asigna la categoría correspondiente. Mayor prioridad = se evalúa primero.
         </p>
         {reglas.length === 0 ? (
-          <div style={{ padding: 24, textAlign: 'center', color: mut }}>Sin reglas definidas</div>
+          <div style={{ padding: 24, textAlign: 'center', color: t.textTertiary }}>Sin reglas definidas</div>
         ) : (
           <Table>
             <THead>
@@ -404,25 +408,25 @@ function PanelReglas() {
             <TBody>
               {reglas.map(r => (
                 <TR key={r.id}>
-                  <TD style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: 12.5 }}>
+                  <TD style={{ fontFamily: FONT.mono, fontSize: 12.5 }}>
                     {r.patron}
                   </TD>
                   <TD muted>{r.tipo_categoria === 'ingreso' ? 'Ingreso' : 'Gasto'}</TD>
                   <TD>{categoriaNombre(r)}</TD>
                   <TD num bold>{r.prioridad}</TD>
                   <TD num>
-                    <input type="checkbox" checked={r.activa} onChange={() => handleToggle(r)} style={{ accentColor: '#B01D23', cursor: 'pointer' }} />
+                    <input type="checkbox" checked={r.activa} onChange={() => handleToggle(r)} style={{ accentColor: t.brandAccent, cursor: 'pointer' }} />
                   </TD>
                   <TD num>
-                    <button onClick={() => { setEditing(r); setModalOpen(true) }} style={actionBtn('#B01D23')}>Editar</button>
-                    <button onClick={() => handleDelete(r)} style={actionBtn(mut)}>Eliminar</button>
+                    <button onClick={() => { setEditing(r); setModalOpen(true) }} style={actionBtn(t.brandAccent)}>Editar</button>
+                    <button onClick={() => handleDelete(r)} style={actionBtn(t.textTertiary)}>Eliminar</button>
                   </TD>
                 </TR>
               ))}
             </TBody>
           </Table>
         )}
-        <button onClick={() => { setEditing(null); setModalOpen(true) }} style={addBtn(isDark)}>
+        <button onClick={() => { setEditing(null); setModalOpen(true) }} style={addBtn(theme)}>
           + Nueva regla
         </button>
       </BigCard>
@@ -439,8 +443,6 @@ function PanelReglas() {
   )
 }
 
-/* ═══════ MODAL REGLA ═══════ */
-
 function ReglaModal({
   editing, catsIng, catsGas, onClose, onSaved,
 }: {
@@ -450,6 +452,8 @@ function ReglaModal({
   onClose: () => void
   onSaved: () => Promise<void>
 }) {
+  const theme = useTheme()
+  const t = getTokens(theme)
   const inputStyle = useInputStyle()
   const [patron, setPatron] = useState(editing?.patron ?? '')
   const [tipo, setTipo] = useState<'ingreso' | 'gasto'>(editing?.tipo_categoria ?? 'ingreso')
@@ -484,7 +488,7 @@ function ReglaModal({
   return (
     <ConfigModal title={`${editing ? 'Editar' : 'Nueva'} regla de conciliación`} onClose={onClose}>
       <ConfigField label="Si concepto bancario contiene">
-        <input value={patron} onChange={e => setPatron(e.target.value)} style={inputStyle} placeholder='p.ej. "Uber Eats", "Mercadona", "Nómina"' />
+        <input value={patron} onChange={e => setPatron(e.target.value)} style={inputStyle} placeholder='p.ej. "Mercadona", "Carrefour", "Nómina"' />
       </ConfigField>
       <ConfigField label="Tipo">
         <select value={tipo} onChange={e => { setTipo(e.target.value as 'ingreso' | 'gasto'); setCategoriaId('') }} style={inputStyle}>
@@ -505,12 +509,12 @@ function ReglaModal({
       </ConfigField>
       <ConfigField label="Activa">
         <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
-          <input type="checkbox" checked={activa} onChange={e => setActiva(e.target.checked)} style={{ accentColor: '#B01D23' }} />
+          <input type="checkbox" checked={activa} onChange={e => setActiva(e.target.checked)} style={{ accentColor: t.brandAccent }} />
           <span>Evaluar esta regla en nuevos movimientos</span>
         </label>
       </ConfigField>
       {error && (
-        <div style={{ marginTop: 12, padding: 8, background: '#FCE0E2', color: '#B01D23', fontSize: 12, borderRadius: 6 }}>
+        <div style={{ marginTop: 12, padding: 8, background: t.dangerBg, color: t.dangerText, fontSize: 12, borderRadius: 6 }}>
           {error}
         </div>
       )}

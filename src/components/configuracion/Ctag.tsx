@@ -1,6 +1,5 @@
 import type { CanalAbv } from '@/types/configuracion'
-import { FONT } from '@/styles/tokens'
-import { useIsDark } from '@/hooks/useIsDark'
+import { useTheme, getTokens, FONT, PALETTE } from '@/styles/tokens'
 
 const LABEL: Record<CanalAbv, string> = {
   UE: 'UE',
@@ -11,30 +10,18 @@ const LABEL: Record<CanalAbv, string> = {
 }
 
 export function Ctag({ abv }: { abv: CanalAbv }) {
-  const isDark = useIsDark()
+  const theme = useTheme()
+  const t = getTokens(theme)
+  const p = PALETTE[theme]
 
-  // Paletas dark-aware: en dark suave (rgba 0.22 fondo + color claro texto); en light sólido.
+  // Cromática operadores David: oliva (success), ambar (warning), naranja (accent),
+  // terra (danger), marino (info). Se aplica al CanalAbv conservando el TYPE.
   const styles: Record<CanalAbv, { bg: string; color: string }> = {
-    UE:  {
-      bg: isDark ? 'rgba(6,193,103,0.22)' : '#06C167',
-      color: isDark ? '#5DCAA5' : '#ffffff',
-    },
-    GL:  {
-      bg: isDark ? 'rgba(232,244,66,0.22)' : '#e8f442',
-      color: isDark ? '#e8f442' : '#5c550d',
-    },
-    JE:  {
-      bg: isDark ? 'rgba(245,166,35,0.22)' : '#f5a623',
-      color: isDark ? '#F5C36B' : '#ffffff',
-    },
-    WEB: {
-      bg: isDark ? 'rgba(176,29,35,0.28)' : '#B01D23',
-      color: isDark ? '#F09595' : '#ffffff',
-    },
-    DIR: {
-      bg: isDark ? 'rgba(102,170,255,0.22)' : '#66aaff',
-      color: isDark ? '#89B5DF' : '#ffffff',
-    },
+    UE:  { bg: t.successBg,  color: t.successText },
+    GL:  { bg: t.warningBg,  color: t.warningText },
+    JE:  { bg: p.naranja[50], color: p.naranja[700] },
+    WEB: { bg: t.dangerBg,   color: t.dangerText },
+    DIR: { bg: t.infoBg,     color: t.infoText },
   }
   const s = styles[abv]
 

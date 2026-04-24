@@ -106,7 +106,7 @@ export default function CuentasPanel() {
   if (loading) return <div style={{ padding: 24, color: T.textTertiary, fontFamily: FONT.sans }}>Cargando…</div>
   if (error) {
     return (
-      <div style={{ padding: 16, background: '#B01D2320', color: T.brandAccent, borderRadius: 10, fontFamily: FONT.sans }}>
+      <div style={{ padding: 16, background: T.dangerBg, color: T.dangerText, borderRadius: 10, fontFamily: FONT.sans }}>
         {error}
       </div>
     )

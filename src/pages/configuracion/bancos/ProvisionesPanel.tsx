@@ -148,7 +148,7 @@ export default function ProvisionesPanel() {
           {msg && (
             <span style={{
               fontFamily: FONT.sans, fontSize: 12,
-              color: msg.tipo === 'ok' ? '#06C167' : T.brandAccent,
+              color: msg.tipo === 'ok' ? T.success : T.danger,
             }}>
               {msg.texto}
             </span>
