@@ -2,15 +2,17 @@ import { useState } from 'react'
 import { useTheme, FONT } from '@/styles/tokens'
 import { ModTitle } from '@/components/configuracion/ModTitle'
 import { ConfigShell } from '@/components/configuracion/ConfigShell'
+import ProveedoresPanel from './ProveedoresPanel'
 import CategoriasPanel from './CategoriasPanel'
 import ReglasPanel from './ReglasPanel'
 import CuentasPanel from './CuentasPanel'
 import PresupuestosPanel from './PresupuestosPanel'
 import ProvisionesPanel from './ProvisionesPanel'
 
-type Sub = 'categorias' | 'reglas' | 'cuentas' | 'presupuestos' | 'provisiones'
+type Sub = 'proveedores' | 'categorias' | 'reglas' | 'cuentas' | 'presupuestos' | 'provisiones'
 
 const PILLS: { id: Sub; label: string }[] = [
+  { id: 'proveedores',  label: 'Proveedores' },
   { id: 'categorias',   label: 'Categorías de conciliación' },
   { id: 'reglas',       label: 'Reglas automáticas' },
   { id: 'cuentas',      label: 'Cuentas bancarias' },
@@ -20,7 +22,7 @@ const PILLS: { id: Sub; label: string }[] = [
 
 export default function BancosPage() {
   const { T } = useTheme()
-  const [sub, setSub] = useState<Sub>('categorias')
+  const [sub, setSub] = useState<Sub>('proveedores')
 
   return (
     <ConfigShell>
@@ -50,6 +52,7 @@ export default function BancosPage() {
           )
         })}
       </div>
+      {sub === 'proveedores' && <ProveedoresPanel />}
       {sub === 'categorias' && <CategoriasPanel />}
       {sub === 'reglas' && <ReglasPanel />}
       {sub === 'cuentas' && <CuentasPanel />}

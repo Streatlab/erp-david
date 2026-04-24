@@ -321,11 +321,11 @@ export function ResumenDashboard({
     return Object.entries(acc).map(([categoria, importe]) => ({ categoria, importe }))
   }, [movimientosAnterior])
 
-  /* — Sumas — */
-  const sumIng    = canalesActual.reduce((s, c) => s + c.importe, 0)
-  const sumIngAnt = canalesAnterior.reduce((s, c) => s + c.importe, 0)
-  const sumGst    = categoriasActual.reduce((s, c) => s + c.importe, 0)
-  const sumGstAnt = categoriasAnterior.reduce((s, c) => s + c.importe, 0)
+  /* — Sumas globales: TODOS los movimientos (paridad con pestaña Movimientos) — */
+  const sumIng    = useMemo(() => movimientos.filter(m => m.importe > 0).reduce((s, m) => s + m.importe, 0), [movimientos])
+  const sumIngAnt = useMemo(() => movimientosAnterior.filter(m => m.importe > 0).reduce((s, m) => s + m.importe, 0), [movimientosAnterior])
+  const sumGst    = useMemo(() => movimientos.filter(m => m.importe < 0).reduce((s, m) => s + Math.abs(m.importe), 0), [movimientos])
+  const sumGstAnt = useMemo(() => movimientosAnterior.filter(m => m.importe < 0).reduce((s, m) => s + Math.abs(m.importe), 0), [movimientosAnterior])
 
   const balance    = sumIng - sumGst
   const balanceAnt = sumIngAnt - sumGstAnt

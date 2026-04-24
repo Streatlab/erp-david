@@ -276,9 +276,15 @@ export function useConciliacion() {
       console.error('syncGasto failed:', e?.message ?? e)
     }
 
-    // 2. Actualizar la fila de conciliación
+    // 2. Resolver nombre legible de la categoría para guardarlo en conciliacion.categoria
+    const catRef = codigo_categoria
+      ? categorias.find(c => c.codigo === codigo_categoria)
+      : null
+    const valorCategoria = catRef?.nombre ?? codigo_categoria
+
+    // 3. Actualizar la fila de conciliación
     const { error } = await supabase.from('conciliacion')
-      .update({ categoria: codigo_categoria, tipo, gasto_id: nuevoGastoId })
+      .update({ categoria: valorCategoria, tipo, gasto_id: nuevoGastoId })
       .eq('id', id)
     if (error) throw error
 

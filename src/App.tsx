@@ -6,7 +6,6 @@ import Dashboard from '@/pages/Dashboard'
 import Entregas from '@/pages/Entregas'
 import Conciliacion from '@/pages/Conciliacion'
 import BancosPage from '@/pages/configuracion/bancos/BancosPage'
-import ProveedoresPage from '@/pages/configuracion/proveedores/ProveedoresPage'
 import Running from '@/pages/Running'
 import Placeholder from '@/pages/Placeholder'
 
@@ -40,10 +39,7 @@ function AppRoutes() {
         {/* Configuración · Redirect */}
         <Route path="configuracion" element={<Navigate to="/configuracion/bancos" replace />} />
 
-        {/* Configuración · Proveedores (va antes de Categorías de conciliación) */}
-        <Route path="configuracion/proveedores" element={<ProtectedRoute solo={['admin']}><ProveedoresPage /></ProtectedRoute>} />
-
-        {/* Configuración · Bancos */}
+        {/* Configuración · Bancos (Proveedores es el primer pill interno) */}
         <Route path="configuracion/bancos" element={<ProtectedRoute solo={['admin']}><BancosPage /></ProtectedRoute>} />
 
         {/* Configuración · Fallback */}

@@ -5,8 +5,6 @@ import { supabase } from '@/lib/supabase'
 import { useTheme, FONT } from '@/styles/tokens'
 import ConfigGroupCard from '@/components/configuracion/ConfigGroupCard'
 import { EditModal, Field } from '@/components/configuracion/EditModal'
-import { ModTitle } from '@/components/configuracion/ModTitle'
-import { ConfigShell } from '@/components/configuracion/ConfigShell'
 
 interface Proveedor {
   id: string
@@ -20,7 +18,7 @@ interface Proveedor {
 interface CatIngreso { codigo: string; nombre: string }
 interface CatGasto   { codigo: string; nombre: string; grupo: string | null }
 
-export default function ProveedoresPage() {
+export default function ProveedoresPanel() {
   const { T, isDark } = useTheme()
   const [provs, setProvs] = useState<Proveedor[]>([])
   const [catsIng, setCatsIng] = useState<CatIngreso[]>([])
@@ -100,7 +98,6 @@ export default function ProveedoresPage() {
         : supabase.from('proveedores').insert(payload)
       const { error } = await q; if (error) throw error
 
-      // Re-aplicar categoria_default a movimientos del proveedor que no tengan categoría
       if (editing && fCatDef && fCatDef !== (editing.categoria_default ?? '')) {
         await supabase.from('conciliacion')
           .update({ categoria: fCatDef })
@@ -147,11 +144,9 @@ export default function ProveedoresPage() {
   const washSub = isDark ? '#F5C36B'                : '#854F0B'
 
   return (
-    <ConfigShell>
-      <ModTitle>Proveedores</ModTitle>
-
+    <>
       {error && (
-        <div style={{ margin: '12px 22px', padding: 14, background: 'var(--terra-500)20', color: 'var(--terra-500)', borderRadius: 10, fontFamily: FONT.body }}>
+        <div style={{ margin: '0 0 14px', padding: 14, background: 'var(--terra-500)20', color: 'var(--terra-500)', borderRadius: 10, fontFamily: FONT.body }}>
           {error}
         </div>
       )}
@@ -285,9 +280,11 @@ export default function ProveedoresPage() {
               className="w-full px-3 py-2 border border-[var(--sl-border)] rounded-lg text-sm bg-[var(--sl-card)] focus:outline-none focus:border-[var(--sl-border-focus)]"
             >
               <option value="">—</option>
-              <optgroup label="INGRESOS">
-                {catsIng.map(c => <option key={c.codigo} value={c.nombre}>{c.nombre}</option>)}
-              </optgroup>
+              {catsIng.length > 0 && (
+                <optgroup label="INGRESOS">
+                  {catsIng.map(c => <option key={c.codigo} value={c.nombre}>{c.nombre}</option>)}
+                </optgroup>
+              )}
               {gastosPorGrupo.map(g => (
                 <Fragment key={g.grupo}>
                   <optgroup label={g.grupo}>
@@ -304,6 +301,6 @@ export default function ProveedoresPage() {
           </Field>
         </EditModal>
       )}
-    </ConfigShell>
+    </>
   )
 }
