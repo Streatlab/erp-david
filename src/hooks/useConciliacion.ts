@@ -16,6 +16,15 @@ export interface Movimiento {
   link_factura: string | null
   notas: string | null
   gasto_id?: string | null
+  furgoneta_id?: string | null
+  prorrateo?: boolean
+}
+
+export interface Furgoneta {
+  id: string
+  codigo: string
+  nombre_corto: string
+  conductor: string
 }
 
 export interface Regla {
@@ -40,6 +49,7 @@ export function useConciliacion() {
   const [movimientos, setMovimientos] = useState<Movimiento[]>([])
   const [reglas, setReglas] = useState<Regla[]>([])
   const [categorias, setCategorias] = useState<CategoriaRef[]>([])
+  const [furgonetas, setFurgonetas] = useState<Furgoneta[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [tick, setTick] = useState(0)
@@ -50,19 +60,22 @@ export function useConciliacion() {
     ;(async () => {
       setLoading(true); setError(null)
       try {
-        const [mov, reg, cIng, cGas] = await Promise.all([
+        const [mov, reg, cIng, cGas, fur] = await Promise.all([
           supabase.from('conciliacion').select('*').order('fecha', { ascending: false }),
           supabase.from('reglas_conciliacion').select('id, patron, tipo_categoria, categoria_id, categoria_codigo, activa, prioridad').order('prioridad', { ascending: false }),
           supabase.from('categorias_contables_ingresos').select('id, codigo, nombre'),
           supabase.from('categorias_contables_gastos').select('id, codigo, nombre, grupo'),
+          supabase.from('furgonetas').select('id, codigo, nombre_corto, conductor').eq('activa', true).order('codigo'),
         ])
         if (cancel) return
         if (mov.error) throw mov.error
         if (reg.error) throw reg.error
         if (cIng.error) throw cIng.error
         if (cGas.error) throw cGas.error
+        if (fur.error) throw fur.error
         setMovimientos((mov.data ?? []) as Movimiento[])
         setReglas((reg.data ?? []) as Regla[])
+        setFurgonetas((fur.data ?? []) as Furgoneta[])
         const cats: CategoriaRef[] = [
           ...(cIng.data ?? []).map((c: any) => ({ id: c.id, codigo: c.codigo, nombre: c.nombre, tipo_parent: 'ingreso' as const })),
           ...(cGas.data ?? []).map((c: any) => ({ id: c.id, codigo: c.codigo, nombre: c.nombre, grupo: c.grupo, tipo_parent: 'gasto' as const })),
@@ -76,6 +89,17 @@ export function useConciliacion() {
     })()
     return () => { cancel = true }
   }, [tick])
+
+  type FurgonetaValue = 'prorrateo' | 'none' | string
+  async function updateFurgoneta(movId: string, value: FurgonetaValue) {
+    let patch: { furgoneta_id: string | null; prorrateo: boolean }
+    if (value === 'prorrateo')      patch = { furgoneta_id: null, prorrateo: true }
+    else if (value === 'none')      patch = { furgoneta_id: null, prorrateo: false }
+    else                             patch = { furgoneta_id: value, prorrateo: false }
+    const { error } = await supabase.from('conciliacion').update(patch).eq('id', movId)
+    if (error) { console.error('updateFurgoneta:', error.message); return }
+    refresh()
+  }
 
   async function insertMovimientos(
     rows: Omit<Movimiento, 'id'>[],
@@ -306,7 +330,7 @@ export function useConciliacion() {
   }
 
   return {
-    movimientos, reglas, categorias, loading, error,
-    refresh, insertMovimientos, updateCategoria, createRegla, deleteRegla, aplicarReglas,
+    movimientos, reglas, categorias, furgonetas, loading, error,
+    refresh, insertMovimientos, updateCategoria, updateFurgoneta, createRegla, deleteRegla, aplicarReglas,
   }
 }

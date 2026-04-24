@@ -103,7 +103,9 @@ export default function Conciliacion() {
     movimientos: movimientosBD,
     insertMovimientos,
     updateCategoria,
+    updateFurgoneta,
     categorias: categoriasBD,
+    furgonetas,
     loading: loadingBD,
   } = useConciliacion()
 
@@ -136,6 +138,8 @@ export default function Conciliacion() {
       categoria_id: m.categoria,
       contraparte: m.proveedor ?? '',
       gasto_id: m.gasto_id ?? null,
+      furgoneta_id: m.furgoneta_id ?? null,
+      prorrateo: m.prorrateo ?? false,
     })),
     [movimientosBD]
   )
@@ -549,13 +553,14 @@ export default function Conciliacion() {
                     <th style={thStyle}>Concepto</th>
                     <th style={{ ...thStyle, textAlign: 'right' }}>Importe</th>
                     <th style={thStyle}>Categoría</th>
+                    <th style={{ ...thStyle, width: 140 }}>Furgoneta</th>
                     <th style={thStyle}>Contraparte</th>
                   </tr>
                 </thead>
                 <tbody>
                   {movimientosFiltrados.length === 0 ? (
                     <tr>
-                      <td colSpan={5} style={{ ...tdStyle, textAlign: 'center', color: T.mut, padding: '28px 12px' }}>
+                      <td colSpan={6} style={{ ...tdStyle, textAlign: 'center', color: T.mut, padding: '28px 12px' }}>
                         Sin movimientos en este rango
                       </td>
                     </tr>
@@ -636,6 +641,41 @@ export default function Conciliacion() {
                               <Zap size={12} color="#f5a623" aria-label="Auto: regla aplicada" />
                             )}
                           </div>
+                        </td>
+                        <td style={{ ...tdStyle, width: 140 }}>
+                          {m.importe < 0 ? (
+                            <select
+                              value={m.furgoneta_id ?? (m.prorrateo ? '__prorrateo__' : '__none__')}
+                              onChange={e => {
+                                const v = e.target.value
+                                if (v === '__prorrateo__') updateFurgoneta(m.id, 'prorrateo')
+                                else if (v === '__none__') updateFurgoneta(m.id, 'none')
+                                else updateFurgoneta(m.id, v)
+                              }}
+                              style={{
+                                width: 140,
+                                backgroundColor: T.inp,
+                                color: m.furgoneta_id || m.prorrateo ? T.pri : T.mut,
+                                border: `1px solid ${m.furgoneta_id || m.prorrateo ? T.brd : '#f5a623'}`,
+                                borderRadius: 6,
+                                padding: '4px 8px',
+                                fontFamily: FONT.heading,
+                                fontSize: 11,
+                                letterSpacing: '1px',
+                                textTransform: 'uppercase',
+                                cursor: 'pointer',
+                                outline: 'none',
+                              }}
+                            >
+                              <option value="__prorrateo__">Prorrateo 1/4</option>
+                              <option value="__none__">Sin asignar</option>
+                              {furgonetas.map(f => (
+                                <option key={f.id} value={f.id}>#{f.codigo} {f.conductor}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span style={{ color: T.mut }}>—</span>
+                          )}
                         </td>
                         <td style={tdStyle}>
                           {colorCp ? (

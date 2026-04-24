@@ -7,6 +7,15 @@ export interface Movimiento {
   contraparte: string
   auto_categorizado?: boolean
   gasto_id?: string | null
+  furgoneta_id?: string | null
+  prorrateo?: boolean
+}
+
+export interface Furgoneta {
+  id: string
+  codigo: string
+  nombre_corto: string
+  conductor: string
 }
 
 export interface Categoria {
