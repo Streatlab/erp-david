@@ -93,6 +93,7 @@ export default function TablaPyG({ gastosAnio, ingresosAnio, rangos }: Props) {
     gastosAnio.forEach(g => {
       const idx = Number(g.fecha.slice(5,7)) - 1;
       const cat = g.categoria as Categoria;
+      if (!perCat[cat]) return;
       perCat[cat][idx] += g.importe;
       if (g.subcategoria) {
         const k = `${cat}::${g.subcategoria}`;
