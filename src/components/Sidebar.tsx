@@ -41,6 +41,7 @@ const ITEMS: NavItem[] = [
   { path: '/contabilidad',     label: 'Contabilidad',     icon: Calculator,    perfiles: ['admin'] },
   { path: '/hacienda',         label: 'Hacienda',         icon: Landmark,      perfiles: ['admin'] },
   { path: '/operativa',        label: 'Operativa',        icon: Settings,      perfiles: ['admin'] },
+  { path: '/configuracion',    label: 'Configuración',    icon: Settings,      perfiles: ['admin'] },
 ]
 
 export default function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
