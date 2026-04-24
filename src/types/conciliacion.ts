@@ -9,6 +9,7 @@ export interface Movimiento {
   gasto_id?: string | null
   furgoneta_id?: string | null
   prorrateo?: boolean
+  proveedor_id?: string | null
 }
 
 export interface Furgoneta {

@@ -148,7 +148,7 @@ export default function ProveedoresPage() {
 
   return (
     <ConfigShell>
-      <ModTitle title="Proveedores" />
+      <ModTitle>Proveedores</ModTitle>
 
       {error && (
         <div style={{ margin: '12px 22px', padding: 14, background: 'var(--terra-500)20', color: 'var(--terra-500)', borderRadius: 10, fontFamily: FONT.body }}>

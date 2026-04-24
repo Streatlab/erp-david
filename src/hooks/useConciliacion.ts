@@ -18,6 +18,7 @@ export interface Movimiento {
   gasto_id?: string | null
   furgoneta_id?: string | null
   prorrateo?: boolean
+  proveedor_id?: string | null
 }
 
 export interface Furgoneta {
@@ -153,6 +154,30 @@ export function useConciliacion() {
     const insertedRows = (insertados ?? []) as Movimiento[]
     const ignorados = rows.length - insertedRows.length
     onProgress?.('saving', rowsConKey.length, rowsConKey.length)
+
+    // Asignar proveedor_id + proveedor (nombre) a los recién insertados que matcheen
+    if (insertedRows.length > 0) {
+      const { data: provs } = await supabase
+        .from('proveedores')
+        .select('id, nombre, patron_detectar')
+        .not('patron_detectar', 'is', null)
+        .eq('activo', true)
+      const provList = (provs ?? []) as { id: string; nombre: string; patron_detectar: string }[]
+      if (provList.length > 0) {
+        for (const m of insertedRows) {
+          const concepto = (m.concepto ?? '').toLowerCase()
+          const match = provList.find(p => p.patron_detectar && concepto.includes(p.patron_detectar))
+          if (match) {
+            await supabase.from('conciliacion')
+              .update({ proveedor_id: match.id, proveedor: match.nombre })
+              .eq('id', m.id)
+            // Actualizar la fila en memoria para que el siguiente paso (reglas) vea el proveedor
+            m.proveedor_id = match.id
+            m.proveedor = match.nombre
+          }
+        }
+      }
+    }
 
     // Aplicar reglas activas a los recién insertados
     let autoCategorizados = 0
