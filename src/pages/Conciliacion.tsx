@@ -23,7 +23,7 @@ const CATEGORIAS: Categoria[] = [
   { id: 'rrhh',     nombre: 'RRHH',                 tipo: 'gasto',   color: '#f5a623' },
   { id: 'alq',      nombre: 'Alquiler',             tipo: 'gasto',   color: 'var(--terra-500)' },
   { id: 'sum',      nombre: 'Suministros',          tipo: 'gasto',   color: '#ff6b70' },
-  { id: 'mkt',      nombre: 'Marketing',            tipo: 'gasto',   color: '#FF4757' },
+  { id: 'mkt',      nombre: 'Marketing',            tipo: 'gasto',   color: 'var(--brand-accent)' },
   { id: 'otros',    nombre: 'Otros',                tipo: 'gasto',   color: '#9aa0c0' },
 ]
 

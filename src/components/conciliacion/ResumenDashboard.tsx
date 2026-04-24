@@ -29,57 +29,33 @@ const VERDE_OK   = '#1D9E75'
 const ROJO       = '#A32D2D'
 
 const COLOR_CANAL: Record<string, string> = {
-  'Uber Eats': '#06C167',
-  'Glovo':     '#e8f442',
-  'Just Eat':  '#f5a623',
-  'Web':       'var(--terra-500)',
-  'Directa':   '#66aaff',
+  'Mercadona': 'var(--brand-accent)',
+  'Carrefour': '#1D9E75',
+  'Lidl':      '#F59E0B',
+  'Día':       '#D4537E',
 }
 
 const COLOR_CATEGORIA: Record<string, string> = {
-  'RRHH':         'var(--terra-500)',
-  'Proveedores':  '#D85A30',
-  'Alquiler':     '#F59E0B',
-  'Suministros':  '#7F77DD',
-  'Marketing':    '#D4537E',
-  'Otros':        '#888780',
+  'Nóminas':                      'var(--terra-500)',
+  'Combustible/Energía vehículo': 'var(--brand-accent)',
+  'Combustible':                  'var(--brand-accent)',
+  'Leasing furgonetas':           '#D85A30',
+  'Seguros':                      '#F59E0B',
+  'Suministros':                  '#7F77DD',
+  'Mantenimiento vehículos':      '#BA7517',
+  'Proveedores':                  '#D4537E',
+  'Impuestos':                    '#9E9588',
+  'Otros':                        '#888780',
 }
 
+const CANALES_DAVID = ['Mercadona', 'Carrefour', 'Lidl', 'Día'] as const
+
+const normTxt = (s: string) =>
+  (s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+
 /* ═══════════════════════════════════════════════════════════
-   MOCKS COHERENTES (FIX 12)
+   MOCKS TESORERÍA / PRESUPUESTOS (pendiente conectar a BD)
    ═══════════════════════════════════════════════════════════ */
-
-const MOCK_CANALES_ACTUAL = [
-  { canal: 'Uber Eats', importe: 21190 },
-  { canal: 'Glovo',     importe: 5340 },
-  { canal: 'Just Eat',  importe: 3200 },
-  { canal: 'Web',       importe: 738 },
-  { canal: 'Directa',   importe: 0 },
-]
-
-const MOCK_CANALES_ANTERIOR = [
-  { canal: 'Uber Eats', importe: 18585 },
-  { canal: 'Glovo',     importe: 5565 },
-  { canal: 'Just Eat',  importe: 2623 },
-  { canal: 'Web',       importe: 683 },
-  { canal: 'Directa',   importe: 0 },
-]
-
-const MOCK_CATEGORIAS_ACTUAL = [
-  { categoria: 'RRHH',         importe: 4850 },
-  { categoria: 'Proveedores',  importe: 4448 },
-  { categoria: 'Alquiler',     importe: 2400 },
-  { categoria: 'Suministros',  importe: 1028 },
-  { categoria: 'Marketing',    importe: 530 },
-]
-
-const MOCK_CATEGORIAS_ANTERIOR = [
-  { categoria: 'RRHH',         importe: 4709 },
-  { categoria: 'Proveedores',  importe: 4888 },
-  { categoria: 'Alquiler',     importe: 2400 },
-  { categoria: 'Suministros',  importe: 918 },
-  { categoria: 'Marketing',    importe: 646 },
-]
 
 const MOCK_PRESUPUESTOS = [
   { categoria: 'compras',     nombre: 'COMPRAS',     consumido: 4448, tope: 6000 },
@@ -281,6 +257,7 @@ function FilaDistribucion({ color, nombre, importe, deltaPct, porcentaje, esIngr
 
 export function ResumenDashboard({
   movimientos,
+  movimientosAnterior,
   mesNombre,
   anio,
   diasRestantes,
@@ -294,11 +271,61 @@ export function ResumenDashboard({
     marginBottom: 4,
   }
 
-  /* — Sumas a partir de mocks (FIX 12) — */
-  const sumIng    = MOCK_CANALES_ACTUAL.reduce((s, c) => s + c.importe, 0)
-  const sumIngAnt = MOCK_CANALES_ANTERIOR.reduce((s, c) => s + c.importe, 0)
-  const sumGst    = MOCK_CATEGORIAS_ACTUAL.reduce((s, c) => s + c.importe, 0)
-  const sumGstAnt = MOCK_CATEGORIAS_ANTERIOR.reduce((s, c) => s + c.importe, 0)
+  /* — Ingresos por canal (David: Mercadona/Carrefour/Lidl/Día) — */
+  const canalesActual = useMemo(() => {
+    const base = CANALES_DAVID.map(c => ({ canal: c as string, importe: 0 }))
+    for (const m of movimientos) {
+      if (m.importe <= 0) continue
+      const cp = normTxt(m.contraparte ?? '')
+      if (!cp) continue
+      const slot = base.find(s => cp.includes(normTxt(s.canal)))
+      if (slot) slot.importe += m.importe
+    }
+    return base
+  }, [movimientos])
+
+  const canalesAnterior = useMemo(() => {
+    const base = CANALES_DAVID.map(c => ({ canal: c as string, importe: 0 }))
+    for (const m of movimientosAnterior) {
+      if (m.importe <= 0) continue
+      const cp = normTxt(m.contraparte ?? '')
+      if (!cp) continue
+      const slot = base.find(s => cp.includes(normTxt(s.canal)))
+      if (slot) slot.importe += m.importe
+    }
+    return base
+  }, [movimientosAnterior])
+
+  /* — Gastos por categoría (top 6 + Otros) — */
+  const categoriasActual = useMemo(() => {
+    const acc: Record<string, number> = {}
+    for (const m of movimientos) {
+      if (m.importe >= 0) continue
+      const cat = m.categoria_id ?? '— Sin categoría —'
+      acc[cat] = (acc[cat] ?? 0) + Math.abs(m.importe)
+    }
+    const ordenadas = Object.entries(acc).map(([categoria, importe]) => ({ categoria, importe })).sort((a, b) => b.importe - a.importe)
+    const top = ordenadas.slice(0, 6)
+    const resto = ordenadas.slice(6).reduce((s, c) => s + c.importe, 0)
+    if (resto > 0) top.push({ categoria: 'Otros', importe: resto })
+    return top
+  }, [movimientos])
+
+  const categoriasAnterior = useMemo(() => {
+    const acc: Record<string, number> = {}
+    for (const m of movimientosAnterior) {
+      if (m.importe >= 0) continue
+      const cat = m.categoria_id ?? '— Sin categoría —'
+      acc[cat] = (acc[cat] ?? 0) + Math.abs(m.importe)
+    }
+    return Object.entries(acc).map(([categoria, importe]) => ({ categoria, importe }))
+  }, [movimientosAnterior])
+
+  /* — Sumas — */
+  const sumIng    = canalesActual.reduce((s, c) => s + c.importe, 0)
+  const sumIngAnt = canalesAnterior.reduce((s, c) => s + c.importe, 0)
+  const sumGst    = categoriasActual.reduce((s, c) => s + c.importe, 0)
+  const sumGstAnt = categoriasAnterior.reduce((s, c) => s + c.importe, 0)
 
   const balance    = sumIng - sumGst
   const balanceAnt = sumIngAnt - sumGstAnt
@@ -336,20 +363,19 @@ export function ResumenDashboard({
   const ratioDeltaTxt = `${ratioDeltaSym} ${Math.abs(Math.round(ratioDeltaPct))}%`
 
   /* — Filas con % sobre total + delta por fila — */
-  const filasIngresos = MOCK_CANALES_ACTUAL
-    .filter(c => c.importe > 0)
+  // Canales: mostrar SIEMPRE los 4 slots David aunque importe=0 (no ocultar)
+  const filasIngresos = canalesActual
     .map(c => {
-      const ant = MOCK_CANALES_ANTERIOR.find(x => x.canal === c.canal)?.importe ?? 0
+      const ant = canalesAnterior.find(x => x.canal === c.canal)?.importe ?? 0
       const deltaPct = ant !== 0 ? ((c.importe - ant) / ant) * 100 : null
       const porcentaje = sumIng > 0 ? Math.round((c.importe / sumIng) * 100) : 0
       return { ...c, color: COLOR_CANAL[c.canal] ?? '#888', deltaPct, porcentaje }
     })
-    .sort((a, b) => b.importe - a.importe)
 
-  const filasGastos = MOCK_CATEGORIAS_ACTUAL
+  const filasGastos = categoriasActual
     .filter(c => c.importe > 0)
     .map(c => {
-      const ant = MOCK_CATEGORIAS_ANTERIOR.find(x => x.categoria === c.categoria)?.importe ?? 0
+      const ant = categoriasAnterior.find(x => x.categoria === c.categoria)?.importe ?? 0
       const deltaPct = ant !== 0 ? ((c.importe - ant) / ant) * 100 : null
       const porcentaje = sumGst > 0 ? Math.round((c.importe / sumGst) * 100) : 0
       return { ...c, color: COLOR_CATEGORIA[c.categoria] ?? '#888', deltaPct, porcentaje }
