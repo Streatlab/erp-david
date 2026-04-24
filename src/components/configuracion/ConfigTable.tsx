@@ -1,5 +1,5 @@
 import type { ReactNode, CSSProperties } from 'react'
-import { useTheme, getTokens, FONT } from '@/styles/tokens'
+import { useThemeMode, getTokens, FONT } from '@/styles/tokens'
 
 export function Table({ children }: { children: ReactNode }) {
   return (
@@ -33,7 +33,7 @@ export function TH({
   num?: boolean
   style?: CSSProperties
 }) {
-  const theme = useTheme()
+  const theme = useThemeMode()
   const t = getTokens(theme)
   return (
     <th
@@ -87,7 +87,7 @@ export function TD({
   style?: CSSProperties
   colSpan?: number
 }) {
-  const theme = useTheme()
+  const theme = useThemeMode()
   const t = getTokens(theme)
   return (
     <td
@@ -108,7 +108,7 @@ export function TD({
 }
 
 export function TotalTR({ children }: { children: ReactNode }) {
-  const theme = useTheme()
+  const theme = useThemeMode()
   const t = getTokens(theme)
   return (
     <tr style={{ borderTop: `2px solid ${t.borderStrong}`, fontWeight: 700 }}>

@@ -1,4 +1,4 @@
-import { useTheme, getTokens, FONT } from '@/styles/tokens'
+import { useThemeMode, getTokens, FONT } from '@/styles/tokens'
 
 export function Avatar({
   letter,
@@ -7,7 +7,7 @@ export function Avatar({
   letter: string
   color?: string | null
 }) {
-  const theme = useTheme()
+  const theme = useThemeMode()
   const t = getTokens(theme)
 
   return (

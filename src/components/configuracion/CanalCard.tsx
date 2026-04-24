@@ -1,5 +1,5 @@
 import { fmtEur } from '@/lib/format'
-import { useTheme, getTokens, PALETTE } from '@/styles/tokens'
+import { useThemeMode, getTokens, PALETTE } from '@/styles/tokens'
 
 type CanalColor = 'ue' | 'gl' | 'je'
 
@@ -11,7 +11,7 @@ export function CanalCard({
   bruto: number
   pedidos: number
 }) {
-  const theme = useTheme()
+  const theme = useThemeMode()
   const t = getTokens(theme)
   const p = PALETTE[theme]
 

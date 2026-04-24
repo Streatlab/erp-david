@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
-import { useTheme, getTokens, FONT } from '@/styles/tokens'
+import { useThemeMode, getTokens, FONT } from '@/styles/tokens'
 
 export function ModTitle({ children }: { children: ReactNode }) {
-  const theme = useTheme()
+  const theme = useThemeMode()
   const t = getTokens(theme)
 
   return (

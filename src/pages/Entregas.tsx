@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
 import {
-  useTheme,
+  useThemeMode,
   getTokens,
   FONT,
   FS,
@@ -13,7 +13,7 @@ import {
 const COLUMNS = ['Fecha', 'Zona', 'Rider', 'Cliente', 'Estado', 'Importe']
 
 export default function Entregas() {
-  const theme = useTheme()
+  const theme = useThemeMode()
   const t = getTokens(theme)
 
   const pageTitleStyle: CSSProperties = {

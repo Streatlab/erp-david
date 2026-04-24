@@ -1,5 +1,5 @@
 import type { CanalAbv } from '@/types/configuracion'
-import { useTheme, getTokens, FONT, PALETTE } from '@/styles/tokens'
+import { useThemeMode, getTokens, FONT, PALETTE } from '@/styles/tokens'
 
 const LABEL: Record<CanalAbv, string> = {
   UE: 'UE',
@@ -10,7 +10,7 @@ const LABEL: Record<CanalAbv, string> = {
 }
 
 export function Ctag({ abv }: { abv: CanalAbv }) {
-  const theme = useTheme()
+  const theme = useThemeMode()
   const t = getTokens(theme)
   const p = PALETTE[theme]
 

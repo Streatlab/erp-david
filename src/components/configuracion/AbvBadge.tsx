@@ -1,4 +1,4 @@
-import { useTheme, getTokens, FONT } from '@/styles/tokens'
+import { useThemeMode, getTokens, FONT } from '@/styles/tokens'
 
 export function AbvBadge({
   abv,
@@ -7,7 +7,7 @@ export function AbvBadge({
   abv: string
   bg?: string
 }) {
-  const theme = useTheme()
+  const theme = useThemeMode()
   const t = getTokens(theme)
 
   return (

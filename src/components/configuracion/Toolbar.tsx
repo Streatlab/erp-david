@@ -1,5 +1,5 @@
 import type { ReactNode, InputHTMLAttributes, ButtonHTMLAttributes } from 'react'
-import { useTheme, getTokens, FONT } from '@/styles/tokens'
+import { useThemeMode, getTokens, FONT } from '@/styles/tokens'
 import { Search } from 'lucide-react'
 
 export function Toolbar({ children }: { children: ReactNode }) {
@@ -23,7 +23,7 @@ export function Spacer() {
 }
 
 export function BtnRed({ children, ...rest }: ButtonHTMLAttributes<HTMLButtonElement>) {
-  const theme = useTheme()
+  const theme = useThemeMode()
   const t = getTokens(theme)
   return (
     <button
@@ -52,7 +52,7 @@ export function BtnRed({ children, ...rest }: ButtonHTMLAttributes<HTMLButtonEle
 }
 
 export function BtnGhost({ children, ...rest }: ButtonHTMLAttributes<HTMLButtonElement>) {
-  const theme = useTheme()
+  const theme = useThemeMode()
   const t = getTokens(theme)
   return (
     <button
@@ -79,7 +79,7 @@ export function BtnGhost({ children, ...rest }: ButtonHTMLAttributes<HTMLButtonE
 }
 
 export function SearchInput(props: InputHTMLAttributes<HTMLInputElement>) {
-  const theme = useTheme()
+  const theme = useThemeMode()
   const t = getTokens(theme)
   return (
     <div

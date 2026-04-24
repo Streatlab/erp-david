@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { CSSProperties } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import {
-  useTheme,
+  useThemeMode,
   getTokens,
   FONT,
   FS,
@@ -14,7 +14,7 @@ import {
 
 export default function Login() {
   const { login } = useAuth()
-  const theme = useTheme()
+  const theme = useThemeMode()
   const t = getTokens(theme)
 
   const [nombre, setNombre] = useState('')

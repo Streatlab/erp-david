@@ -1,4 +1,4 @@
-import { useTheme, getTokens, FONT } from '@/styles/tokens'
+import { useThemeMode, getTokens, FONT } from '@/styles/tokens'
 
 interface Tab {
   id: string
@@ -14,7 +14,7 @@ export function TabPills({
   active: string
   onChange: (id: string) => void
 }) {
-  const theme = useTheme()
+  const theme = useThemeMode()
   const T = getTokens(theme)
 
   return (

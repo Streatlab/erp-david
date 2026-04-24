@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { useTheme, getTokens, FONT } from '@/styles/tokens'
+import { useThemeMode, getTokens, FONT } from '@/styles/tokens'
 
 type SubTone = 'pos' | 'neg' | 'muted'
 
@@ -16,7 +16,7 @@ export function KpiCard({
   sub?: string
   subTone?: SubTone
 }) {
-  const theme = useTheme()
+  const theme = useThemeMode()
   const t = getTokens(theme)
 
   const subColor =

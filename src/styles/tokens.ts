@@ -15,7 +15,7 @@ import { useEffect, useState } from "react";
 
 export type Theme = "light" | "dark";
 
-export function useTheme(): Theme {
+export function useThemeMode(): Theme {
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof document === "undefined") return "light";
     return (document.documentElement.getAttribute("data-theme") as Theme) || "light";
@@ -34,6 +34,47 @@ export function useTheme(): Theme {
   }, []);
 
   return theme;
+}
+
+// ——————————————————————————————————————————————————————
+// TOKEN SET (forma Binagre: { T, isDark })
+// Compat layer para módulos portados desde Binagre que consumen
+// `const { T, isDark } = useTheme()` + acceso directo `T.bg`, `T.pri`, etc.
+// Derivado de los tokens semánticos David para mantener paleta coherente.
+// ——————————————————————————————————————————————————————
+
+export interface TokenSet {
+  bg: string;
+  group: string;
+  card: string;
+  brd: string;
+  pri: string;
+  sec: string;
+  mut: string;
+  inp: string;
+  emphasis: string;
+  accent: string;
+}
+
+function tokenSetFromTheme(theme: Theme): TokenSet {
+  const t = getTokens(theme);
+  return {
+    bg: t.bgApp,
+    group: t.bgSurfaceAlt,
+    card: t.bgSurface,
+    brd: t.borderDefault,
+    pri: t.textPrimary,
+    sec: t.textSecondary,
+    mut: t.textTertiary,
+    inp: t.bgSurface,
+    emphasis: t.brandAccent,
+    accent: t.brandAccent,
+  };
+}
+
+export function useTheme(): { T: TokenSet; isDark: boolean } {
+  const theme = useThemeMode();
+  return { T: tokenSetFromTheme(theme), isDark: theme === "dark" };
 }
 
 // ——————————————————————————————————————————————————————
@@ -258,6 +299,11 @@ export function getOperadorStyle(operador: Operador, theme: Theme) {
 export const FONT = {
   sans: '"Inter", "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif',
   mono: '"JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, monospace',
+  // Compat Binagre: body = Lexend, heading/title/pageTitle = Oswald
+  body: 'Lexend, "Inter", sans-serif',
+  heading: 'Oswald, "Inter", sans-serif',
+  title: 'Oswald, "Inter", sans-serif',
+  pageTitle: 'Oswald, "Inter", sans-serif',
 } as const;
 
 export const FS = {
@@ -339,14 +385,25 @@ export const MOTION = {
 
 import type { CSSProperties } from "react";
 
-/** Card base — fondo surface, borde default, radio lg */
-export function cardStyle(theme: Theme): CSSProperties {
-  const t = getTokens(theme);
+/** Card base — fondo surface, borde default, radio lg.
+ *  Polimórfico: acepta Theme (David) o TokenSet (Binagre compat). */
+export function cardStyle(theme: Theme): CSSProperties;
+export function cardStyle(T: TokenSet): CSSProperties;
+export function cardStyle(arg: Theme | TokenSet): CSSProperties {
+  if (typeof arg === "string") {
+    const t = getTokens(arg);
+    return {
+      background: t.bgSurface,
+      border: `0.5px solid ${t.borderDefault}`,
+      borderRadius: RADIUS.lg,
+      padding: SPACE[6],
+    };
+  }
   return {
-    background: t.bgSurface,
-    border: `0.5px solid ${t.borderDefault}`,
-    borderRadius: RADIUS.lg,
-    padding: SPACE[6],
+    background: arg.card,
+    border: `0.5px solid ${arg.brd}`,
+    borderRadius: 10,
+    padding: "14px 16px",
   };
 }
 
@@ -544,3 +601,50 @@ export function fmtDateFull(fecha: Date | string | null | undefined): string {
     month: "short",
   });
 }
+
+// ——————————————————————————————————————————————————————
+// COMPAT HELPERS BINAGRE (consumen TokenSet)
+// Añadidos para módulos portados que esperan estas signatures.
+// ——————————————————————————————————————————————————————
+
+export const kpiLabelStyle = (T: TokenSet): CSSProperties => ({
+  fontFamily: FONT.heading,
+  fontSize: 12,
+  letterSpacing: "2px",
+  textTransform: "uppercase",
+  color: T.mut,
+});
+
+export const kpiValueStyle = (T: TokenSet): CSSProperties => ({
+  fontFamily: FONT.heading,
+  fontSize: "2.4rem",
+  fontWeight: 600,
+  color: T.pri,
+  lineHeight: 1,
+});
+
+export const tabActiveStyle = (_isDark: boolean): CSSProperties => ({
+  padding: "6px 14px",
+  borderRadius: 6,
+  border: "none",
+  background: "var(--brand-accent)",
+  color: "#ffffff",
+  fontFamily: FONT.body,
+  fontSize: 13,
+  fontWeight: 500,
+  cursor: "pointer",
+  transition: "background 150ms",
+});
+
+export const tabInactiveStyle = (T: TokenSet): CSSProperties => ({
+  padding: "6px 14px",
+  borderRadius: 6,
+  border: `0.5px solid ${T.brd}`,
+  background: "none",
+  color: T.sec,
+  fontFamily: FONT.body,
+  fontSize: 13,
+  fontWeight: 500,
+  cursor: "pointer",
+  transition: "background 150ms",
+});

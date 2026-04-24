@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { useTheme, getTokens, groupStyle, FONT } from '@/styles/tokens'
+import { useThemeMode, getTokens, groupStyle, FONT } from '@/styles/tokens'
 
 interface Props {
   title?: ReactNode
@@ -11,7 +11,7 @@ interface Props {
 }
 
 export default function ConfigGroupCard({ title, subtitle, right, children, padded = false, style }: Props) {
-  const theme = useTheme()
+  const theme = useThemeMode()
   const T = getTokens(theme)
   return (
     <div style={{ ...groupStyle(theme), padding: padded ? '18px 22px' : 0, marginBottom: 14, overflow: 'hidden', ...style }}>

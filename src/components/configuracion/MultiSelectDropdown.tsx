@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { useTheme, getTokens, FONT } from '@/styles/tokens'
+import { useThemeMode, getTokens, FONT } from '@/styles/tokens'
 import { useIsDark } from '@/hooks/useIsDark'
 
 interface Opt { value: string; label: string }
@@ -12,7 +12,7 @@ interface Props {
 }
 
 export function MultiSelectDropdown({ label, options, selected, onChange }: Props) {
-  const theme = useTheme()
+  const theme = useThemeMode()
   const T = getTokens(theme)
   const isDark = useIsDark()
   const [open, setOpen] = useState(false)

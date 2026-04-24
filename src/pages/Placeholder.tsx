@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react'
 import { useLocation } from 'react-router-dom'
 import { Construction } from 'lucide-react'
 import {
-  useTheme,
+  useThemeMode,
   getTokens,
   cardStyle,
   FONT,
@@ -25,7 +25,7 @@ const LABELS: Record<string, string> = {
 
 export default function Placeholder() {
   const location = useLocation()
-  const theme = useTheme()
+  const theme = useThemeMode()
   const t = getTokens(theme)
   const slug = location.pathname.split('/').filter(Boolean).pop() || ''
   const title = LABELS[slug] ?? slug.replace(/-/g, ' ').replace(/^./, c => c.toUpperCase())

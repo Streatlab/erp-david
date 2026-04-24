@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { useTheme, getTokens, FONT } from '@/styles/tokens'
+import { useThemeMode, getTokens, FONT } from '@/styles/tokens'
 
 export function ConfigModal({
   title,
@@ -10,7 +10,7 @@ export function ConfigModal({
   onClose: () => void
   children: ReactNode
 }) {
-  const theme = useTheme()
+  const theme = useThemeMode()
   const t = getTokens(theme)
 
   return (
@@ -61,7 +61,7 @@ export function ConfigModal({
 }
 
 export function ConfigField({ label, children }: { label: string; children: ReactNode }) {
-  const theme = useTheme()
+  const theme = useThemeMode()
   const t = getTokens(theme)
   return (
     <div style={{ marginBottom: 12 }}>
@@ -85,7 +85,7 @@ export function ConfigField({ label, children }: { label: string; children: Reac
 }
 
 export function useInputStyle() {
-  const theme = useTheme()
+  const theme = useThemeMode()
   const t = getTokens(theme)
   return {
     width: '100%',
@@ -111,7 +111,7 @@ export function ModalActions({
   saving?: boolean
   disabled?: boolean
 }) {
-  const theme = useTheme()
+  const theme = useThemeMode()
   const t = getTokens(theme)
   return (
     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 20 }}>

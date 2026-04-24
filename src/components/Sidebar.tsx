@@ -16,7 +16,7 @@ import {
 import { useAuth } from '@/context/AuthContext'
 import { useSidebarState } from '@/hooks/useSidebarState'
 import { ThemeToggle } from './ThemeToggle'
-import { useTheme, getTokens, FONT, FS, FW, RADIUS, SPACE, TRACKING } from '@/styles/tokens'
+import { useThemeMode, getTokens, FONT, FS, FW, RADIUS, SPACE, TRACKING } from '@/styles/tokens'
 
 interface NavItem {
   path: string
@@ -46,7 +46,7 @@ const ITEMS: NavItem[] = [
 export default function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { usuario, logout } = useAuth()
   const { collapsed, toggle } = useSidebarState()
-  const theme = useTheme()
+  const theme = useThemeMode()
   const t = getTokens(theme)
   const perfil = usuario?.perfil ?? ''
 

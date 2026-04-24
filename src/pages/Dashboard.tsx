@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
 import {
-  useTheme,
+  useThemeMode,
   getTokens,
   cardStyle,
   labelStyle,
@@ -26,7 +26,7 @@ const KPIS: KpiCard[] = [
 ]
 
 export default function Dashboard() {
-  const theme = useTheme()
+  const theme = useThemeMode()
   const t = getTokens(theme)
 
   const pageTitleStyle: CSSProperties = {

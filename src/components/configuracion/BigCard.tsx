@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { useTheme, getTokens, FONT } from '@/styles/tokens'
+import { useThemeMode, getTokens, FONT } from '@/styles/tokens'
 
 export function BigCard({
   title,
@@ -10,7 +10,7 @@ export function BigCard({
   count?: ReactNode
   children: ReactNode
 }) {
-  const theme = useTheme()
+  const theme = useThemeMode()
   const t = getTokens(theme)
 
   return (
