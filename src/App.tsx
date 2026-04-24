@@ -2,9 +2,10 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from '@/context/AuthContext'
 import Layout from '@/components/Layout'
 import Login from '@/pages/Login'
-import Dashboard from '@/pages/Dashboard'
+import PanelGlobal from '@/pages/PanelGlobal'
 import Entregas from '@/pages/Entregas'
 import Conciliacion from '@/pages/Conciliacion'
+import Flota from '@/pages/Flota'
 import BancosPage from '@/pages/configuracion/bancos/BancosPage'
 import Running from '@/pages/finanzas/Running'
 import Placeholder from '@/pages/Placeholder'
@@ -23,11 +24,11 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={usuario ? <Navigate to="/" replace /> : <Login />} />
       <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-        <Route index element={<Dashboard />} />
+        <Route index element={<PanelGlobal />} />
 
         <Route path="entregas"         element={<ProtectedRoute solo={['admin']}><Entregas /></ProtectedRoute>} />
         <Route path="personal"         element={<ProtectedRoute solo={['admin']}><Placeholder /></ProtectedRoute>} />
-        <Route path="flota"            element={<ProtectedRoute solo={['admin']}><Placeholder /></ProtectedRoute>} />
+        <Route path="flota"            element={<ProtectedRoute solo={['admin']}><Flota /></ProtectedRoute>} />
         <Route path="liquidacion-cade" element={<ProtectedRoute solo={['admin']}><Placeholder /></ProtectedRoute>} />
         <Route path="conciliacion"     element={<ProtectedRoute solo={['admin']}><Conciliacion /></ProtectedRoute>} />
         <Route path="running"          element={<ProtectedRoute solo={['admin']}><Running /></ProtectedRoute>} />
