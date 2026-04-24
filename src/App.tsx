@@ -5,6 +5,7 @@ import Login from '@/pages/Login'
 import Dashboard from '@/pages/Dashboard'
 import Entregas from '@/pages/Entregas'
 import Conciliacion from '@/pages/Conciliacion'
+import BancosPage from '@/pages/configuracion/bancos/BancosPage'
 import Running from '@/pages/Running'
 import Placeholder from '@/pages/Placeholder'
 
@@ -34,6 +35,7 @@ function AppRoutes() {
         <Route path="contabilidad"     element={<ProtectedRoute solo={['admin']}><Placeholder /></ProtectedRoute>} />
         <Route path="hacienda"         element={<ProtectedRoute solo={['admin']}><Placeholder /></ProtectedRoute>} />
         <Route path="operativa"        element={<ProtectedRoute solo={['admin']}><Placeholder /></ProtectedRoute>} />
+        <Route path="configuracion/bancos" element={<ProtectedRoute solo={['admin']}><BancosPage /></ProtectedRoute>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
