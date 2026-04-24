@@ -6,7 +6,7 @@ import Dashboard from '@/pages/Dashboard'
 import Entregas from '@/pages/Entregas'
 import Conciliacion from '@/pages/Conciliacion'
 import BancosPage from '@/pages/configuracion/bancos/BancosPage'
-import Running from '@/pages/Running'
+import Running from '@/pages/finanzas/Running'
 import Placeholder from '@/pages/Placeholder'
 
 function ProtectedRoute({ children, solo }: { children: React.ReactNode; solo?: string[] }) {

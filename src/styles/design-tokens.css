@@ -141,6 +141,60 @@
   --dur-slow:    320ms;
   --ease-out:    cubic-bezier(0.22, 1, 0.36, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* ——— RUNNING FINANCIERO (compat Binagre, mapeado a design system David) ——— */
+  --rf-bg-page:        var(--bg-app);
+  --rf-bg-card:        var(--bg-surface);
+  --rf-bg-panel:       var(--bg-surface-alt);
+  --rf-border:         var(--border-default);
+  --rf-border-card:    var(--border-default);
+  --rf-border-input:   var(--border-strong);
+  --rf-text:           var(--text-primary);
+  --rf-text-primary:   var(--text-primary);
+  --rf-text-2:         var(--text-secondary);
+  --rf-text-secondary: var(--text-secondary);
+  --rf-text-muted:     var(--text-tertiary);
+  --rf-text-label:     var(--text-secondary);
+
+  --rf-red:       var(--terra-500);
+  --rf-red-soft:  var(--terra-50);
+  --rf-green:     var(--oliva-500);
+  --rf-yellow:    var(--ambar-500);
+  --rf-orange:    var(--naranja-500);
+
+  --rf-ch-uber:       var(--oliva-500);
+  --rf-ch-uber-bg:    rgba(122, 140, 62, 0.14);
+  --rf-ch-glovo:      var(--ambar-500);
+  --rf-ch-glovo-bg:   rgba(245, 184, 74, 0.14);
+  --rf-ch-justeat:    var(--naranja-500);
+  --rf-ch-justeat-bg: rgba(242, 107, 31, 0.14);
+  --rf-ch-web:        var(--terra-500);
+  --rf-ch-web-bg:     var(--terra-50);
+  --rf-ch-directa:    var(--marino-500);
+  --rf-ch-directa-bg: rgba(22, 53, 92, 0.08);
+
+  --rf-q1-bg:   rgba(22, 53, 92, 0.06);
+  --rf-q2-bg:   rgba(122, 140, 62, 0.06);
+  --rf-q3-bg:   rgba(245, 184, 74, 0.08);
+  --rf-q4-bg:   rgba(242, 107, 31, 0.06);
+  --rf-year-bg: rgba(242, 107, 31, 0.10);
+
+  --rf-gasto-producto: var(--naranja-500);
+  --rf-gasto-rrhh:     var(--terra-500);
+  --rf-gasto-alquiler: var(--marino-500);
+  --rf-gasto-mkt:      var(--ambar-500);
+  --rf-gasto-sumin:    var(--oliva-500);
+
+  --rf-bar-good: var(--oliva-500);
+  --rf-bar-warn: var(--ambar-500);
+  --rf-bar-bad:  var(--terra-500);
+
+  --rf-presup-ok-bg:       rgba(122, 140, 62, 0.10);
+  --rf-presup-ok-border:   rgba(122, 140, 62, 0.35);
+  --rf-presup-warn-bg:     rgba(245, 184, 74, 0.12);
+  --rf-presup-warn-border: rgba(245, 184, 74, 0.40);
+  --rf-presup-bad-bg:      rgba(201, 74, 44, 0.10);
+  --rf-presup-bad-border:  rgba(201, 74, 44, 0.35);
 }
 
 

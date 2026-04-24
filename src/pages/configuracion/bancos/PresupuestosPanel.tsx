@@ -229,7 +229,7 @@ function CellEditable({
     padding: '6px 8px', fontFamily: FONT.body, fontSize: 12, color: T.pri,
     borderBottom: `0.5px solid ${T.brd}`, textAlign: 'right', fontVariantNumeric: 'tabular-nums',
     transition: 'background 250ms',
-    background: flash ? '#06C16722' : 'transparent',
+    background: flash ? 'var(--oliva-500)22' : 'transparent',
     cursor: editing ? 'text' : 'pointer',
   }
 
