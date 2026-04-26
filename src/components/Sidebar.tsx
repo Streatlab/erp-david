@@ -61,7 +61,12 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
 
   // Cargar furgonetas para subhijos
   const [furgos, setFurgos] = useState<Furgoneta[]>([])
-  const flotaAbierta = location.pathname.startsWith('/flota')
+  // Estado expansión: por defecto, abierto si estamos en /flota
+  const [flotaExpanded, setFlotaExpanded] = useState<boolean>(location.pathname.startsWith('/flota'))
+
+  useEffect(() => {
+    if (location.pathname.startsWith('/flota')) setFlotaExpanded(true)
+  }, [location.pathname])
 
   useEffect(() => {
     if (perfil === 'admin') {
@@ -86,6 +91,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
     transition: 'background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out)',
     whiteSpace: 'nowrap' as const,
     overflow: 'hidden',
+    flex: 1,
   })
 
   const subItemStyle = (isActive: boolean): React.CSSProperties => ({
@@ -172,38 +178,60 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
               )
             }
 
-            return (
-              <div key={item.path}>
-                <NavLink to={item.path} onClick={onClose} end={!item.expandable}
-                  style={({ isActive }) => itemStyle(isActive)}>
-                  {({ isActive }) => (<>
-                    <Icon size={18} strokeWidth={1.5} color={isActive ? t.textOnPrimary : t.textSecondary} style={{ flexShrink: 0 }} />
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{item.label}</span>
-                    {item.expandable && (
+            // Expandable Flota
+            if (item.expandable && item.path === '/flota') {
+              const isActive = location.pathname.startsWith('/flota')
+              return (
+                <div key={item.path}>
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <NavLink to={item.path} onClick={onClose} end style={() => itemStyle(isActive)}>
+                      <Icon size={18} strokeWidth={1.5} color={isActive ? t.textOnPrimary : t.textSecondary} style={{ flexShrink: 0 }} />
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
+                    </NavLink>
+                    <button
+                      onClick={() => setFlotaExpanded(v => !v)}
+                      style={{
+                        background: 'transparent', border: 'none', cursor: 'pointer',
+                        padding: '8px 12px', marginRight: 8,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}
+                      title={flotaExpanded ? 'Colapsar' : 'Expandir'}
+                    >
                       <ChevronRight
                         size={14}
-                        strokeWidth={2}
+                        strokeWidth={2.5}
                         color={isActive ? t.textOnPrimary : t.textSecondary}
-                        style={{ transform: flotaAbierta ? 'rotate(90deg)' : 'none', transition: 'transform 150ms', flexShrink: 0 }}
+                        style={{ transform: flotaExpanded ? 'rotate(90deg)' : 'none', transition: 'transform 150ms' }}
                       />
-                    )}
-                  </>)}
-                </NavLink>
+                    </button>
+                  </div>
 
-                {item.expandable && item.path === '/flota' && flotaAbierta && furgos.map(f => (
-                  <NavLink
-                    key={f.id}
-                    to={`/flota/${f.codigo}`}
-                    onClick={onClose}
-                    style={({ isActive }) => subItemStyle(isActive)}
-                  >
-                    <span style={{ width: 6, height: 6, borderRadius: 999, background: t.brandAccent ?? t.brandPrimary, flexShrink: 0 }} />
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {f.matricula} · {f.nombre_corto ?? f.conductor}
-                    </span>
-                  </NavLink>
-                ))}
-              </div>
+                  {flotaExpanded && furgos.map(f => (
+                    <NavLink
+                      key={f.id}
+                      to={`/flota/${f.codigo}`}
+                      onClick={onClose}
+                      style={({ isActive }) => subItemStyle(isActive)}
+                    >
+                      <span style={{ width: 6, height: 6, borderRadius: 999, background: t.brandAccent ?? t.brandPrimary, flexShrink: 0 }} />
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {f.matricula} · {f.nombre_corto ?? f.conductor}
+                      </span>
+                    </NavLink>
+                  ))}
+                </div>
+              )
+            }
+
+            // Item normal
+            return (
+              <NavLink key={item.path} to={item.path} onClick={onClose} end
+                style={({ isActive }) => itemStyle(isActive)}>
+                {({ isActive }) => (<>
+                  <Icon size={18} strokeWidth={1.5} color={isActive ? t.textOnPrimary : t.textSecondary} style={{ flexShrink: 0 }} />
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
+                </>)}
+              </NavLink>
             )
           })}
         </nav>
