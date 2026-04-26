@@ -1,115 +1,78 @@
-import { useEffect, useState, useCallback } from 'react'
-import { useThemeMode, getTokens, FONT, FS, FW, SPACE, RADIUS, TRACKING } from '@/styles/tokens'
+import { useEffect, useState } from 'react';
 import {
-  getFurgonetas, calcularAlertas, getCostesFlotaMes, costeMensualFurgo,
-  type Furgoneta, type CostesFlotaMes, type AlertaFlota,
-} from '@/lib/flota/queries'
-
-import KpisFlota from '@/components/flota/KpisFlota'
-import AlertasFlota from '@/components/flota/AlertasFlota'
-import FurgonetaCard from '@/components/flota/FurgonetaCard'
-import ModalEditarFurgoneta from '@/components/flota/ModalEditarFurgoneta'
+  getFurgonetas,
+  getCosteFlotaMes,
+  costeMensualFurgo,
+  type Furgoneta,
+  type CosteFlota,
+} from '../lib/flota/queries';
+import FurgonetaCard from '../components/flota/FurgonetaCard';
+import FichaFurgoneta from '../components/flota/FichaFurgoneta';
 
 export default function Flota() {
-  const theme = useThemeMode()
-  const t = getTokens(theme)
+  const [furgos, setFurgos] = useState<Furgoneta[]>([]);
+  const [costes, setCostes] = useState<CosteFlota | null>(null);
+  const [seleccionada, setSeleccionada] = useState<Furgoneta | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const [furgonetas, setFurgonetas] = useState<Furgoneta[]>([])
-  const [costes, setCostes] = useState<CostesFlotaMes>({ total: 0, prestamosAlquiler: 0, combustible: 0, combustiblePorFurgoId: new Map() })
-  const [alertas, setAlertas] = useState<AlertaFlota[]>([])
-  const [loading, setLoading] = useState(true)
-  const [err, setErr] = useState<string | null>(null)
-  const [editar, setEditar] = useState<Furgoneta | null>(null)
+  useEffect(() => {
+    (async () => {
+      try {
+        const [fs, cs] = await Promise.all([getFurgonetas(), getCosteFlotaMes()]);
+        setFurgos(fs);
+        setCostes(cs);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
-  const cargar = useCallback(async () => {
-    setLoading(true); setErr(null)
-    try {
-      const furgos = await getFurgonetas()
-      setFurgonetas(furgos)
-      const [c] = await Promise.all([getCostesFlotaMes(furgos)])
-      setCostes(c)
-      setAlertas(calcularAlertas(furgos))
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e))
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+  if (loading) {
+    return <div className="p-8 text-[var(--marino)]">Cargando flota…</div>;
+  }
 
-  useEffect(() => { cargar() }, [cargar])
-
-  const activas = furgonetas.filter(f => f.activa).length
+  if (seleccionada) {
+    return (
+      <FichaFurgoneta
+        furgoneta={seleccionada}
+        combustibleMes={costes?.combustiblePorFurgo[seleccionada.id] ?? 0}
+        onVolver={() => setSeleccionada(null)}
+      />
+    );
+  }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE[6] }}>
-      {/* HEADER */}
-      <div>
-        <h1 style={{
-          margin: 0,
-          fontFamily: FONT.title,
-          fontSize: 22,
-          fontWeight: FW.bold,
-          color: t.brandAccent,
-          letterSpacing: TRACKING.wider,
-          textTransform: 'uppercase',
-        }}>
-          FLOTA · {activas} FURGONETAS ELÉCTRICAS
-        </h1>
-        <div style={{ marginTop: 4, fontFamily: FONT.body, fontSize: FS.sm, color: t.textTertiary }}>
-          Vehículos activos · Alertas · Coste operativo mensual
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-[var(--marino)]">Flota</h1>
+        <div className="text-right">
+          <div className="text-xs text-gray-500 uppercase tracking-wide">Coste flota mes</div>
+          <div className="text-2xl font-bold text-[var(--fuego)]">
+            {(costes?.costeTotal ?? 0).toLocaleString('es-ES', {
+              style: 'currency',
+              currency: 'EUR',
+              maximumFractionDigits: 0,
+            })}
+          </div>
+          <div className="text-[11px] text-gray-400">
+            Combustible {(costes?.combustibleTotal ?? 0).toLocaleString('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
+            {' · '}Préstamos {(costes?.prestamoTotal ?? 0).toLocaleString('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
+            {' · '}Seguros {(costes?.seguroTotal ?? 0).toLocaleString('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
+          </div>
         </div>
       </div>
 
-      {err && (
-        <div style={{
-          background: t.dangerBg, color: t.dangerText,
-          border: `1px solid ${t.dangerBorder}`,
-          padding: SPACE[4], borderRadius: RADIUS.md,
-          fontFamily: FONT.body, fontSize: FS.sm,
-        }}>
-          Error: {err}. Verifica que se haya ejecutado la migración 015 (añade columnas km, ITV, seguros y crea furgonetas_mantenimientos).
-        </div>
-      )}
-
-      {loading && furgonetas.length === 0 && (
-        <div style={{ padding: SPACE[8], textAlign: 'center', color: t.textTertiary, fontFamily: FONT.body }}>
-          Cargando flota…
-        </div>
-      )}
-
-      {furgonetas.length > 0 && (
-        <>
-          {/* FILA 1 — KPIs */}
-          <KpisFlota furgonetas={furgonetas} costes={costes} alertas={alertas} />
-
-          {/* FILA 2 — Alertas */}
-          <AlertasFlota alertas={alertas} />
-
-          {/* FILA 3 — Detalle por furgoneta */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-            gap: SPACE[5],
-          }}>
-            {furgonetas.map(f => (
-              <FurgonetaCard
-                key={f.id}
-                furgo={f}
-                costeMes={costeMensualFurgo(f, costes.combustiblePorFurgoId.get(f.id) ?? 0)}
-                onEdit={() => setEditar(f)}
-              />
-            ))}
-          </div>
-        </>
-      )}
-
-      {editar && (
-        <ModalEditarFurgoneta
-          furgo={editar}
-          onClose={() => setEditar(null)}
-          onSaved={cargar}
-        />
-      )}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {furgos.map((f) => (
+          <FurgonetaCard
+            key={f.id}
+            furgoneta={f}
+            costeMes={costeMensualFurgo(f, costes?.combustiblePorFurgo[f.id] ?? 0)}
+            combustibleMes={costes?.combustiblePorFurgo[f.id] ?? 0}
+            onClick={() => setSeleccionada(f)}
+          />
+        ))}
+      </div>
     </div>
-  )
+  );
 }
