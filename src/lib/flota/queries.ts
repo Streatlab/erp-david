@@ -113,6 +113,34 @@ export interface Incidencia {
   estado?: string | null; notas?: string | null;
 }
 
+// ─── Helper: extraer ID de URL Drive ────────────────────────
+export function extractDriveFileId(input: string | null | undefined): string | null {
+  if (!input) return null;
+  const v = input.trim();
+  if (!v) return null;
+  // Si ya parece un ID (no contiene /), devolvemos tal cual
+  if (!v.includes('/') && !v.includes('?')) return v;
+  // Patrón /file/d/ID/
+  const m1 = v.match(/\/file\/d\/([a-zA-Z0-9_-]{20,})/);
+  if (m1) return m1[1];
+  // Patrón ?id=ID
+  const m2 = v.match(/[?&]id=([a-zA-Z0-9_-]{20,})/);
+  if (m2) return m2[1];
+  // Patrón folders/ID (carpeta, no debería usarse aquí)
+  const m3 = v.match(/\/folders\/([a-zA-Z0-9_-]{20,})/);
+  if (m3) return m3[1];
+  return null;
+}
+
+export function driveFileUrl(fileId: string | null | undefined): string | null {
+  if (!fileId) return null;
+  return `https://drive.google.com/file/d/${fileId}/view`;
+}
+
+export function driveThumb(fileId: string): string {
+  return `https://drive.google.com/thumbnail?id=${fileId}&sz=w600`;
+}
+
 // ─── Queries ────────────────────────────────────────────────
 export async function getFurgonetas(): Promise<Furgoneta[]> {
   const { data, error } = await supabase.from('furgonetas').select('*').order('codigo', { ascending: true });
@@ -125,9 +153,25 @@ export async function getFurgonetaPorCodigo(codigo: string): Promise<Furgoneta |
   return data as Furgoneta | null;
 }
 
+export async function updateFurgoneta(id: string, patch: Partial<Furgoneta>) {
+  const { error } = await supabase.from('furgonetas').update(patch).eq('id', id);
+  if (error) throw error;
+}
+
 export async function getSeguro(furgoId: string): Promise<SeguroFurgo | null> {
   const { data } = await supabase.from('furgonetas_seguros').select('*').eq('furgoneta_id', furgoId).maybeSingle();
   return data as SeguroFurgo | null;
+}
+
+export async function upsertSeguro(furgoId: string, patch: Partial<SeguroFurgo>) {
+  const existing = await getSeguro(furgoId);
+  if (existing) {
+    const { error } = await supabase.from('furgonetas_seguros').update(patch).eq('furgoneta_id', furgoId);
+    if (error) throw error;
+  } else {
+    const { error } = await supabase.from('furgonetas_seguros').insert({ furgoneta_id: furgoId, ...patch });
+    if (error) throw error;
+  }
 }
 
 export async function getItv(furgoId: string): Promise<ItvFurgo | null> {
@@ -135,9 +179,37 @@ export async function getItv(furgoId: string): Promise<ItvFurgo | null> {
   return data as ItvFurgo | null;
 }
 
+export async function upsertItv(furgoId: string, patch: Partial<ItvFurgo>) {
+  const existing = await getItv(furgoId);
+  if (existing) {
+    const { error } = await supabase.from('furgonetas_itv').update(patch).eq('furgoneta_id', furgoId);
+    if (error) throw error;
+  } else {
+    const { error } = await supabase.from('furgonetas_itv').insert({ furgoneta_id: furgoId, ...patch });
+    if (error) throw error;
+  }
+}
+
 export async function getFotos(furgoId: string): Promise<FotoFurgo[]> {
   const { data } = await supabase.from('furgonetas_fotos').select('*').eq('furgoneta_id', furgoId).order('fecha', { ascending: false });
   return (data ?? []) as FotoFurgo[];
+}
+
+export async function insertFoto(furgoId: string, patch: Partial<FotoFurgo>) {
+  if (patch.es_portada) {
+    await supabase.from('furgonetas_fotos').update({ es_portada: false }).eq('furgoneta_id', furgoId);
+  }
+  const { error } = await supabase.from('furgonetas_fotos').insert({ furgoneta_id: furgoId, ...patch });
+  if (error) throw error;
+}
+
+export async function deleteFoto(id: string) {
+  await supabase.from('furgonetas_fotos').delete().eq('id', id);
+}
+
+export async function setPortada(id: string, furgoId: string) {
+  await supabase.from('furgonetas_fotos').update({ es_portada: false }).eq('furgoneta_id', furgoId);
+  await supabase.from('furgonetas_fotos').update({ es_portada: true }).eq('id', id);
 }
 
 export async function getConductor(conductorId: string): Promise<Conductor | null> {
@@ -145,9 +217,26 @@ export async function getConductor(conductorId: string): Promise<Conductor | nul
   return data as Conductor | null;
 }
 
+export async function getConductores(): Promise<Conductor[]> {
+  const { data } = await supabase.from('conductores').select('*').order('nombre');
+  return (data ?? []) as Conductor[];
+}
+
+export async function updateConductor(id: string, patch: Partial<Conductor>) {
+  await supabase.from('conductores').update(patch).eq('id', id);
+}
+
 export async function getPartesKm(furgoId: string): Promise<ParteKm[]> {
   const { data } = await supabase.from('furgonetas_partes_km').select('*').eq('furgoneta_id', furgoId).order('semana_lunes', { ascending: false }).limit(20);
   return (data ?? []) as ParteKm[];
+}
+
+export async function insertParteKm(furgoId: string, patch: Partial<ParteKm>) {
+  const { error } = await supabase.from('furgonetas_partes_km').upsert(
+    { furgoneta_id: furgoId, ...patch },
+    { onConflict: 'furgoneta_id,semana_lunes' }
+  );
+  if (error) throw error;
 }
 
 export async function getRevisionesVisuales(furgoId: string): Promise<RevisionVisual[]> {
@@ -155,9 +244,26 @@ export async function getRevisionesVisuales(furgoId: string): Promise<RevisionVi
   return (data ?? []) as RevisionVisual[];
 }
 
+export async function insertRevisionVisual(furgoId: string, patch: Partial<RevisionVisual>) {
+  const { error } = await supabase.from('furgonetas_revisiones_visuales').upsert(
+    { furgoneta_id: furgoId, ...patch },
+    { onConflict: 'furgoneta_id,semana_lunes' }
+  );
+  if (error) throw error;
+}
+
 export async function getMantenimientos(furgoId: string): Promise<Mantenimiento[]> {
   const { data } = await supabase.from('furgonetas_mantenimientos_hist').select('*').eq('furgoneta_id', furgoId).order('fecha', { ascending: false });
   return (data ?? []) as Mantenimiento[];
+}
+
+export async function insertMantenimiento(furgoId: string, patch: Partial<Mantenimiento>) {
+  const { error } = await supabase.from('furgonetas_mantenimientos_hist').insert({ furgoneta_id: furgoId, ...patch });
+  if (error) throw error;
+}
+
+export async function deleteMantenimiento(id: string) {
+  await supabase.from('furgonetas_mantenimientos_hist').delete().eq('id', id);
 }
 
 export async function getPrestamo(furgoId: string): Promise<Prestamo | null> {
@@ -165,14 +271,45 @@ export async function getPrestamo(furgoId: string): Promise<Prestamo | null> {
   return data as Prestamo | null;
 }
 
+export async function upsertPrestamo(furgoId: string, patch: Partial<Prestamo>) {
+  const existing = await getPrestamo(furgoId);
+  if (existing) {
+    await supabase.from('furgonetas_prestamos').update(patch).eq('furgoneta_id', furgoId);
+  } else {
+    await supabase.from('furgonetas_prestamos').insert({ furgoneta_id: furgoId, ...patch });
+  }
+}
+
 export async function getDocumentos(furgoId: string): Promise<Documento[]> {
   const { data } = await supabase.from('furgonetas_documentos').select('*').eq('furgoneta_id', furgoId).order('fecha_documento', { ascending: false });
   return (data ?? []) as Documento[];
 }
 
+export async function insertDocumento(furgoId: string, patch: Partial<Documento>) {
+  const { error } = await supabase.from('furgonetas_documentos').insert({ furgoneta_id: furgoId, ...patch });
+  if (error) throw error;
+}
+
+export async function deleteDocumento(id: string) {
+  await supabase.from('furgonetas_documentos').delete().eq('id', id);
+}
+
 export async function getIncidencias(furgoId: string): Promise<Incidencia[]> {
   const { data } = await supabase.from('furgonetas_incidencias').select('*').eq('furgoneta_id', furgoId).order('fecha', { ascending: false });
   return (data ?? []) as Incidencia[];
+}
+
+export async function insertIncidencia(furgoId: string, patch: Partial<Incidencia>) {
+  const { error } = await supabase.from('furgonetas_incidencias').insert({ furgoneta_id: furgoId, ...patch });
+  if (error) throw error;
+}
+
+export async function updateIncidencia(id: string, patch: Partial<Incidencia>) {
+  await supabase.from('furgonetas_incidencias').update(patch).eq('id', id);
+}
+
+export async function deleteIncidencia(id: string) {
+  await supabase.from('furgonetas_incidencias').delete().eq('id', id);
 }
 
 // ─── Coste flota mes ───────────────────────────────────────
@@ -239,11 +376,10 @@ export function costeMensualFurgo(f: Furgoneta, combustibleMes: number): number 
   return Number(f.prestamo_mensual ?? 0) + Number(f.seguro_anual ?? 0) / 12 + Number(f.alquiler_mensual ?? 0) + combustibleMes;
 }
 
-export function driveFileUrl(fileId: string | null | undefined): string | null {
-  if (!fileId) return null;
-  return `https://drive.google.com/file/d/${fileId}/view`;
-}
-
-export function driveThumb(fileId: string): string {
-  return `https://drive.google.com/thumbnail?id=${fileId}&sz=w400`;
+export function lunesDeFecha(d: Date = new Date()): string {
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day; // ISO: lunes=1
+  const lunes = new Date(d);
+  lunes.setDate(d.getDate() + diff);
+  return lunes.toISOString().slice(0, 10);
 }
