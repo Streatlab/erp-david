@@ -6,6 +6,7 @@ import PanelGlobal from '@/pages/PanelGlobal'
 import Entregas from '@/pages/Entregas'
 import Conciliacion from '@/pages/Conciliacion'
 import Flota from '@/pages/Flota'
+import FurgonetaDetalle from '@/pages/FurgonetaDetalle'
 import BancosPage from '@/pages/configuracion/bancos/BancosPage'
 import Running from '@/pages/finanzas/Running'
 import Placeholder from '@/pages/Placeholder'
@@ -29,6 +30,7 @@ function AppRoutes() {
         <Route path="entregas"         element={<ProtectedRoute solo={['admin']}><Entregas /></ProtectedRoute>} />
         <Route path="personal"         element={<ProtectedRoute solo={['admin']}><Placeholder /></ProtectedRoute>} />
         <Route path="flota"            element={<ProtectedRoute solo={['admin']}><Flota /></ProtectedRoute>} />
+        <Route path="flota/:codigo"    element={<ProtectedRoute solo={['admin']}><FurgonetaDetalle /></ProtectedRoute>} />
         <Route path="liquidacion-cade" element={<ProtectedRoute solo={['admin']}><Placeholder /></ProtectedRoute>} />
         <Route path="conciliacion"     element={<ProtectedRoute solo={['admin']}><Conciliacion /></ProtectedRoute>} />
         <Route path="running"          element={<ProtectedRoute solo={['admin']}><Running /></ProtectedRoute>} />
