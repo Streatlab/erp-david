@@ -12,6 +12,11 @@ export function mapSlugToCategoria(slug: string | null | undefined): Categoria |
   if (!slug) return null
   const s = slug.toLowerCase().trim()
 
+  // Guard David: la flota es 100% eléctrica. Si llega un slug con "gasolin"
+  // (por error de import o seed antiguo), no se mapea — queda fuera de Running
+  // hasta que un humano lo recategorice como recargas-electricas o ADMIN_GENERALES.
+  if (s.includes('gasolin')) return null
+
   // Suministros y energía
   if (s === 'suministros' || s === 'sumin') return 'SUMINISTROS'
   if (s === 'combustible' || s === 'combustible-energia-vehiculo' || s === 'recargas-electricas') return 'SUMINISTROS'

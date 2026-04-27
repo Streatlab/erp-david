@@ -6,6 +6,8 @@ export function normalizarConcepto(s: string): string {
   return s
     .toLowerCase()
     .trim()
+    .replace(/^\s*\d{16}\s+/, "")
+    .replace(/\|\s*\d{16}\s*\d*\s*$/, "")
     .replace(/[^a-z0-9 ]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
