@@ -1,15 +1,12 @@
 {
-  "defaultMode": "plan",
-  "project": "david-erp",
-  "owner": "Streatlab",
-  "repo": "erp-david",
-  "branch": "master",
-  "deployUrl": "https://davidparte.vercel.app",
-  "supabaseId": "idclhnxttdbwayxeowrm",
-  "isolation": {
-    "forbiddenRepos": ["binagre"],
-    "forbiddenTokens": ["#B01D23", "#1e2233", "#e8f442", "#484f66"],
-    "forbiddenContexts": ["Binagre", "Streat Lab", "escandallo", "Rushour", "Think Paladar", "Emilio"]
+  "model": "sonnet",
+  "env": {
+    "MAX_THINKING_TOKENS": "10000",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "haiku"
   },
-  "deployChain": "git add . && git commit -m \"...\" && git push origin master && npx vercel --prod && git pull origin master"
+  "hooks": {
+    "PreToolUse": ".claude/hooks/pre-tool-use.sh",
+    "PostToolUse": ".claude/hooks/post-tool-use.sh",
+    "SubagentStop": ".claude/hooks/subagent-stop.sh"
+  }
 }
