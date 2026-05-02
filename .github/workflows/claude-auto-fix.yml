@@ -15,7 +15,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 2
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -25,19 +26,51 @@ jobs:
       - name: Install deps
         run: npm ci || npm install
 
+      - name: Find job from latest commit
+        id: find_job
+        run: |
+          JOB=$(git diff --name-only HEAD~1 HEAD -- '.claude/jobs/*.md' | head -n 1)
+          if [ -z "$JOB" ]; then
+            echo "No hay job en este commit"
+            exit 78
+          fi
+          echo "Job encontrado: $JOB"
+          {
+            echo "JOB_CONTENT<<EOF"
+            cat "$JOB"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+          echo "JOB_PATH=$JOB" >> $GITHUB_OUTPUT
+
       - name: Run Claude Code on job spec
-        uses: anthropics/claude-code-action@v1
+        uses: anthropics/claude-code-base-action@beta
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: |
-            Hay un nuevo archivo de tarea en .claude/jobs/. Lee el más reciente.
-            Sigue exactamente las instrucciones que contiene:
-            - Ejecuta el plan paso a paso
-            - Aplica los cambios en los archivos indicados
-            - Respeta los design tokens Marino+Fuego definidos en CLAUDE.md y .claude/rules/
-            - Si la tarea menciona subagentes, usa los definidos en .claude/agents/
-            - Al terminar, haz commit con mensaje descriptivo y push a master
-            - Documenta el resultado en un comentario en el commit
-          claude_args: |
-            --max-turns 30
-            --model claude-sonnet-4-5
+            Eres el implementer del pipeline ERP David. Lee la siguiente tarea y ejecutala paso a paso.
+
+            ${{ steps.find_job.outputs.JOB_CONTENT }}
+
+            Reglas:
+            - Aplica los cambios exactamente como indica la tarea.
+            - Respeta los design tokens Marino+Fuego del repo (CLAUDE.md).
+            - Aislamiento absoluto: NUNCA tocar Supabase de Binagre ni tokens Streat Lab.
+            - Al terminar, ELIMINA el archivo del job ${{ steps.find_job.outputs.JOB_PATH }} con el comando: rm "${{ steps.find_job.outputs.JOB_PATH }}"
+            - NO hagas commit ni push: el siguiente step se encarga.
+          allowed_tools: "Bash,View,Read,Write,Edit,GlobTool,GrepTool,BatchTool"
+          max_turns: "20"
+          model: "claude-sonnet-4-5"
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "claude-code-bot"
+          git config user.email "claude-code@streatlab.com"
+          if [ -n "$(git status --porcelain)" ]; then
+            git add -A
+            git commit -m "feat(auto): aplicado job ${{ steps.find_job.outputs.JOB_PATH }}"
+            git push origin master
+            echo "Push completado"
+          else
+            echo "No hay cambios para commitear"
+            exit 1
+          fi
