@@ -2,30 +2,40 @@ name: Keepalive Supabase David
 
 # Cada 3 días llama a la función keepalive_ping() de Supabase
 # para evitar pausa automática por inactividad (free tier).
-# Endpoint público REST de Supabase: no requiere auth si la función es SECURITY DEFINER
-# o si la RLS lo permite. Usamos la URL pública del proyecto.
+# Usa anon key publishable (segura para repos públicos/privados).
 
 on:
   schedule:
-    # Cada 3 días a las 06:00 UTC
     - cron: '0 6 */3 * *'
-  workflow_dispatch:  # Permite ejecutarlo manualmente desde GitHub UI
+  workflow_dispatch:
 
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
       - name: Ping Supabase David
+        env:
+          SUPABASE_URL: https://idclhnxttdbwayxeowrm.supabase.co
+          SUPABASE_PUBLISHABLE_KEY: sb_publishable_91jz2GP6JMNFh19sAUwdAg_RVu1NUe7
         run: |
           echo "Pinging Supabase David project..."
-          curl -X POST \
-            "https://idclhnxttdbwayxeowrm.supabase.co/rest/v1/rpc/keepalive_ping" \
-            -H "apikey: ${{ secrets.SUPABASE_DAVID_ANON_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_DAVID_ANON_KEY }}" \
+          response=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST \
+            "$SUPABASE_URL/rest/v1/rpc/keepalive_ping" \
+            -H "apikey: $SUPABASE_PUBLISHABLE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_PUBLISHABLE_KEY" \
             -H "Content-Type: application/json" \
-            -d '{}' \
-            --fail \
-            --show-error \
-            -v
-          echo ""
-          echo "Keepalive ping completado"
+            -d '{}')
+          
+          http_code=$(echo "$response" | grep "HTTP_STATUS:" | cut -d: -f2)
+          body=$(echo "$response" | sed '/HTTP_STATUS:/d')
+          
+          echo "Response: $body"
+          echo "HTTP Status: $http_code"
+          
+          if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+            echo "Keepalive ping OK"
+            exit 0
+          else
+            echo "Keepalive ping FAILED"
+            exit 1
+          fi
