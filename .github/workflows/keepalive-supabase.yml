@@ -1,0 +1,31 @@
+name: Keepalive Supabase David
+
+# Cada 3 días llama a la función keepalive_ping() de Supabase
+# para evitar pausa automática por inactividad (free tier).
+# Endpoint público REST de Supabase: no requiere auth si la función es SECURITY DEFINER
+# o si la RLS lo permite. Usamos la URL pública del proyecto.
+
+on:
+  schedule:
+    # Cada 3 días a las 06:00 UTC
+    - cron: '0 6 */3 * *'
+  workflow_dispatch:  # Permite ejecutarlo manualmente desde GitHub UI
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase David
+        run: |
+          echo "Pinging Supabase David project..."
+          curl -X POST \
+            "https://idclhnxttdbwayxeowrm.supabase.co/rest/v1/rpc/keepalive_ping" \
+            -H "apikey: ${{ secrets.SUPABASE_DAVID_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_DAVID_ANON_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{}' \
+            --fail \
+            --show-error \
+            -v
+          echo ""
+          echo "Keepalive ping completado"
