@@ -12,6 +12,10 @@
 3. Vercel cobra por build: agrupar todos los cambios de la sesión en 1 commit. Objetivo 1-3 commits/sesión.
 4. Tras publicar el usuario, verificar estado en Vercel (1 sola verificación) y reportar READY o fallo.
 
+## Verificación antes de commitear (obligatorio)
+- Comprobar tipos y build localmente cuando haya entorno: `npx tsc --noEmit` y `npm run build`.
+- Sin entorno local: revisar mentalmente imports, tipos y JSX del fragmento tocado antes del commit. Un build roto = build de Vercel desperdiciado.
+
 ## Comunicación (obligatorio)
 1. Respuestas máx 3-4 líneas. Sin preámbulos, sin postambles, sin recapitulaciones.
 2. Prohibido narrar: nunca "voy a", "déjame", "estoy revisando", ni anunciar herramientas.
@@ -29,12 +33,32 @@
 6. Agrupar llamadas a herramientas en un solo turno cuando sea posible.
 7. Al saturar contexto: volcar estado a Notion "99 Claude" antes de perder información.
 
+## Mapa de módulos (orientarse SIN explorar el repo)
+- Flota (furgonetas): en rediseño — eliminar cards "Furgonetas activas" y "Alertas priorizadas"; cada elemento clicable navega a su detalle: seguro (póliza, contacto, coberturas, PDFs póliza/condiciones/recibo, precio recibo, fecha pago), conductor (ficha completa empleado), ITV (fecha, taller, último informe).
+- 6 módulos mapeados desde Binagre pendientes de adaptar: facturas+OCR · liquidación Cade · rentabilidad por supermercado/ruta · conciliación bancaria · dashboard KPI · importación extractos. Orden de arranque: pendiente de decisión del usuario.
+- Documentación contaminada de Binagre en este repo: pendiente de limpieza.
+- Drive David: carpeta "00 CORRECAMINOS" (subcarpetas: pólizas seguros, ITV, empleados, fotos furgonetas). IDs en Notion 99 Claude.
+- Mantener este mapa actualizado.
+
+## Errores ya cometidos — PROHIBIDO repetir
+1. Commitear a la rama principal (dispara build de producción).
+2. Un deploy por microajuste.
+3. Mezclar cualquier cosa de Binagre/Streat Lab en este repo (repos, Supabase, tokens, docs).
+4. Inventar datos: solo datos reales o fuentes verificadas, especialmente en seguros, ITV y empleados.
+
+## Reglas de negocio críticas
+1. Cliente único: Cade. Ciclo de pago de Cade: PENDIENTE de confirmar por el usuario — no asumir nada hasta entonces.
+2. Reparto para Mercadona, Carrefour, Lidl y Día en Alcoi y Ontinyent: la rentabilidad se mide por supermercado y por ruta.
+3. Diseño: kit Marino+Fuego Mediterráneo, regla 60/30/10, sin rojos en gráficos.
+
 ## Pendientes (Notion "99 Claude")
 - Track: DAVID-ERP. Estados: ACTIVO / EN_CURSO / PARADO / RESUELTO.
 - Fix nuevo → tarea ACTIVA. Al empezar → EN_CURSO. Al cerrar → RESUELTO.
 
-## Diseño
-- Kit Marino+Fuego Mediterráneo. Solo datos reales o fuentes verificadas, nada inventado.
+## Definición de TERMINADO (checklist de cierre de sesión)
+1. Todos los cambios en 1 commit a `trabajo`.
+2. Notion 99 Claude actualizado (track DAVID-ERP, estados realistas).
+3. Reporte final: "Hecho: X · Pendiente tuyo: Y" (Y = publicar merge si aplica).
 
 ## Aislamiento absoluto
 - Este repo = David Reparte. JAMÁS mezclar con Binagre / Streat Lab: ni repos, ni Supabase, ni design tokens, ni lógica de negocio.
