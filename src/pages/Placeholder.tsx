@@ -16,8 +16,19 @@ import {
 const LABELS: Record<string, string> = {
   'personal':         'Personal',
   'flota':            'Flota',
-  'liquidacion-cade': 'Liquidación Cade',
   'punto-equilibrio': 'Punto equilibrio',
+  'ventas':           'Ventas',
+  'tareas':           'Tareas',
+  'papeleo':          'Papeleo',
+  'checklists':       'Checklists',
+  'manuales':         'Manuales',
+  'libro-facturas':   'Libro registro de facturas',
+  'equipos':          'Equipos',
+  'danos-vehiculos':  'Daños vehículos',
+  'pedidos':          'Pedidos',
+  'inventarios':      'Inventarios',
+  'mantenimiento':    'Mantenimiento',
+  'informes-equipo':  'Informes equipo',
   'contabilidad':     'Contabilidad',
   'hacienda':         'Hacienda',
   'operativa':        'Operativa',
@@ -79,7 +90,7 @@ export default function Placeholder() {
           color: t.textSecondary,
           marginTop: SPACE[2],
         }}>
-          Este módulo está planificado y se implementará próximamente.
+          Sección planificada. Se llena por fases con datos reales.
         </p>
         <code
           style={{
