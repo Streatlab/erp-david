@@ -6,14 +6,21 @@ import {
   Users,
   Route as RouteIcon,
   Wallet,
-  Scale,
   ClipboardList,
-  Building2,
-  Calculator,
-  Landmark,
   Settings,
   LogOut,
   ChevronRight,
+  ListChecks,
+  FileText,
+  BookOpen,
+  AlertTriangle,
+  Library,
+  Wrench,
+  Boxes,
+  ShoppingCart,
+  HardHat,
+  CarFront,
+  BarChart3,
 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { useSidebarState } from '@/hooks/useSidebarState'
@@ -21,31 +28,52 @@ import { ThemeToggle } from './ThemeToggle'
 import { useThemeMode, getTokens, FONT, FS, FW, RADIUS, SPACE, TRACKING } from '@/styles/tokens'
 import { getFurgonetas, type Furgoneta } from '@/lib/flota/queries'
 
+type IconType = React.ComponentType<{
+  size?: number
+  strokeWidth?: number
+  color?: string
+  style?: React.CSSProperties
+}>
+
+interface NavChild { path: string; label: string }
+
 interface NavItem {
   path: string
   label: string
-  icon: React.ComponentType<{
-    size?: number
-    strokeWidth?: number
-    color?: string
-    style?: React.CSSProperties
-  }>
+  icon: IconType
   perfiles: string[]
-  expandable?: boolean
+  expandable?: 'flota' | 'group'
+  children?: NavChild[]
 }
 
+const FINANZAS_CHILDREN: NavChild[] = [
+  { path: '/finanzas/facturacion',   label: 'Facturación emitida' },
+  { path: '/finanzas/liquidaciones', label: 'Liquidaciones' },
+  { path: '/finanzas/pagos-cobros',  label: 'Pagos y Cobros' },
+  { path: '/finanzas/ventas',        label: 'Ventas' },
+  { path: '/punto-equilibrio',       label: 'Punto equilibrio' },
+  { path: '/running',                label: 'Running' },
+  { path: '/conciliacion',           label: 'Conciliación' },
+]
+
 const ITEMS: NavItem[] = [
-  { path: '/entregas',         label: 'Entregas',         icon: Truck,         perfiles: ['admin'] },
-  { path: '/personal',         label: 'Personal',         icon: Users,         perfiles: ['admin'] },
-  { path: '/flota',            label: 'Flota',            icon: RouteIcon,     perfiles: ['admin'], expandable: true },
-  { path: '/liquidacion-cade', label: 'Liquidación Cade', icon: Wallet,        perfiles: ['admin'] },
-  { path: '/conciliacion',     label: 'Conciliación',     icon: Scale,         perfiles: ['admin'] },
-  { path: '/running',          label: 'Running',          icon: ClipboardList, perfiles: ['admin'] },
-  { path: '/punto-equilibrio', label: 'Punto equilibrio', icon: Building2,     perfiles: ['admin'] },
-  { path: '/contabilidad',     label: 'Contabilidad',     icon: Calculator,    perfiles: ['admin'] },
-  { path: '/hacienda',         label: 'Hacienda',         icon: Landmark,      perfiles: ['admin'] },
-  { path: '/operativa',        label: 'Operativa',        icon: Settings,      perfiles: ['admin'] },
-  { path: '/configuracion',    label: 'Configuración',    icon: Settings,      perfiles: ['admin'] },
+  { path: '/finanzas',        label: 'Finanzas',            icon: Wallet,        perfiles: ['admin'], expandable: 'group', children: FINANZAS_CHILDREN },
+  { path: '/entregas',        label: 'Entregas',            icon: Truck,         perfiles: ['admin'] },
+  { path: '/flota',           label: 'Flota',               icon: RouteIcon,     perfiles: ['admin'], expandable: 'flota' },
+  { path: '/personal',        label: 'Personal',            icon: Users,         perfiles: ['admin'] },
+  { path: '/tareas',          label: 'Tareas',              icon: ListChecks,    perfiles: ['admin'] },
+  { path: '/reclamaciones',   label: 'Reclamaciones Cade',  icon: AlertTriangle, perfiles: ['admin'] },
+  { path: '/papeleo',         label: 'Papeleo',             icon: FileText,      perfiles: ['admin'] },
+  { path: '/checklists',      label: 'Checklists',          icon: ClipboardList, perfiles: ['admin'] },
+  { path: '/manuales',        label: 'Manuales',            icon: BookOpen,      perfiles: ['admin'] },
+  { path: '/libro-facturas',  label: 'Libro registro',      icon: Library,       perfiles: ['admin'] },
+  { path: '/equipos',         label: 'Equipos',             icon: HardHat,       perfiles: ['admin'] },
+  { path: '/danos-vehiculos', label: 'Daños vehículos',     icon: CarFront,      perfiles: ['admin'] },
+  { path: '/pedidos',         label: 'Pedidos',             icon: ShoppingCart,  perfiles: ['admin'] },
+  { path: '/inventarios',     label: 'Inventarios',         icon: Boxes,         perfiles: ['admin'] },
+  { path: '/mantenimiento',   label: 'Mantenimiento',       icon: Wrench,        perfiles: ['admin'] },
+  { path: '/informes-equipo', label: 'Informes equipo',     icon: BarChart3,     perfiles: ['admin'] },
+  { path: '/configuracion',   label: 'Configuración',       icon: Settings,      perfiles: ['admin'] },
 ]
 
 export default function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -59,13 +87,14 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
   const sidebarWidth = collapsed ? 56 : 240
   const visibleItems = ITEMS.filter(i => i.perfiles.includes(perfil))
 
-  // Cargar furgonetas para subhijos
   const [furgos, setFurgos] = useState<Furgoneta[]>([])
-  // Estado expansión: por defecto, abierto si estamos en /flota
   const [flotaExpanded, setFlotaExpanded] = useState<boolean>(location.pathname.startsWith('/flota'))
+  const finanzasActiva = FINANZAS_CHILDREN.some(c => location.pathname.startsWith(c.path))
+  const [finanzasExpanded, setFinanzasExpanded] = useState<boolean>(finanzasActiva)
 
   useEffect(() => {
     if (location.pathname.startsWith('/flota')) setFlotaExpanded(true)
+    if (FINANZAS_CHILDREN.some(c => location.pathname.startsWith(c.path))) setFinanzasExpanded(true)
   }, [location.pathname])
 
   useEffect(() => {
@@ -78,7 +107,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
     display: 'flex',
     alignItems: 'center',
     gap: 10,
-    padding: '10px 14px 10px 12px',
+    padding: '9px 14px 9px 12px',
     margin: '2px 8px',
     borderRadius: RADIUS.md,
     fontFamily: FONT.sans,
@@ -112,6 +141,25 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
     overflow: 'hidden',
     textOverflow: 'ellipsis',
   })
+
+  const chevron = (expanded: boolean, active: boolean, onClick: () => void, title: string) => (
+    <button
+      onClick={onClick}
+      style={{
+        background: 'transparent', border: 'none', cursor: 'pointer',
+        padding: '8px 12px', marginRight: 8,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}
+      title={title}
+    >
+      <ChevronRight
+        size={14}
+        strokeWidth={2.5}
+        color={active ? t.textOnPrimary : t.textSecondary}
+        style={{ transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform 150ms' }}
+      />
+    </button>
+  )
 
   return (
     <>
@@ -170,16 +218,42 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
           {visibleItems.map(item => {
             const Icon = item.icon
             if (collapsed) {
+              const to = item.expandable === 'group' ? (item.children?.[0]?.path ?? item.path) : item.path
               return (
-                <NavLink key={item.path} to={item.path} onClick={onClose} title={item.label}
-                  style={{ width: '100%', height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>
+                <NavLink key={item.path} to={to} onClick={onClose} title={item.label}
+                  style={{ width: '100%', height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>
                   {({ isActive }) => (<Icon size={20} strokeWidth={1.5} color={isActive ? t.brandPrimary : t.textSecondary} />)}
                 </NavLink>
               )
             }
 
-            // Expandable Flota
-            if (item.expandable && item.path === '/flota') {
+            // Grupo Finanzas
+            if (item.expandable === 'group') {
+              const isActive = finanzasActiva
+              return (
+                <div key={item.path}>
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <div
+                      onClick={() => setFinanzasExpanded(v => !v)}
+                      style={itemStyle(isActive)}
+                    >
+                      <Icon size={18} strokeWidth={1.5} color={isActive ? t.textOnPrimary : t.textSecondary} style={{ flexShrink: 0 }} />
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
+                    </div>
+                    {chevron(finanzasExpanded, isActive, () => setFinanzasExpanded(v => !v), finanzasExpanded ? 'Colapsar' : 'Expandir')}
+                  </div>
+                  {finanzasExpanded && item.children?.map(c => (
+                    <NavLink key={c.path} to={c.path} onClick={onClose} style={({ isActive }) => subItemStyle(isActive)}>
+                      <span style={{ width: 6, height: 6, borderRadius: 999, background: t.brandAccent, flexShrink: 0 }} />
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.label}</span>
+                    </NavLink>
+                  ))}
+                </div>
+              )
+            }
+
+            // Flota expandible
+            if (item.expandable === 'flota') {
               const isActive = location.pathname.startsWith('/flota')
               return (
                 <div key={item.path}>
@@ -188,22 +262,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
                       <Icon size={18} strokeWidth={1.5} color={isActive ? t.textOnPrimary : t.textSecondary} style={{ flexShrink: 0 }} />
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
                     </NavLink>
-                    <button
-                      onClick={() => setFlotaExpanded(v => !v)}
-                      style={{
-                        background: 'transparent', border: 'none', cursor: 'pointer',
-                        padding: '8px 12px', marginRight: 8,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}
-                      title={flotaExpanded ? 'Colapsar' : 'Expandir'}
-                    >
-                      <ChevronRight
-                        size={14}
-                        strokeWidth={2.5}
-                        color={isActive ? t.textOnPrimary : t.textSecondary}
-                        style={{ transform: flotaExpanded ? 'rotate(90deg)' : 'none', transition: 'transform 150ms' }}
-                      />
-                    </button>
+                    {chevron(flotaExpanded, isActive, () => setFlotaExpanded(v => !v), flotaExpanded ? 'Colapsar' : 'Expandir')}
                   </div>
 
                   {flotaExpanded && furgos.map(f => (
