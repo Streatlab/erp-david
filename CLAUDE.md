@@ -2,8 +2,15 @@
 
 ## Contexto mínimo
 - ERP React/TypeScript/Vite. Vercel: proyecto "davidparte" (davidparte.vercel.app). Ignorar proyecto duplicado "erp-david" en Vercel.
+- Supabase propio de David: idclhnxttdbwayxeowrm (conector MCP "Supabase David"). NUNCA usar el Supabase de Binagre.
 - David: autónomo subcontratista de Cade, reparte para Mercadona/Carrefour/Lidl/Día en Alcoi y Ontinyent.
 - El usuario NO es programador. Todo se ejecuta vía herramientas, nunca se le pide código, SQL ni prompts.
+
+## Git y deploy (obligatorio)
+1. TODO commit va a la rama `trabajo`. PROHIBIDO commitear a la rama principal.
+2. Publicar a producción (merge) lo hace SOLO el usuario, nunca Claude.
+3. Vercel cobra por build: agrupar todos los cambios de la sesión en 1 commit. Objetivo 1-3 commits/sesión.
+4. Tras publicar el usuario, verificar estado en Vercel (1 sola verificación) y reportar READY o fallo.
 
 ## Comunicación (obligatorio)
 1. Respuestas máx 3-4 líneas. Sin preámbulos, sin postambles, sin recapitulaciones.
@@ -22,10 +29,9 @@
 6. Agrupar llamadas a herramientas en un solo turno cuando sea posible.
 7. Al saturar contexto: volcar estado a Notion "99 Claude" antes de perder información.
 
-## Deploy (obligatorio)
-1. Vercel cobra por build. Agrupar TODOS los cambios de la sesión en 1 commit → 1 deploy. Objetivo: 1-3 deploys/sesión máximo.
-2. Nunca 1 build por microajuste.
-3. Tras deploy: verificar estado en Vercel (1 sola verificación) y reportar READY o fallo, sin preguntar.
+## Pendientes (Notion "99 Claude")
+- Track: DAVID-ERP. Estados: ACTIVO / EN_CURSO / PARADO / RESUELTO.
+- Fix nuevo → tarea ACTIVA. Al empezar → EN_CURSO. Al cerrar → RESUELTO.
 
 ## Diseño
 - Kit Marino+Fuego Mediterráneo. Solo datos reales o fuentes verificadas, nada inventado.
