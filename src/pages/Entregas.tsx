@@ -1,85 +1,40 @@
-import type { CSSProperties } from 'react'
-import {
-  useThemeMode,
-  getTokens,
-  FONT,
-  FS,
-  FW,
-  RADIUS,
-  SPACE,
-  TRACKING,
-} from '@/styles/tokens'
+import { CELESTE, GRIS, ARENA, BLANCO, OSW } from '@/styles/neobrutal'
+import { PageNeo, Banda, CabeceraNeo, TablaWrap, thNeo, tdNeo } from '@/components/neo/NeoUI'
 
 const COLUMNS = ['Fecha', 'Zona', 'Rider', 'Cliente', 'Estado', 'Importe']
 
 export default function Entregas() {
-  const theme = useThemeMode()
-  const t = getTokens(theme)
-
-  const pageTitleStyle: CSSProperties = {
-    fontFamily: FONT.sans,
-    fontSize: FS.xs,
-    letterSpacing: TRACKING.wider,
-    color: t.brandAccent,
-    textTransform: 'uppercase',
-    fontWeight: FW.bold,
-    margin: 0,
-    marginBottom: SPACE[4],
-  }
-
-  const tableWrapStyle: CSSProperties = {
-    background: t.bgSurface,
-    border: `0.5px solid ${t.borderDefault}`,
-    borderRadius: RADIUS.lg,
-    overflow: 'hidden',
-  }
-
-  const thStyle: CSSProperties = {
-    fontFamily: FONT.sans,
-    fontSize: FS['2xs'],
-    letterSpacing: TRACKING.wide,
-    textTransform: 'uppercase',
-    fontWeight: FW.medium,
-    color: t.textSecondary,
-    padding: '12px 14px',
-    textAlign: 'left',
-    borderBottom: `0.5px solid ${t.borderSubtle}`,
-    background: t.bgSurfaceAlt,
-    whiteSpace: 'nowrap',
-  }
-
-  const emptyStyle: CSSProperties = {
-    padding: '48px 16px',
-    textAlign: 'center',
-    fontFamily: FONT.sans,
-    fontSize: FS.sm,
-    color: t.textSecondary,
-  }
-
   return (
-    <div>
-      <h1 style={pageTitleStyle}>Entregas</h1>
-
-      <div style={tableWrapStyle}>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                {COLUMNS.map(col => (
-                  <th key={col} style={thStyle}>{col}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td colSpan={COLUMNS.length} style={emptyStyle}>
-                  Sin entregas registradas.
-                </td>
-              </tr>
-            </tbody>
-          </table>
+    <PageNeo>
+      <CabeceraNeo eyebrowTxt="Operativa" titulo="Entregas">
+        <div style={{ fontSize: 13, fontWeight: 600, color: ARENA, opacity: 0.85 }}>
+          Aquí vivirá el registro diario de repartos por operador y furgoneta.
         </div>
-      </div>
-    </div>
+      </CabeceraNeo>
+
+      <Banda bg={BLANCO}>
+        <TablaWrap>
+          <thead>
+            <tr>
+              {COLUMNS.map(col => (
+                <th key={col} style={thNeo}>{col}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td colSpan={COLUMNS.length} style={{ ...tdNeo(false), textAlign: 'center', padding: 48 }}>
+                <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 22, textTransform: 'uppercase', color: GRIS }}>
+                  Sin entregas registradas
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: CELESTE, marginTop: 8 }}>
+                  Cuando este módulo se conecte a las liquidaciones de Cade, verás aquí cada reparto.
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </TablaWrap>
+      </Banda>
+    </PageNeo>
   )
 }
