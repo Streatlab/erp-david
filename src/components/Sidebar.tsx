@@ -24,8 +24,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { useSidebarState } from '@/hooks/useSidebarState'
-import { ThemeToggle } from './ThemeToggle'
-import { useThemeMode, getTokens, FONT, FS, FW, RADIUS, SPACE, TRACKING } from '@/styles/tokens'
+import { SIDEBAR, OSW, LEX, AMBAR, ARENA, INK, NARANJA } from '@/styles/neobrutal'
 import { getFurgonetas, type Furgoneta } from '@/lib/flota/queries'
 
 type IconType = React.ComponentType<{
@@ -76,15 +75,15 @@ const ITEMS: NavItem[] = [
   { path: '/configuracion',   label: 'Configuración',       icon: Settings,      perfiles: ['admin'] },
 ]
 
+const TEXTO_SUAVE = 'rgba(245,236,217,0.72)' // ARENA al 72% para items inactivos
+
 export default function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { usuario, logout } = useAuth()
   const { collapsed, toggle } = useSidebarState()
-  const theme = useThemeMode()
-  const t = getTokens(theme)
   const perfil = usuario?.perfil ?? ''
   const location = useLocation()
 
-  const sidebarWidth = collapsed ? 56 : 240
+  const sidebarWidth = collapsed ? SIDEBAR.widthCollapsed : SIDEBAR.widthOpen
   const visibleItems = ITEMS.filter(i => i.perfiles.includes(perfil))
 
   const [furgos, setFurgos] = useState<Furgoneta[]>([])
@@ -108,18 +107,17 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
     alignItems: 'center',
     gap: 10,
     padding: '9px 14px 9px 12px',
-    margin: '2px 8px',
-    borderRadius: RADIUS.md,
-    fontFamily: FONT.sans,
-    fontSize: FS.sm,
-    fontWeight: isActive ? FW.bold : FW.regular,
-    color: isActive ? t.textOnPrimary : t.textPrimary,
-    background: isActive ? t.brandPrimary : 'transparent',
-    border: isActive ? `1.5px solid ${t.neoInk}` : '1.5px solid transparent',
-    boxShadow: isActive ? t.neoShadowSm : 'none',
+    margin: '3px 10px',
+    borderRadius: 0,
+    fontFamily: LEX,
+    fontSize: 13,
+    fontWeight: isActive ? 700 : 600,
+    color: isActive ? ARENA : TEXTO_SUAVE,
+    background: isActive ? NARANJA : 'transparent',
+    border: isActive ? `2px solid ${INK}` : '2px solid transparent',
+    boxShadow: isActive ? `3px 3px 0 ${INK}` : 'none',
     textDecoration: 'none',
     cursor: 'pointer',
-    transition: 'background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out)',
     whiteSpace: 'nowrap' as const,
     overflow: 'hidden',
     flex: 1,
@@ -130,13 +128,14 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
     alignItems: 'center',
     gap: 8,
     padding: '6px 14px 6px 36px',
-    margin: '1px 8px',
-    borderRadius: RADIUS.sm ?? 6,
-    fontFamily: FONT.sans,
-    fontSize: FS.xs,
-    fontWeight: isActive ? FW.bold : FW.regular,
-    color: isActive ? t.brandPrimary : t.textSecondary,
-    background: isActive ? `${t.brandPrimary}1A` : 'transparent',
+    margin: '1px 10px',
+    borderRadius: 0,
+    fontFamily: LEX,
+    fontSize: 12,
+    fontWeight: isActive ? 700 : 400,
+    color: isActive ? AMBAR : TEXTO_SUAVE,
+    background: isActive ? 'rgba(11,21,36,0.55)' : 'transparent',
+    borderLeft: isActive ? `3px solid ${AMBAR}` : '3px solid transparent',
     textDecoration: 'none',
     cursor: 'pointer',
     whiteSpace: 'nowrap' as const,
@@ -157,7 +156,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
       <ChevronRight
         size={14}
         strokeWidth={2.5}
-        color={active ? t.textOnPrimary : t.textSecondary}
+        color={active ? ARENA : TEXTO_SUAVE}
         style={{ transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform 150ms' }}
       />
     </button>
@@ -169,25 +168,25 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
 
       <aside
         style={{
-          background: t.bgSurface,
-          borderRight: `2px solid ${t.neoInk}`,
+          background: SIDEBAR.BG,
+          borderRight: SIDEBAR.border,
           width: sidebarWidth, minWidth: sidebarWidth, maxWidth: sidebarWidth,
         }}
         className={`fixed top-0 left-0 z-40 h-full flex flex-col transition-all duration-200 overflow-hidden lg:translate-x-0 lg:static lg:z-auto ${open ? 'translate-x-0' : '-translate-x-full'}`}
       >
         {collapsed ? (
-          <div style={{ borderBottom: `2px solid ${t.neoInk}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 64, padding: '6px 0', gap: 4 }}>
+          <div style={{ borderBottom: SIDEBAR.sep, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 64, padding: '6px 0', gap: 4 }}>
             <button onClick={toggle} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 2 }} title="Expandir">
               <img src="/logo-davidreparte.svg" alt="David Reparte" style={{ height: 32, width: 'auto', display: 'block' }} />
             </button>
           </div>
         ) : (
-          <div style={{ padding: SPACE[3], borderBottom: `2px solid ${t.neoInk}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 88, position: 'relative' }}>
+          <div style={{ padding: 14, borderBottom: SIDEBAR.sep, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 88, position: 'relative', background: SIDEBAR.BG }}>
             <img src="/logo-davidreparte.svg" alt="David Reparte" style={{ height: 44, width: 'auto', display: 'block' }} />
-            <span style={{ fontFamily: FONT.sans, fontSize: FS['2xs'], color: t.textSecondary, letterSpacing: TRACKING.wider, textTransform: 'uppercase', fontWeight: FW.medium, marginTop: 6 }}>
+            <span style={{ fontFamily: OSW, fontSize: 12, color: ARENA, letterSpacing: '2px', textTransform: 'uppercase', fontWeight: 600, marginTop: 6 }}>
               David Reparte
             </span>
-            <button onClick={toggle} style={{ color: t.textSecondary, background: 'none', border: 'none', cursor: 'pointer', padding: 6, position: 'absolute', top: 8, right: 8 }} className="hidden lg:block" title="Colapsar">«</button>
+            <button onClick={toggle} style={{ color: TEXTO_SUAVE, background: 'none', border: 'none', cursor: 'pointer', padding: 6, position: 'absolute', top: 8, right: 8, fontFamily: OSW }} className="hidden lg:block" title="Colapsar">«</button>
           </div>
         )}
 
@@ -195,18 +194,17 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
           {(!collapsed && perfil) && (
             <NavLink to="/" end onClick={onClose}
               style={({ isActive }) => ({
-                width: 'auto', background: isActive ? t.brandPrimary : 'transparent',
-                border: isActive ? `1.5px solid ${t.neoInk}` : '1.5px solid transparent',
-                boxShadow: isActive ? t.neoShadowSm : 'none',
+                width: 'auto', background: isActive ? NARANJA : 'transparent',
+                border: isActive ? `2px solid ${INK}` : '2px solid transparent',
+                boxShadow: isActive ? `3px 3px 0 ${INK}` : 'none',
                 cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'flex-start',
-                gap: 10, padding: '10px 14px 10px 12px', margin: '2px 8px', borderRadius: RADIUS.md,
-                fontFamily: FONT.sans, fontSize: FS.xs, textTransform: 'uppercase',
-                letterSpacing: TRACKING.wide, fontWeight: FW.bold,
-                color: isActive ? t.textOnPrimary : t.brandPrimary, textDecoration: 'none',
-                transition: 'background var(--dur-fast) var(--ease-out)',
+                gap: 10, padding: '10px 14px 10px 12px', margin: '3px 10px', borderRadius: 0,
+                fontFamily: OSW, fontSize: 12, textTransform: 'uppercase',
+                letterSpacing: '1.5px', fontWeight: 700,
+                color: isActive ? ARENA : AMBAR, textDecoration: 'none',
               })}>
               {({ isActive }) => (<>
-                <LayoutDashboard size={18} strokeWidth={1.5} color={isActive ? t.textOnPrimary : t.brandPrimary} style={{ flexShrink: 0 }} />
+                <LayoutDashboard size={18} strokeWidth={2} color={isActive ? ARENA : AMBAR} style={{ flexShrink: 0 }} />
                 <span>Panel global</span>
               </>)}
             </NavLink>
@@ -215,7 +213,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
           {collapsed && perfil && (
             <NavLink to="/" end onClick={onClose} title="Panel global"
               style={{ width: '100%', height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>
-              {({ isActive }) => (<LayoutDashboard size={20} strokeWidth={1.5} color={isActive ? t.brandPrimary : t.textSecondary} />)}
+              {({ isActive }) => (<LayoutDashboard size={20} strokeWidth={2} color={isActive ? NARANJA : TEXTO_SUAVE} />)}
             </NavLink>
           )}
 
@@ -226,7 +224,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
               return (
                 <NavLink key={item.path} to={to} onClick={onClose} title={item.label}
                   style={{ width: '100%', height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>
-                  {({ isActive }) => (<Icon size={20} strokeWidth={1.5} color={isActive ? t.brandPrimary : t.textSecondary} />)}
+                  {({ isActive }) => (<Icon size={20} strokeWidth={2} color={isActive ? NARANJA : TEXTO_SUAVE} />)}
                 </NavLink>
               )
             }
@@ -241,14 +239,14 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
                       onClick={() => setFinanzasExpanded(v => !v)}
                       style={itemStyle(isActive)}
                     >
-                      <Icon size={18} strokeWidth={1.5} color={isActive ? t.textOnPrimary : t.textSecondary} style={{ flexShrink: 0 }} />
+                      <Icon size={18} strokeWidth={2} color={isActive ? ARENA : TEXTO_SUAVE} style={{ flexShrink: 0 }} />
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
                     </div>
                     {chevron(finanzasExpanded, isActive, () => setFinanzasExpanded(v => !v), finanzasExpanded ? 'Colapsar' : 'Expandir')}
                   </div>
                   {finanzasExpanded && item.children?.map(c => (
                     <NavLink key={c.path} to={c.path} onClick={onClose} style={({ isActive }) => subItemStyle(isActive)}>
-                      <span style={{ width: 6, height: 6, borderRadius: 999, background: t.brandAccent, flexShrink: 0 }} />
+                      <span style={{ width: 6, height: 6, background: AMBAR, flexShrink: 0 }} />
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.label}</span>
                     </NavLink>
                   ))}
@@ -263,7 +261,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
                 <div key={item.path}>
                   <div style={{ display: 'flex', alignItems: 'center' }}>
                     <NavLink to={item.path} onClick={onClose} end style={() => itemStyle(isActive)}>
-                      <Icon size={18} strokeWidth={1.5} color={isActive ? t.textOnPrimary : t.textSecondary} style={{ flexShrink: 0 }} />
+                      <Icon size={18} strokeWidth={2} color={isActive ? ARENA : TEXTO_SUAVE} style={{ flexShrink: 0 }} />
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
                     </NavLink>
                     {chevron(flotaExpanded, isActive, () => setFlotaExpanded(v => !v), flotaExpanded ? 'Colapsar' : 'Expandir')}
@@ -276,7 +274,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
                       onClick={onClose}
                       style={({ isActive }) => subItemStyle(isActive)}
                     >
-                      <span style={{ width: 6, height: 6, borderRadius: 999, background: t.brandAccent ?? t.brandPrimary, flexShrink: 0 }} />
+                      <span style={{ width: 6, height: 6, background: AMBAR, flexShrink: 0 }} />
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {f.matricula} · {f.nombre_corto ?? f.conductor}
                       </span>
@@ -291,7 +289,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
               <NavLink key={item.path} to={item.path} onClick={onClose} end
                 style={({ isActive }) => itemStyle(isActive)}>
                 {({ isActive }) => (<>
-                  <Icon size={18} strokeWidth={1.5} color={isActive ? t.textOnPrimary : t.textSecondary} style={{ flexShrink: 0 }} />
+                  <Icon size={18} strokeWidth={2} color={isActive ? ARENA : TEXTO_SUAVE} style={{ flexShrink: 0 }} />
                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
                 </>)}
               </NavLink>
@@ -299,23 +297,19 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
           })}
         </nav>
 
-        <div style={{ padding: collapsed ? '8px' : '12px', borderTop: `2px solid ${t.neoInk}`, display: 'flex', justifyContent: 'center' }}>
-          <ThemeToggle />
-        </div>
-
-        <div style={{ padding: SPACE[3], borderTop: `0.5px solid ${t.borderSubtle}`, fontFamily: FONT.sans, fontSize: FS.xs, color: t.textSecondary, textAlign: collapsed ? 'center' : 'left' }}>
+        <div style={{ padding: 14, borderTop: SIDEBAR.sep, fontFamily: LEX, fontSize: 12, color: TEXTO_SUAVE, textAlign: collapsed ? 'center' : 'left', background: SIDEBAR.BG }}>
           {!collapsed ? (
             <>
-              <div style={{ marginBottom: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: t.textPrimary }}>
-                {usuario?.nombre} — <span style={{ color: t.brandAccent, fontWeight: FW.medium }}>{usuario?.perfil}</span>
+              <div style={{ marginBottom: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: ARENA, fontWeight: 600 }}>
+                {usuario?.nombre} — <span style={{ color: AMBAR, fontWeight: 700 }}>{usuario?.perfil}</span>
               </div>
-              <button onClick={logout} style={{ color: t.textSecondary, fontSize: FS.xs, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: FONT.sans }}>
+              <button onClick={logout} style={{ color: TEXTO_SUAVE, fontSize: 12, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: LEX }}>
                 Cerrar sesión
               </button>
             </>
           ) : (
-            <button onClick={logout} style={{ color: t.textSecondary, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Cerrar sesión">
-              <LogOut size={16} strokeWidth={1.5} />
+            <button onClick={logout} style={{ color: TEXTO_SUAVE, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Cerrar sesión">
+              <LogOut size={16} strokeWidth={2} />
             </button>
           )}
         </div>
