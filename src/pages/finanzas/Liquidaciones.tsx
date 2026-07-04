@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { fmtEur } from '@/lib/format'
+import { OLIVA, TERRA, CELESTE, GRIS, ARENA_CL, BLANCO, ARENA, INK, OSW } from '@/styles/neobrutal'
 import {
-  useThemeMode, getTokens, cardStyle, badgeStyle,
-  fmtEur, fmtNum,
-  FONT, FS, FW, SPACE, RADIUS, TRACKING,
-} from '@/styles/tokens'
+  PageNeo, Banda, CabeceraNeo, KpiNeo, AvisoNeo,
+  TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo,
+} from '@/components/neo/NeoUI'
 
 interface Liquidacion {
   id: string
@@ -29,10 +30,10 @@ function fmtMes(mes: string | null): string {
   return `${MESES[d.getMonth()]} ${d.getFullYear()}`
 }
 
-export default function Liquidaciones() {
-  const theme = useThemeMode()
-  const t = getTokens(theme)
+const fmtNum = (n: number | null | undefined) =>
+  n == null ? '—' : Math.round(n).toLocaleString('es-ES')
 
+export default function Liquidaciones() {
   const [liqs, setLiqs] = useState<Liquidacion[]>([])
   const [loading, setLoading] = useState(true)
   const [errMsg, setErrMsg] = useState<string | null>(null)
@@ -59,106 +60,86 @@ export default function Liquidaciones() {
   }), [liqs])
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE[5] }}>
-      <div>
-        <h1 style={{ margin: 0, fontFamily: FONT.title, fontSize: 22, fontWeight: FW.bold, color: t.brandAccent, letterSpacing: TRACKING.wider, textTransform: 'uppercase' }}>
-          Liquidaciones Cade
-        </h1>
-        <div style={{ marginTop: 4, fontFamily: FONT.body, fontSize: FS.sm, color: t.textTertiary }}>
-          Una liquidación mensual por código de transportista. Cade paga el 10–15 del mes siguiente.
+    <PageNeo>
+      <CabeceraNeo eyebrowTxt="Finanzas" titulo="Liquidaciones Cade">
+        <div style={{ fontSize: 13, fontWeight: 600, color: ARENA, opacity: 0.85, maxWidth: 380 }}>
+          Una liquidación mensual por transportista. Cade paga el 10–15 del mes siguiente.
         </div>
-      </div>
+      </CabeceraNeo>
 
-      {errMsg && (
-        <div style={{ background: t.dangerBg, color: t.dangerText, border: `1px solid ${t.dangerBorder}`, padding: SPACE[4], borderRadius: RADIUS.md, fontFamily: FONT.body, fontSize: FS.sm }}>
-          Error: {errMsg}
-        </div>
+      {errMsg && <AvisoNeo>ERROR: {errMsg}</AvisoNeo>}
+
+      {kpis.recortes !== 0 && (
+        <AvisoNeo>
+          CADE TE HA RECORTADO {fmtEur(Math.abs(kpis.recortes))}. Clic en cada fila con recorte para ver el detalle y reclamar.
+        </AvisoNeo>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: SPACE[4] }}>
-        <Kpi label="Total liquidado" value={fmtEur(kpis.total)} />
-        <Kpi label="Entregas" value={fmtNum(kpis.entregas)} />
-        <Kpi label="Complementos mínimo" value={fmtEur(kpis.complementos)} />
-        <Kpi label="Recortes detectados" value={fmtEur(kpis.recortes)} danger={kpis.recortes !== 0} />
-      </div>
+      {/* KPIs: ¿qué me paga y qué me recorta Cade? */}
+      <Banda bg={ARENA_CL}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 18 }}>
+          <KpiNeo label="Total liquidado" valor={fmtEur(kpis.total)} color={OLIVA} />
+          <KpiNeo label="Entregas" valor={fmtNum(kpis.entregas)} />
+          <KpiNeo label="Complementos mínimo" valor={fmtEur(kpis.complementos)} color={CELESTE} />
+          <KpiNeo label="Recortes detectados" valor={fmtEur(kpis.recortes)} color={kpis.recortes !== 0 ? TERRA : OLIVA} sub={kpis.recortes !== 0 ? 'Dinero que te quitan' : 'Sin recortes'} />
+        </div>
+      </Banda>
 
-      <div style={{ ...cardStyle(theme), padding: 0, overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: FONT.body, fontSize: FS.sm }}>
+      <Banda bg={BLANCO}>
+        <TablaWrap>
           <thead>
             <tr>
               {['Mes', 'Transportista', 'Emisor', 'Entregas', 'Importe entregas', 'Complemento', 'Recortes', 'Total', 'Factura'].map(h => (
-                <th key={h} style={th(t)}>{h}</th>
+                <th key={h} style={thNeo}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={9} style={{ ...td(t), textAlign: 'center', color: t.textTertiary, padding: SPACE[8] }}>Cargando…</td></tr>
+              <tr><td colSpan={9} style={{ ...tdNeo(false), textAlign: 'center', color: GRIS, padding: 32 }}>Cargando…</td></tr>
             )}
             {!loading && liqs.length === 0 && (
-              <tr><td colSpan={9} style={{ ...td(t), textAlign: 'center', color: t.textTertiary, padding: SPACE[8] }}>Sin liquidaciones cargadas todavía.</td></tr>
+              <tr><td colSpan={9} style={{ ...tdNeo(false), textAlign: 'center', color: GRIS, padding: 32 }}>Sin liquidaciones cargadas todavía.</td></tr>
             )}
-            {liqs.map(l => (
-              <LiqRow key={l.id} l={l} abierta={abierta === l.id} onToggle={() => setAbierta(abierta === l.id ? null : l.id)} />
-            ))}
+            {liqs.map((l, i) => {
+              const alt = i % 2 === 1
+              const hayRecortes = (l.recortes ?? 0) !== 0
+              const estadoColor = hayRecortes ? TERRA : OLIVA
+              const open = abierta === l.id
+              return (
+                <FragmentRow key={l.id}>
+                  <tr onClick={hayRecortes ? () => setAbierta(open ? null : l.id) : undefined} style={{ cursor: hayRecortes ? 'pointer' : 'default' }}>
+                    <td style={{ ...tdEstado(alt, estadoColor), fontFamily: OSW, fontWeight: 700, textTransform: 'capitalize' }}>{fmtMes(l.mes)}</td>
+                    <td style={tdNeo(alt)}>{l.transportista ?? '—'}</td>
+                    <td style={tdNeo(alt)}>
+                      <BadgeNeo color={(l.emisor ?? '').toUpperCase() === 'JUAN' ? '#F5B84A' : '#16355C'}>{l.emisor ?? '—'}</BadgeNeo>
+                    </td>
+                    <td style={{ ...tdNeo(alt), textAlign: 'right' }}>{fmtNum(l.entregas)}</td>
+                    <td style={{ ...tdNeo(alt), textAlign: 'right' }}>{fmtEur(l.importe_entregas)}</td>
+                    <td style={{ ...tdNeo(alt), textAlign: 'right' }}>{fmtEur(l.complemento_minimo)}</td>
+                    <td style={{ ...tdNeo(alt), textAlign: 'right', color: hayRecortes ? TERRA : GRIS, fontFamily: OSW, fontWeight: hayRecortes ? 700 : 600 }}>
+                      {hayRecortes ? `${fmtEur(l.recortes)} ${open ? '▾' : '▸'}` : '—'}
+                    </td>
+                    <td style={{ ...tdNeo(alt), textAlign: 'right', fontFamily: OSW, fontWeight: 700, fontSize: 15 }}>{fmtEur(l.total)}</td>
+                    <td style={tdNeo(alt)}>{l.factura_id ? <BadgeNeo color={OLIVA}>VINCULADA</BadgeNeo> : <span style={{ color: GRIS }}>—</span>}</td>
+                  </tr>
+                  {open && l.recortes_detalle && (
+                    <tr>
+                      <td colSpan={9} style={{ padding: '12px 16px', background: TERRA, color: ARENA, fontSize: 12, fontWeight: 600, whiteSpace: 'pre-wrap', borderBottom: `3px solid ${INK}` }}>
+                        {l.recortes_detalle}
+                      </td>
+                    </tr>
+                  )}
+                </FragmentRow>
+              )
+            })}
           </tbody>
-        </table>
-      </div>
-    </div>
+        </TablaWrap>
+      </Banda>
+    </PageNeo>
   )
 }
 
-function LiqRow({ l, abierta, onToggle }: { l: Liquidacion; abierta: boolean; onToggle: () => void }) {
-  const theme = useThemeMode()
-  const t = getTokens(theme)
-  const hayRecortes = (l.recortes ?? 0) !== 0
-  return (
-    <>
-      <tr onClick={hayRecortes ? onToggle : undefined} style={{ cursor: hayRecortes ? 'pointer' : 'default' }}>
-        <td style={{ ...td(t), fontWeight: FW.bold, textTransform: 'capitalize' }}>{fmtMes(l.mes)}</td>
-        <td style={td(t)}>{l.transportista ?? '—'}</td>
-        <td style={td(t)}>
-          <span style={badgeStyle(theme, (l.emisor ?? '').toUpperCase() === 'JUAN' ? 'ambar' : 'marino')}>{l.emisor ?? '—'}</span>
-        </td>
-        <td style={{ ...td(t), textAlign: 'right' }}>{fmtNum(l.entregas)}</td>
-        <td style={{ ...td(t), textAlign: 'right' }}>{fmtEur(l.importe_entregas)}</td>
-        <td style={{ ...td(t), textAlign: 'right' }}>{fmtEur(l.complemento_minimo)}</td>
-        <td style={{ ...td(t), textAlign: 'right', color: hayRecortes ? t.dangerText : t.textSecondary, fontWeight: hayRecortes ? FW.bold : FW.regular }}>
-          {hayRecortes ? `${fmtEur(l.recortes)} ${abierta ? '▾' : '▸'}` : '—'}
-        </td>
-        <td style={{ ...td(t), textAlign: 'right', fontWeight: FW.bold }}>{fmtEur(l.total)}</td>
-        <td style={td(t)}>{l.factura_id ? <span style={badgeStyle(theme, 'oliva')}>VINCULADA</span> : <span style={{ color: t.textTertiary }}>—</span>}</td>
-      </tr>
-      {abierta && l.recortes_detalle && (
-        <tr>
-          <td colSpan={9} style={{ ...td(t), background: t.dangerBg, color: t.dangerText, fontSize: FS.xs, whiteSpace: 'pre-wrap' }}>
-            {l.recortes_detalle}
-          </td>
-        </tr>
-      )}
-    </>
-  )
-}
-
-function Kpi({ label, value, danger }: { label: string; value: string; danger?: boolean }) {
-  const theme = useThemeMode()
-  const t = getTokens(theme)
-  return (
-    <div style={cardStyle(theme)}>
-      <div style={{ fontSize: FS['2xs'], letterSpacing: TRACKING.wide, textTransform: 'uppercase', color: t.textSecondary, fontWeight: FW.medium, marginBottom: 6 }}>{label}</div>
-      <div style={{ fontSize: FS.xl, fontWeight: FW.bold, color: danger ? t.danger : t.textPrimary, lineHeight: 1.15, letterSpacing: TRACKING.tight }}>{value}</div>
-    </div>
-  )
-}
-
-function th(t: ReturnType<typeof getTokens>): CSSProperties {
-  return {
-    textAlign: 'left', padding: '10px 12px', fontSize: FS['2xs'], letterSpacing: TRACKING.wide,
-    textTransform: 'uppercase', color: t.textSecondary, fontWeight: FW.medium,
-    borderBottom: `0.5px solid ${t.borderDefault}`, whiteSpace: 'nowrap',
-  }
-}
-
-function td(t: ReturnType<typeof getTokens>): CSSProperties {
-  return { padding: '8px 12px', borderBottom: `0.5px solid ${t.borderSubtle}`, color: t.textPrimary }
+function FragmentRow({ children }: { children: React.ReactNode }) {
+  return <>{children}</>
 }
