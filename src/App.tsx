@@ -12,6 +12,7 @@ import Running from '@/pages/finanzas/Running'
 import FacturacionEmitida from '@/pages/finanzas/FacturacionEmitida'
 import Liquidaciones from '@/pages/finanzas/Liquidaciones'
 import PagosCobros from '@/pages/finanzas/PagosCobros'
+import PuntoEquilibrio from '@/pages/finanzas/PuntoEquilibrio'
 import ReclamacionesCade from '@/pages/ReclamacionesCade'
 import Placeholder from '@/pages/Placeholder'
 
@@ -35,7 +36,6 @@ const PLACEHOLDERS = [
   'inventarios',
   'mantenimiento',
   'informes-equipo',
-  'punto-equilibrio',
   'finanzas/ventas',
 ]
 
@@ -52,6 +52,7 @@ function AppRoutes() {
         <Route path="finanzas/facturacion"   element={<ProtectedRoute solo={['admin']}><FacturacionEmitida /></ProtectedRoute>} />
         <Route path="finanzas/liquidaciones" element={<ProtectedRoute solo={['admin']}><Liquidaciones /></ProtectedRoute>} />
         <Route path="finanzas/pagos-cobros"  element={<ProtectedRoute solo={['admin']}><PagosCobros /></ProtectedRoute>} />
+        <Route path="punto-equilibrio"       element={<ProtectedRoute solo={['admin']}><PuntoEquilibrio /></ProtectedRoute>} />
         <Route path="running"                element={<ProtectedRoute solo={['admin']}><Running /></ProtectedRoute>} />
         <Route path="conciliacion"           element={<ProtectedRoute solo={['admin']}><Conciliacion /></ProtectedRoute>} />
 
