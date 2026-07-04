@@ -4,5 +4,7 @@
 - FASE 2 (04/07/2026): Panel Global recompuesto en bandas full-bleed (hero ámbar, supermercados, gastos, tesorería BBVA, ratio, objetivos, presupuestos, semanas, cierre marino).
 - FASE 3 (04/07/2026): Facturación emitida, Liquidaciones Cade y Reclamaciones Cade con patrón Tabla Neobrutal (banda lateral de estado, KPIs bloque, avisos TERRA).
 - FASE 4 (04/07/2026): Pagos y Cobros + Conciliación recompuestas (lógica de importación/categorización intacta).
+- FASE 5 parcial (04/07/2026): Flota (KPIs coste + "la que más te cuesta") y Entregas recompuestas. FurgonetaDetalle pendiente (archivo grande, chat propio).
+- Colorines (04/07/2026): banda ingresos CELESTE, banda objetivos ÁMBAR, highlight TERRA en gastos.
 
 Manual de referencia: Notion → 99 Claude → "MANUAL DE ESTILO · Neobrutal Mediterráneo David".
