@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { fmtEur, fmtDate } from '@/lib/format'
+import { CELESTE, OLIVA, TERRA, NARANJA, MARINO, AMBAR, GRIS, ARENA_CL, BLANCO, INK, OSW, ARENA } from '@/styles/neobrutal'
+import { card } from '@/styles/neobrutal'
 import {
-  useThemeMode, getTokens, cardStyle, badgeStyle,
-  fmtEur, fmtDate,
-  FONT, FS, FW, SPACE, RADIUS, TRACKING,
-} from '@/styles/tokens'
+  PageNeo, Banda, CabeceraNeo, KpiNeo, AvisoNeo,
+  TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo,
+} from '@/components/neo/NeoUI'
 
 interface FacturaPendiente {
   id: string
@@ -34,9 +36,6 @@ function fechaEsperada(f: FacturaPendiente): Date | null {
 }
 
 export default function PagosCobros() {
-  const theme = useThemeMode()
-  const t = getTokens(theme)
-
   const [pendientes, setPendientes] = useState<FacturaPendiente[]>([])
   const [gastos, setGastos] = useState<GastoRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -99,116 +98,99 @@ export default function PagosCobros() {
   }, [gastos])
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE[5] }}>
-      <h1 style={{ margin: 0, fontFamily: FONT.title, fontSize: 22, fontWeight: FW.bold, color: t.brandAccent, letterSpacing: TRACKING.wider, textTransform: 'uppercase' }}>
-        Pagos y Cobros
-      </h1>
+    <PageNeo>
+      <CabeceraNeo eyebrowTxt="Finanzas" titulo="Pagos y Cobros" />
 
-      {errMsg && (
-        <div style={{ background: t.dangerBg, color: t.dangerText, border: `1px solid ${t.dangerBorder}`, padding: SPACE[4], borderRadius: RADIUS.md, fontFamily: FONT.body, fontSize: FS.sm }}>
-          Error: {errMsg}
-        </div>
+      {errMsg && <AvisoNeo>ERROR: {errMsg}</AvisoNeo>}
+
+      {cobros.vencido > 0 && (
+        <AvisoNeo>
+          CADE VA TARDE: {fmtEur(cobros.vencido)} VENCIDO pasado el día 15. Reclamar.
+        </AvisoNeo>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: SPACE[4] }}>
-        <Kpi label="Cobros pendientes" value={fmtEur(cobros.total)} sub={`${cobros.rows.length} facturas`} accent />
-        <Kpi label="Vencido (Cade, pasado día 15)" value={fmtEur(cobros.vencido)} danger={cobros.vencido > 0} />
-        <Kpi label="Pagos mes en curso" value={fmtEur(pagosPorMes[0]?.total ?? 0)} sub={pagosPorMes[0]?.label ?? '—'} />
-      </div>
+      {/* ¿Cuánto entra y cuánto sale? */}
+      <Banda bg={ARENA_CL}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 18 }}>
+          <KpiNeo label="Cobros pendientes" valor={fmtEur(cobros.total)} color={CELESTE} sub={`${cobros.rows.length} facturas por cobrar`} />
+          <KpiNeo label="Vencido · Cade pasado día 15" valor={fmtEur(cobros.vencido)} color={cobros.vencido > 0 ? TERRA : OLIVA} />
+          <KpiNeo label="Pagos mes en curso" valor={fmtEur(pagosPorMes[0]?.total ?? 0)} color={NARANJA} sub={pagosPorMes[0]?.label ?? '—'} />
+        </div>
+      </Banda>
 
       {/* COBROS PENDIENTES */}
-      <div style={{ ...cardStyle(theme), padding: 0, overflowX: 'auto' }}>
-        <div style={sectionHeader(t)}>Cobros pendientes</div>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: FONT.body, fontSize: FS.sm }}>
+      <Banda bg={BLANCO}>
+        <h2 style={{ fontFamily: OSW, fontWeight: 700, fontSize: 'clamp(20px,2.4vw,28px)', textTransform: 'uppercase', letterSpacing: '-0.5px', margin: '0 0 16px' }}>
+          ¿Cuándo cobras?
+        </h2>
+        <TablaWrap>
           <thead>
             <tr>
               {['Nº', 'Cliente', 'Transp.', 'Emisor', 'Periodo', 'Cobro esperado', 'Total', 'Estado'].map(h => (
-                <th key={h} style={th(t)}>{h}</th>
+                <th key={h} style={thNeo}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={8} style={{ ...td(t), textAlign: 'center', color: t.textTertiary, padding: SPACE[8] }}>Cargando…</td></tr>
+              <tr><td colSpan={8} style={{ ...tdNeo(false), textAlign: 'center', color: GRIS, padding: 32 }}>Cargando…</td></tr>
             )}
             {!loading && cobros.rows.length === 0 && (
-              <tr><td colSpan={8} style={{ ...td(t), textAlign: 'center', color: t.textTertiary, padding: SPACE[8] }}>Todo cobrado. Sin pendientes.</td></tr>
+              <tr><td colSpan={8} style={{ ...tdNeo(false), textAlign: 'center', color: OLIVA, padding: 32, fontFamily: OSW, fontWeight: 700, textTransform: 'uppercase' }}>Todo cobrado. Sin pendientes.</td></tr>
             )}
-            {cobros.rows.map(r => (
-              <tr key={r.id} style={{ background: r.vencida ? t.dangerBg : 'transparent' }}>
-                <td style={{ ...td(t), fontWeight: FW.bold }}>{r.numero_factura ?? '—'}</td>
-                <td style={td(t)}>{r.cliente}</td>
-                <td style={td(t)}>{r.transportista ?? '—'}</td>
-                <td style={td(t)}>
-                  <span style={badgeStyle(theme, (r.emisor ?? '').toUpperCase() === 'JUAN' ? 'ambar' : 'marino')}>{r.emisor ?? '—'}</span>
-                </td>
-                <td style={td(t)}>{fmtDate(r.periodo)}</td>
-                <td style={{ ...td(t), color: r.vencida ? t.dangerText : t.textSecondary, fontWeight: r.vencida ? FW.bold : FW.regular }}>
-                  {r.fe ? fmtDate(r.fe) : '—'}
-                </td>
-                <td style={{ ...td(t), textAlign: 'right', fontWeight: FW.bold }}>{fmtEur(r.total)}</td>
-                <td style={td(t)}>
-                  <span style={badgeStyle(theme, r.vencida ? 'terra' : 'naranja')}>{r.vencida ? 'VENCIDA' : 'PENDIENTE'}</span>
-                </td>
-              </tr>
-            ))}
+            {cobros.rows.map((r, i) => {
+              const alt = i % 2 === 1
+              const c = r.vencida ? TERRA : NARANJA
+              return (
+                <tr key={r.id}>
+                  <td style={{ ...tdEstado(alt, c), fontFamily: OSW, fontWeight: 700 }}>{r.numero_factura ?? '—'}</td>
+                  <td style={tdNeo(alt)}>{r.cliente}</td>
+                  <td style={tdNeo(alt)}>{r.transportista ?? '—'}</td>
+                  <td style={tdNeo(alt)}>
+                    <BadgeNeo color={(r.emisor ?? '').toUpperCase() === 'JUAN' ? AMBAR : MARINO}>{r.emisor ?? '—'}</BadgeNeo>
+                  </td>
+                  <td style={tdNeo(alt)}>{fmtDate(r.periodo ?? '')}</td>
+                  <td style={{ ...tdNeo(alt), color: r.vencida ? TERRA : undefined, fontWeight: r.vencida ? 700 : 600 }}>
+                    {r.fe ? fmtDate(r.fe) : '—'}
+                  </td>
+                  <td style={{ ...tdNeo(alt), textAlign: 'right', fontFamily: OSW, fontWeight: 700, fontSize: 15 }}>{fmtEur(r.total)}</td>
+                  <td style={tdNeo(alt)}>
+                    <BadgeNeo color={c}>{r.vencida ? 'VENCIDA' : 'PENDIENTE'}</BadgeNeo>
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
-        </table>
-      </div>
+        </TablaWrap>
+      </Banda>
 
       {/* PAGOS POR MES */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: SPACE[4] }}>
-        {pagosPorMes.map(m => (
-          <div key={m.label} style={cardStyle(theme)}>
-            <div style={{ fontSize: FS['2xs'], letterSpacing: TRACKING.wide, textTransform: 'uppercase', color: t.textSecondary, fontWeight: FW.medium }}>
-              Pagos · {m.label}
-            </div>
-            <div style={{ fontSize: FS.lg, fontWeight: FW.bold, color: t.textPrimary, margin: '6px 0 10px' }}>{fmtEur(m.total)}</div>
-            {m.top.map(([cat, imp]) => (
-              <div key={cat} style={{ display: 'flex', justifyContent: 'space-between', fontFamily: FONT.body, fontSize: FS.xs, color: t.textSecondary, padding: '3px 0', borderBottom: `0.5px solid ${t.borderSubtle}` }}>
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 8 }}>{cat}</span>
-                <span style={{ fontWeight: FW.medium, color: t.textPrimary, whiteSpace: 'nowrap' }}>{fmtEur(imp)}</span>
+      <Banda bg={ARENA}>
+        <h2 style={{ fontFamily: OSW, fontWeight: 700, fontSize: 'clamp(20px,2.4vw,28px)', textTransform: 'uppercase', letterSpacing: '-0.5px', margin: '0 0 16px' }}>
+          ¿Qué has pagado?
+        </h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 18 }}>
+          {pagosPorMes.map(m => (
+            <div key={m.label} style={{ ...card(BLANCO), padding: '16px 18px' }}>
+              <div style={{ fontFamily: OSW, fontWeight: 600, fontSize: 12, letterSpacing: 2, textTransform: 'uppercase' }}>
+                Pagos · {m.label}
               </div>
-            ))}
-          </div>
-        ))}
-        {!loading && pagosPorMes.length === 0 && (
-          <div style={{ ...cardStyle(theme), color: t.textTertiary, fontFamily: FONT.body, fontSize: FS.sm }}>
-            Sin gastos conciliados en los últimos meses.
-          </div>
-        )}
-      </div>
-    </div>
+              <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 'clamp(22px,3vw,36px)', color: NARANJA, margin: '8px 0 12px' }}>{fmtEur(m.total)}</div>
+              {m.top.map(([cat, imp]) => (
+                <div key={cat} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 600, padding: '4px 0', borderBottom: `1px solid ${ARENA_CL}` }}>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 8 }}>{cat}</span>
+                  <span style={{ fontFamily: OSW, fontWeight: 700, whiteSpace: 'nowrap', color: INK }}>{fmtEur(imp)}</span>
+                </div>
+              ))}
+            </div>
+          ))}
+          {!loading && pagosPorMes.length === 0 && (
+            <div style={{ ...card(BLANCO), padding: '16px 18px', color: GRIS, fontSize: 13, fontWeight: 600 }}>
+              Sin gastos conciliados en los últimos meses.
+            </div>
+          )}
+        </div>
+      </Banda>
+    </PageNeo>
   )
-}
-
-function Kpi({ label, value, sub, accent, danger }: { label: string; value: string; sub?: string; accent?: boolean; danger?: boolean }) {
-  const theme = useThemeMode()
-  const t = getTokens(theme)
-  return (
-    <div style={cardStyle(theme)}>
-      <div style={{ fontSize: FS['2xs'], letterSpacing: TRACKING.wide, textTransform: 'uppercase', color: t.textSecondary, fontWeight: FW.medium, marginBottom: 6 }}>{label}</div>
-      <div style={{ fontSize: FS.xl, fontWeight: FW.bold, color: danger ? t.danger : accent ? t.brandAccent : t.textPrimary, lineHeight: 1.15, letterSpacing: TRACKING.tight }}>{value}</div>
-      {sub && <div style={{ marginTop: 4, fontSize: FS.xs, color: t.textTertiary, fontFamily: FONT.body }}>{sub}</div>}
-    </div>
-  )
-}
-
-function sectionHeader(t: ReturnType<typeof getTokens>): CSSProperties {
-  return {
-    padding: '12px 16px', fontSize: FS.xs, letterSpacing: TRACKING.wider, textTransform: 'uppercase',
-    color: t.brandAccent, fontWeight: FW.bold, borderBottom: `0.5px solid ${t.borderDefault}`, fontFamily: FONT.sans,
-  }
-}
-
-function th(t: ReturnType<typeof getTokens>): CSSProperties {
-  return {
-    textAlign: 'left', padding: '10px 12px', fontSize: FS['2xs'], letterSpacing: TRACKING.wide,
-    textTransform: 'uppercase', color: t.textSecondary, fontWeight: FW.medium,
-    borderBottom: `0.5px solid ${t.borderDefault}`, whiteSpace: 'nowrap',
-  }
-}
-
-function td(t: ReturnType<typeof getTokens>): CSSProperties {
-  return { padding: '8px 12px', borderBottom: `0.5px solid ${t.borderSubtle}`, color: t.textPrimary }
 }
