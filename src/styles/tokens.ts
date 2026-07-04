@@ -1,10 +1,13 @@
 // ============================================================
 // DAVID ERP — DESIGN TOKENS (TypeScript)
-// v1.0 — Marino + Fuego · Mediterráneo vivo
+// v2.0 — Marino + Fuego · Mediterráneo vivo · NEOBRUTAL
 // ------------------------------------------------------------
 // FUENTE ÚNICA DE VERDAD para estilos del ERP DavidReparte.
 // NO MEZCLAR con tokens de Streat Lab / Binagre.
 // Todo componente debe consumir estos tokens, nunca hardcodear.
+// v2.0: capa neobrutalista (bordes gruesos + sombras duras)
+// sobre la paleta Marino+Fuego. Los helpers pre-compuestos
+// (cardStyle, badgeStyle, botones) aplican el look a toda la app.
 // ============================================================
 
 import { useEffect, useState } from "react";
@@ -62,7 +65,7 @@ function tokenSetFromTheme(theme: Theme): TokenSet {
     bg: t.bgApp,
     group: t.bgSurfaceAlt,
     card: t.bgSurface,
-    brd: t.borderDefault,
+    brd: t.neoInk,
     pri: t.textPrimary,
     sec: t.textSecondary,
     mut: t.textTertiary,
@@ -199,6 +202,11 @@ export const PALETTE = {
 export function getTokens(theme: Theme) {
   const p = PALETTE[theme];
 
+  // Tinta neobrutal: bordes y sombras duras.
+  // Light: marino oscuro. Dark: celeste apagado (evita ruido).
+  const neoInk = theme === "light" ? p.marino[700] : "#4F7AAD";
+  const neoShadow = theme === "light" ? p.marino[700] : "rgba(79, 122, 173, 0.55)";
+
   return {
     // Fondos
     bgApp: p.sand[200],
@@ -217,6 +225,14 @@ export function getTokens(theme: Theme) {
     borderSubtle: theme === "light" ? "rgba(22, 53, 92, 0.08)" : "rgba(255, 255, 255, 0.06)",
     borderDefault: theme === "light" ? "rgba(22, 53, 92, 0.14)" : "rgba(255, 255, 255, 0.10)",
     borderStrong: theme === "light" ? "rgba(22, 53, 92, 0.28)" : "rgba(255, 255, 255, 0.18)",
+
+    // NEOBRUTAL
+    neoInk,
+    neoShadow,
+    neoBorder: `2px solid ${neoInk}`,
+    neoShadowCard: `4px 4px 0 ${neoShadow}`,
+    neoShadowBtn: `3px 3px 0 ${neoShadow}`,
+    neoShadowSm: `2px 2px 0 ${neoShadow}`,
 
     // Marca
     brandPrimary: p.marino[500],
@@ -353,10 +369,10 @@ export const SPACE = {
 } as const;
 
 export const RADIUS = {
-  sm: "6px",
-  md: "10px",
-  lg: "14px",
-  xl: "20px",
+  sm: "4px",
+  md: "8px",
+  lg: "10px",
+  xl: "14px",
   pill: "999px",
 } as const;
 
@@ -379,13 +395,13 @@ export const MOTION = {
 } as const;
 
 // ——————————————————————————————————————————————————————
-// ESTILOS PRE-COMPUESTOS (helpers comunes)
+// ESTILOS PRE-COMPUESTOS (helpers comunes) — NEOBRUTAL
 // Consumen tokens semánticos según tema activo
 // ——————————————————————————————————————————————————————
 
 import type { CSSProperties } from "react";
 
-/** Card base — fondo surface, borde default, radio lg.
+/** Card base neobrutal — fondo surface, borde 2px marino, sombra dura.
  *  Polimórfico: acepta Theme (David) o TokenSet (Binagre compat). */
 export function cardStyle(theme: Theme): CSSProperties;
 export function cardStyle(T: TokenSet): CSSProperties;
@@ -394,15 +410,17 @@ export function cardStyle(arg: Theme | TokenSet): CSSProperties {
     const t = getTokens(arg);
     return {
       background: t.bgSurface,
-      border: `0.5px solid ${t.borderDefault}`,
+      border: t.neoBorder,
       borderRadius: RADIUS.lg,
+      boxShadow: t.neoShadowCard,
       padding: SPACE[6],
     };
   }
   return {
     background: arg.card,
-    border: `0.5px solid ${arg.brd}`,
+    border: `2px solid ${arg.brd}`,
     borderRadius: 10,
+    boxShadow: `4px 4px 0 ${arg.brd}`,
     padding: "14px 16px",
   };
 }
@@ -443,7 +461,7 @@ export function kpiStyle(theme: Theme): CSSProperties {
   };
 }
 
-/** Botón primario (CTA) — naranja */
+/** Botón primario (CTA) — naranja Valencia, neobrutal */
 export function btnPrimaryStyle(theme: Theme): CSSProperties {
   const t = getTokens(theme);
   return {
@@ -451,29 +469,31 @@ export function btnPrimaryStyle(theme: Theme): CSSProperties {
     color: t.textOnAccent,
     padding: `${SPACE[2]} ${SPACE[4]}`,
     borderRadius: RADIUS.md,
-    border: "0.5px solid transparent",
+    border: t.neoBorder,
+    boxShadow: t.neoShadowBtn,
     fontSize: FS.sm,
-    fontWeight: FW.medium,
+    fontWeight: FW.bold,
     fontFamily: FONT.sans,
     cursor: "pointer",
-    transition: `background ${MOTION.durFast} ${MOTION.easeOut}, transform ${MOTION.durFast} ${MOTION.easeOut}`,
+    transition: `transform ${MOTION.durFast} ${MOTION.easeOut}, box-shadow ${MOTION.durFast} ${MOTION.easeOut}`,
   };
 }
 
-/** Botón secundario — outline marino */
+/** Botón secundario — outline marino, neobrutal */
 export function btnSecondaryStyle(theme: Theme): CSSProperties {
   const t = getTokens(theme);
   return {
-    background: "transparent",
+    background: t.bgSurface,
     color: t.brandPrimary,
     padding: `${SPACE[2]} ${SPACE[4]}`,
     borderRadius: RADIUS.md,
-    border: `0.5px solid ${t.brandPrimary}`,
+    border: t.neoBorder,
+    boxShadow: t.neoShadowSm,
     fontSize: FS.sm,
     fontWeight: FW.medium,
     fontFamily: FONT.sans,
     cursor: "pointer",
-    transition: `background ${MOTION.durFast} ${MOTION.easeOut}`,
+    transition: `transform ${MOTION.durFast} ${MOTION.easeOut}, box-shadow ${MOTION.durFast} ${MOTION.easeOut}`,
   };
 }
 
@@ -485,7 +505,7 @@ export function btnGhostStyle(theme: Theme): CSSProperties {
     color: t.textSecondary,
     padding: `${SPACE[2]} ${SPACE[4]}`,
     borderRadius: RADIUS.md,
-    border: "0.5px solid transparent",
+    border: "2px solid transparent",
     fontSize: FS.sm,
     fontWeight: FW.medium,
     fontFamily: FONT.sans,
@@ -494,12 +514,13 @@ export function btnGhostStyle(theme: Theme): CSSProperties {
   };
 }
 
-/** Badge genérico — pill pequeña */
+/** Badge neobrutal — rectangular con borde tinta */
 export function badgeStyle(
   theme: Theme,
   variant: "marino" | "naranja" | "oliva" | "ambar" | "terra" = "marino"
 ): CSSProperties {
   const p = PALETTE[theme];
+  const t = getTokens(theme);
   const MAP = {
     marino: { bg: p.marino[500], fg: p.sand[50] },
     naranja: { bg: p.naranja[500], fg: p.sand[50] },
@@ -514,10 +535,12 @@ export function badgeStyle(
     fontWeight: FW.bold,
     letterSpacing: TRACKING.wide,
     padding: "3px 10px",
-    borderRadius: RADIUS.pill,
+    borderRadius: RADIUS.sm,
     textTransform: "uppercase",
     background: MAP[variant].bg,
     color: MAP[variant].fg,
+    border: `1.5px solid ${t.neoInk}`,
+    boxShadow: `2px 2px 0 ${t.neoShadow}`,
   };
 }
 
@@ -529,7 +552,7 @@ export function semaforoColor(theme: Theme, valor: number): string {
   return t.info;
 }
 
-/** Group style — separador visual entre secciones.
+/** Group style — bloque agrupador neobrutal.
  *  Polimórfico: acepta Theme (David) o TokenSet (Binagre compat). */
 export function groupStyle(theme: Theme): CSSProperties;
 export function groupStyle(T: TokenSet): CSSProperties;
@@ -537,26 +560,31 @@ export function groupStyle(arg: Theme | TokenSet): CSSProperties {
   if (typeof arg === "string") {
     const t = getTokens(arg);
     return {
-      borderTop: `0.5px solid ${t.borderSubtle}`,
-      paddingTop: SPACE[6],
-      marginTop: SPACE[6],
+      background: t.bgSurfaceAlt,
+      border: t.neoBorder,
+      borderRadius: RADIUS.xl,
+      boxShadow: t.neoShadowCard,
+      padding: SPACE[6],
     };
   }
   return {
     background: arg.group,
-    border: `0.5px solid ${arg.brd}`,
-    borderRadius: 16,
+    border: `2px solid ${arg.brd}`,
+    borderRadius: 14,
+    boxShadow: `4px 4px 0 ${arg.brd}`,
     padding: "24px 28px",
   };
 }
 
-/** Estilo para cards tintadas por operador */
+/** Estilo para cards tintadas por operador — neobrutal */
 export function cardOperadorStyle(theme: Theme, operador: Operador): CSSProperties {
   const op = getOperadorStyle(operador, theme);
+  const t = getTokens(theme);
   return {
     background: op.bg,
-    border: `0.5px solid ${op.bd}`,
+    border: `2px solid ${op.bd}`,
     borderRadius: RADIUS.md,
+    boxShadow: t.neoShadowSm,
     padding: SPACE[4],
   };
 }
@@ -614,7 +642,7 @@ export function fmtDateFull(fecha: Date | string | null | undefined): string {
 }
 
 // ——————————————————————————————————————————————————————
-// COMPAT HELPERS BINAGRE (consumen TokenSet)
+// COMPAT HELPERS BINAGRE (consumen TokenSet) — NEOBRUTAL
 // Añadidos para módulos portados que esperan estas signatures.
 // ——————————————————————————————————————————————————————
 
@@ -637,20 +665,21 @@ export const kpiValueStyle = (T: TokenSet): CSSProperties => ({
 export const tabActiveStyle = (_isDark: boolean): CSSProperties => ({
   padding: "6px 14px",
   borderRadius: 6,
-  border: "none",
+  border: "2px solid var(--text-primary, #1C1A14)",
   background: "var(--brand-accent)",
   color: "#ffffff",
   fontFamily: FONT.body,
   fontSize: 13,
-  fontWeight: 500,
+  fontWeight: 700,
   cursor: "pointer",
+  boxShadow: "2px 2px 0 var(--text-primary, #1C1A14)",
   transition: "background 150ms",
 });
 
 export const tabInactiveStyle = (T: TokenSet): CSSProperties => ({
   padding: "6px 14px",
   borderRadius: 6,
-  border: `0.5px solid ${T.brd}`,
+  border: `2px solid ${T.brd}`,
   background: "none",
   color: T.sec,
   fontFamily: FONT.body,
@@ -669,7 +698,7 @@ export const sectionLabelStyle = (T: TokenSet): CSSProperties => ({
 });
 
 export const dividerStyle = (T: TokenSet): CSSProperties => ({
-  height: 1,
+  height: 2,
   background: T.brd,
   margin: "12px 0",
 });
