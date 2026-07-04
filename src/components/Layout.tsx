@@ -2,14 +2,15 @@ import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import { Menu } from 'lucide-react'
 import Sidebar from '@/components/Sidebar'
+import { ARENA, INK, MARINO, OSW } from '@/styles/neobrutal'
 
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
     <div
-      className="flex h-screen font-sans"
-      style={{ background: 'var(--bg-app)', color: 'var(--text-primary)' }}
+      className="flex h-screen"
+      style={{ background: ARENA, color: INK, fontFamily: "'Lexend', sans-serif" }}
     >
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
@@ -17,32 +18,33 @@ export default function Layout() {
         <header
           className="h-12 flex items-center px-4 lg:hidden"
           style={{
-            background: 'var(--bg-surface)',
-            borderBottom: '0.5px solid var(--border-default)',
+            background: MARINO,
+            borderBottom: `4px solid ${INK}`,
           }}
         >
           <button
             onClick={() => setSidebarOpen(true)}
-            style={{ color: 'var(--text-primary)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            style={{ color: ARENA, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             aria-label="Abrir menú"
           >
-            <Menu size={20} strokeWidth={1.5} />
+            <Menu size={20} strokeWidth={2} />
           </button>
           <span
-            className="ml-3 text-xs"
+            className="ml-3"
             style={{
-              color: 'var(--text-primary)',
-              fontFamily: 'var(--font-sans)',
-              letterSpacing: 'var(--tracking-wide)',
+              color: ARENA,
+              fontFamily: OSW,
+              fontSize: 13,
+              letterSpacing: '2px',
               textTransform: 'uppercase',
-              fontWeight: 500,
+              fontWeight: 600,
             }}
           >
             David Reparte
           </span>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6" style={{ background: ARENA }}>
           <Outlet />
         </main>
       </div>
