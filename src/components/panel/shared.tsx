@@ -33,8 +33,9 @@ export function CardBase({ children, style }: { children: React.ReactNode; style
     <div
       style={{
         background: t.bgSurface,
-        border: `0.5px solid ${t.borderDefault}`,
+        border: t.neoBorder,
         borderRadius: RADIUS.lg,
+        boxShadow: t.neoShadowCard,
         padding: SPACE[6],
         display: 'flex',
         flexDirection: 'column',
@@ -90,7 +91,7 @@ export function HugeNumber({
 export function Separator() {
   const theme = useThemeMode()
   const t = getTokens(theme)
-  return <div style={{ height: 1, background: t.borderSubtle, margin: `${SPACE[1]} 0` }} />
+  return <div style={{ height: 2, background: t.neoInk, opacity: 0.25, margin: `${SPACE[1]} 0` }} />
 }
 
 export function Marker({ color, square = false }: { color: string; square?: boolean }) {
@@ -112,7 +113,7 @@ export function MiniBar({ color, pct }: { color: string; pct: number }) {
   const theme = useThemeMode()
   const t = getTokens(theme)
   return (
-    <div style={{ height: 3, width: '100%', background: t.borderSubtle, borderRadius: 2, overflow: 'hidden' }}>
+    <div style={{ height: 4, width: '100%', background: t.borderSubtle, borderRadius: 2, overflow: 'hidden', border: `1px solid ${t.neoInk}22` }}>
       <div style={{ height: '100%', width: `${Math.min(100, Math.max(0, pct * 100))}%`, background: color }} />
     </div>
   )
