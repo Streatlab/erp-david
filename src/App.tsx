@@ -9,6 +9,10 @@ import Flota from '@/pages/Flota'
 import FurgonetaDetalle from '@/pages/FurgonetaDetalle'
 import BancosPage from '@/pages/configuracion/bancos/BancosPage'
 import Running from '@/pages/finanzas/Running'
+import FacturacionEmitida from '@/pages/finanzas/FacturacionEmitida'
+import Liquidaciones from '@/pages/finanzas/Liquidaciones'
+import PagosCobros from '@/pages/finanzas/PagosCobros'
+import ReclamacionesCade from '@/pages/ReclamacionesCade'
 import Placeholder from '@/pages/Placeholder'
 
 function ProtectedRoute({ children, solo }: { children: React.ReactNode; solo?: string[] }) {
@@ -17,6 +21,23 @@ function ProtectedRoute({ children, solo }: { children: React.ReactNode; solo?: 
   if (solo && !solo.includes(usuario.perfil)) return <Navigate to="/" replace />
   return <>{children}</>
 }
+
+const PLACEHOLDERS = [
+  'personal',
+  'tareas',
+  'papeleo',
+  'checklists',
+  'manuales',
+  'libro-facturas',
+  'equipos',
+  'danos-vehiculos',
+  'pedidos',
+  'inventarios',
+  'mantenimiento',
+  'informes-equipo',
+  'punto-equilibrio',
+  'finanzas/ventas',
+]
 
 function AppRoutes() {
   const { usuario } = useAuth()
@@ -27,25 +48,30 @@ function AppRoutes() {
       <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
         <Route index element={<PanelGlobal />} />
 
+        {/* Finanzas */}
+        <Route path="finanzas/facturacion"   element={<ProtectedRoute solo={['admin']}><FacturacionEmitida /></ProtectedRoute>} />
+        <Route path="finanzas/liquidaciones" element={<ProtectedRoute solo={['admin']}><Liquidaciones /></ProtectedRoute>} />
+        <Route path="finanzas/pagos-cobros"  element={<ProtectedRoute solo={['admin']}><PagosCobros /></ProtectedRoute>} />
+        <Route path="running"                element={<ProtectedRoute solo={['admin']}><Running /></ProtectedRoute>} />
+        <Route path="conciliacion"           element={<ProtectedRoute solo={['admin']}><Conciliacion /></ProtectedRoute>} />
+
+        {/* Operación */}
         <Route path="entregas"         element={<ProtectedRoute solo={['admin']}><Entregas /></ProtectedRoute>} />
-        <Route path="personal"         element={<ProtectedRoute solo={['admin']}><Placeholder /></ProtectedRoute>} />
         <Route path="flota"            element={<ProtectedRoute solo={['admin']}><Flota /></ProtectedRoute>} />
         <Route path="flota/:codigo"    element={<ProtectedRoute solo={['admin']}><FurgonetaDetalle /></ProtectedRoute>} />
-        <Route path="liquidacion-cade" element={<ProtectedRoute solo={['admin']}><Placeholder /></ProtectedRoute>} />
-        <Route path="conciliacion"     element={<ProtectedRoute solo={['admin']}><Conciliacion /></ProtectedRoute>} />
-        <Route path="running"          element={<ProtectedRoute solo={['admin']}><Running /></ProtectedRoute>} />
-        <Route path="punto-equilibrio" element={<ProtectedRoute solo={['admin']}><Placeholder /></ProtectedRoute>} />
-        <Route path="contabilidad"     element={<ProtectedRoute solo={['admin']}><Placeholder /></ProtectedRoute>} />
-        <Route path="hacienda"         element={<ProtectedRoute solo={['admin']}><Placeholder /></ProtectedRoute>} />
-        <Route path="operativa"        element={<ProtectedRoute solo={['admin']}><Placeholder /></ProtectedRoute>} />
+        <Route path="reclamaciones"    element={<ProtectedRoute solo={['admin']}><ReclamacionesCade /></ProtectedRoute>} />
 
-        {/* Configuración · Redirect */}
+        {/* Secciones en fases (placeholder navegable) */}
+        {PLACEHOLDERS.map(p => (
+          <Route key={p} path={p} element={<ProtectedRoute solo={['admin']}><Placeholder /></ProtectedRoute>} />
+        ))}
+
+        {/* Redirects de rutas antiguas */}
+        <Route path="liquidacion-cade" element={<Navigate to="/finanzas/liquidaciones" replace />} />
+
+        {/* Configuración */}
         <Route path="configuracion" element={<Navigate to="/configuracion/bancos" replace />} />
-
-        {/* Configuración · Bancos (Proveedores es el primer pill interno) */}
         <Route path="configuracion/bancos" element={<ProtectedRoute solo={['admin']}><BancosPage /></ProtectedRoute>} />
-
-        {/* Configuración · Fallback */}
         <Route path="configuracion/:slug" element={<ProtectedRoute solo={['admin']}><Placeholder /></ProtectedRoute>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
