@@ -20,7 +20,7 @@ const PERIODOS: { key: PeriodoKey; label: string }[] = [
 
 /* Colores de operador según manual Neobrutal Mediterráneo */
 const COLOR_OP_NEO: Record<string, string> = {
-  mercadona: '#F26B1F', carrefour: '#7A8C3E', lidl: '#F5B84A', dia: '#C94A2C', prior: '#2D7DD2', cadeOtro: GRIS,
+  mercadona: '#F26B1F', carrefour: '#7A8C3E', lidl: '#F5B84A', dia: '#C94A2C', prior: '#0B1524', cadeOtro: '#A89472',
 }
 const COLOR_GASTO_NEO: Record<string, string> = {
   rrhh: MARINO, renting: NARANJA, combustible: AMBAR, controlables: TERRA, otros: GRIS,
@@ -198,20 +198,20 @@ export default function PanelGlobal() {
           </div>
         </Banda>
 
-        {/* BANDA 3 · ¿Quién te paga? (BLANCO) */}
-        <Banda bg={BLANCO}>
-          <span style={eyebrow(CELESTE, ARENA)}>¿Quién te paga?</span>
-          <h2 style={{ ...d('clamp(22px,2.6vw,32px)'), margin: '12px 0 20px' }}>Ingresos por supermercado</h2>
+        {/* BANDA 3 · ¿Quién te paga? (CELESTE por cobrar/bruto) */}
+        <Banda bg={CELESTE}>
+          <span style={eyebrow(BLANCO)}>¿Quién te paga?</span>
+          <h2 style={{ ...d('clamp(22px,2.6vw,32px)', ARENA), margin: '12px 0 20px' }}>Ingresos por supermercado</h2>
           <div style={{ display: 'grid', gap: 14 }}>
             {bundle.ingresos.filas.map(f => {
               const color = COLOR_OP_NEO[f.key] ?? GRIS
               return (
                 <div key={f.key} style={{ display: 'grid', gridTemplateColumns: 'minmax(140px,220px) 1fr minmax(150px,200px)', gap: 14, alignItems: 'center' }}>
-                  <span style={{ fontFamily: OSW, fontWeight: 600, fontSize: 14, textTransform: 'uppercase', letterSpacing: 0.5 }}>{f.label}</span>
+                  <span style={{ fontFamily: OSW, fontWeight: 600, fontSize: 14, textTransform: 'uppercase', letterSpacing: 0.5, color: ARENA }}>{f.label}</span>
                   <BarraH pct={f.pct} color={color} />
-                  <span style={{ fontFamily: OSW, fontWeight: 700, fontSize: 20, textAlign: 'right' }}>
-                    {E(f.importe)} <span style={{ fontSize: 13, color: GRIS }}>· {P0(f.pct * 100)}</span>
-                    <span style={{ fontFamily: OSW, fontSize: 13, marginLeft: 8, color: f.delta == null ? GRIS : f.delta >= 0 ? OLIVA : TERRA }}>{DELTA(f.delta == null ? null : f.delta * 100)}</span>
+                  <span style={{ fontFamily: OSW, fontWeight: 700, fontSize: 20, textAlign: 'right', color: BLANCO }}>
+                    {E(f.importe)} <span style={{ fontSize: 13, color: ARENA_CL }}>· {P0(f.pct * 100)}</span>
+                    <span style={{ fontFamily: OSW, fontSize: 13, marginLeft: 8, background: f.delta == null ? 'transparent' : f.delta >= 0 ? OLIVA : TERRA, color: ARENA, padding: f.delta == null ? 0 : '1px 6px' }}>{DELTA(f.delta == null ? null : f.delta * 100)}</span>
                   </span>
                 </div>
               )
@@ -219,11 +219,11 @@ export default function PanelGlobal() {
           </div>
         </Banda>
 
-        {/* BANDA 4 · ¿En qué se va? (ARENA_CL) */}
+        {/* BANDA 4 · ¿En qué se va? (ARENA_CL con TERRA/NARANJA) */}
         <Banda bg={ARENA_CL}>
-          <span style={eyebrow(NARANJA, ARENA)}>¿En qué se va?</span>
+          <span style={eyebrow(TERRA, ARENA)}>¿En qué se va?</span>
           <h2 style={{ ...d('clamp(22px,2.6vw,32px)'), margin: '12px 0 20px' }}>
-            Gastos del período: <span style={{ color: TERRA }}>{EUR(gas)}</span>
+            Gastos del período: <span style={{ background: TERRA, color: ARENA, padding: '0 10px' }}>{EUR(gas)}</span>
           </h2>
           <div style={{ display: 'grid', gap: 14 }}>
             {bundle.gastos.filas.map(f => (
@@ -298,13 +298,13 @@ export default function PanelGlobal() {
           </div>
         </Banda>
 
-        {/* BANDA 7 · Objetivos (ARENA) */}
-        <Banda bg={ARENA}>
-          <span style={eyebrow(AMBAR)}>Objetivos</span>
+        {/* BANDA 7 · Objetivos (ÁMBAR = foco/objetivos) */}
+        <Banda bg={AMBAR}>
+          <span style={eyebrow(INK, AMBAR)}>Objetivos</span>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 28, marginTop: 16 }}>
             <div style={{ display: 'grid', gap: 14 }}>
               {bundle.objetivos.map(f => {
-                const c = f.pct >= 1 ? OLIVA : f.pct >= 0.7 ? AMBAR : TERRA
+                const c = f.pct >= 1 ? OLIVA : f.pct >= 0.7 ? NARANJA : TERRA
                 return (
                   <div key={f.label} onClick={() => editarObjetivo(f)} title="Clic para editar objetivo"
                     style={{ ...card(BLANCO), padding: '14px 16px', cursor: 'pointer' }}>
@@ -326,7 +326,7 @@ export default function PanelGlobal() {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 8 }}>
                 {bundle.objetivosDia.map(f => {
-                  const c = f.esFuturo ? GRIS : f.pct >= 1 ? OLIVA : f.pct >= 0.7 ? AMBAR : TERRA
+                  const c = f.esFuturo ? GRIS : f.pct >= 1 ? OLIVA : f.pct >= 0.7 ? NARANJA : TERRA
                   return (
                     <div key={f.fecha} onClick={() => editarDia(f)} title="Editar objetivo del día"
                       style={{
@@ -378,7 +378,7 @@ export default function PanelGlobal() {
 
         {/* BANDA 9 · Semanas (ARENA_CL) */}
         <Banda bg={ARENA_CL}>
-          <span style={eyebrow(MARINO, ARENA)}>Ritmo semanal</span>
+          <span style={eyebrow(OLIVA, ARENA)}>Ritmo semanal</span>
           <h2 style={{ ...d('clamp(20px,2.4vw,28px)'), margin: '12px 0 20px' }}>Ingresos vs gastos · últimas 4 semanas</h2>
           <div style={{ display: 'grid', gridTemplateColumns: `repeat(${bundle.barrasSemanas.length}, 1fr)`, gap: 18, alignItems: 'end', minHeight: 180 }}>
             {(() => {
