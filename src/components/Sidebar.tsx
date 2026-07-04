@@ -112,9 +112,11 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
     borderRadius: RADIUS.md,
     fontFamily: FONT.sans,
     fontSize: FS.sm,
-    fontWeight: isActive ? FW.medium : FW.regular,
+    fontWeight: isActive ? FW.bold : FW.regular,
     color: isActive ? t.textOnPrimary : t.textPrimary,
     background: isActive ? t.brandPrimary : 'transparent',
+    border: isActive ? `1.5px solid ${t.neoInk}` : '1.5px solid transparent',
+    boxShadow: isActive ? t.neoShadowSm : 'none',
     textDecoration: 'none',
     cursor: 'pointer',
     transition: 'background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out)',
@@ -132,7 +134,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
     borderRadius: RADIUS.sm ?? 6,
     fontFamily: FONT.sans,
     fontSize: FS.xs,
-    fontWeight: isActive ? FW.medium : FW.regular,
+    fontWeight: isActive ? FW.bold : FW.regular,
     color: isActive ? t.brandPrimary : t.textSecondary,
     background: isActive ? `${t.brandPrimary}1A` : 'transparent',
     textDecoration: 'none',
@@ -168,19 +170,19 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
       <aside
         style={{
           background: t.bgSurface,
-          borderRight: `0.5px solid ${t.borderDefault}`,
+          borderRight: `2px solid ${t.neoInk}`,
           width: sidebarWidth, minWidth: sidebarWidth, maxWidth: sidebarWidth,
         }}
         className={`fixed top-0 left-0 z-40 h-full flex flex-col transition-all duration-200 overflow-hidden lg:translate-x-0 lg:static lg:z-auto ${open ? 'translate-x-0' : '-translate-x-full'}`}
       >
         {collapsed ? (
-          <div style={{ borderBottom: `0.5px solid ${t.borderSubtle}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 64, padding: '6px 0', gap: 4 }}>
+          <div style={{ borderBottom: `2px solid ${t.neoInk}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 64, padding: '6px 0', gap: 4 }}>
             <button onClick={toggle} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 2 }} title="Expandir">
               <img src="/logo-davidreparte.svg" alt="David Reparte" style={{ height: 32, width: 'auto', display: 'block' }} />
             </button>
           </div>
         ) : (
-          <div style={{ padding: SPACE[3], borderBottom: `0.5px solid ${t.borderSubtle}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 88, position: 'relative' }}>
+          <div style={{ padding: SPACE[3], borderBottom: `2px solid ${t.neoInk}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 88, position: 'relative' }}>
             <img src="/logo-davidreparte.svg" alt="David Reparte" style={{ height: 44, width: 'auto', display: 'block' }} />
             <span style={{ fontFamily: FONT.sans, fontSize: FS['2xs'], color: t.textSecondary, letterSpacing: TRACKING.wider, textTransform: 'uppercase', fontWeight: FW.medium, marginTop: 6 }}>
               David Reparte
@@ -194,7 +196,9 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
             <NavLink to="/" end onClick={onClose}
               style={({ isActive }) => ({
                 width: 'auto', background: isActive ? t.brandPrimary : 'transparent',
-                border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'flex-start',
+                border: isActive ? `1.5px solid ${t.neoInk}` : '1.5px solid transparent',
+                boxShadow: isActive ? t.neoShadowSm : 'none',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'flex-start',
                 gap: 10, padding: '10px 14px 10px 12px', margin: '2px 8px', borderRadius: RADIUS.md,
                 fontFamily: FONT.sans, fontSize: FS.xs, textTransform: 'uppercase',
                 letterSpacing: TRACKING.wide, fontWeight: FW.bold,
@@ -295,7 +299,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
           })}
         </nav>
 
-        <div style={{ padding: collapsed ? '8px' : '12px', borderTop: `0.5px solid ${t.borderSubtle}`, display: 'flex', justifyContent: 'center' }}>
+        <div style={{ padding: collapsed ? '8px' : '12px', borderTop: `2px solid ${t.neoInk}`, display: 'flex', justifyContent: 'center' }}>
           <ThemeToggle />
         </div>
 
