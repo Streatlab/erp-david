@@ -67,6 +67,23 @@ export const SIDEBAR = {
   border: `4px solid ${INK}`, sep: `3px solid ${INK}`,
 } as const
 
+/**
+ * Sistema decorativo del sidebar (espejo estructural del SIDEBAR_SECTION_BG
+ * de Binagre, paleta mediterránea David). Cada área del menú lleva cabecera
+ * en bloque de color sólido con significado fijo del manual:
+ * finanzas=CELESTE (dinero/por cobrar) · operaciones=NARANJA (reparto/coste) ·
+ * equipo=OLIVA (personas/positivo) · almacen=ÁMBAR (foco, texto INK) ·
+ * documentos=INK (archivo) · configuracion=GRIS (neutro, texto INK).
+ */
+export const SIDEBAR_SECTION_BG: Record<string, { bg: string; color: string }> = {
+  finanzas:      { bg: CELESTE, color: ARENA },
+  operaciones:   { bg: NARANJA, color: ARENA },
+  equipo:        { bg: OLIVA,   color: ARENA },
+  almacen:       { bg: AMBAR,   color: INK },
+  documentos:    { bg: INK,     color: ARENA },
+  configuracion: { bg: GRIS,    color: INK },
+}
+
 /* ── Helpers de estilo ───────────────────────────── */
 /** Número/título neobrutal: Oswald 700, uppercase, interlineado apretado. */
 export const d = (size: string, color: string = INK): CSSProperties => ({
