@@ -24,7 +24,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { useSidebarState } from '@/hooks/useSidebarState'
-import { SIDEBAR, OSW, LEX, AMBAR, ARENA, INK, NARANJA } from '@/styles/neobrutal'
+import { SIDEBAR, SIDEBAR_SECTION_BG, OSW, LEX, AMBAR, ARENA, INK, NARANJA } from '@/styles/neobrutal'
 import { getFurgonetas, type Furgoneta } from '@/lib/flota/queries'
 
 type IconType = React.ComponentType<{
@@ -45,6 +45,12 @@ interface NavItem {
   children?: NavChild[]
 }
 
+interface NavSection {
+  id: keyof typeof SIDEBAR_SECTION_BG
+  label: string
+  items: NavItem[]
+}
+
 const FINANZAS_CHILDREN: NavChild[] = [
   { path: '/finanzas/facturacion',   label: 'Facturación emitida' },
   { path: '/finanzas/liquidaciones', label: 'Liquidaciones' },
@@ -55,24 +61,56 @@ const FINANZAS_CHILDREN: NavChild[] = [
   { path: '/conciliacion',           label: 'Conciliación' },
 ]
 
-const ITEMS: NavItem[] = [
-  { path: '/finanzas',        label: 'Finanzas',            icon: Wallet,        perfiles: ['admin'], expandable: 'group', children: FINANZAS_CHILDREN },
-  { path: '/entregas',        label: 'Entregas',            icon: Truck,         perfiles: ['admin'] },
-  { path: '/flota',           label: 'Flota',               icon: RouteIcon,     perfiles: ['admin'], expandable: 'flota' },
-  { path: '/personal',        label: 'Personal',            icon: Users,         perfiles: ['admin'] },
-  { path: '/tareas',          label: 'Tareas',              icon: ListChecks,    perfiles: ['admin'] },
-  { path: '/reclamaciones',   label: 'Reclamaciones Cade',  icon: AlertTriangle, perfiles: ['admin'] },
-  { path: '/papeleo',         label: 'Papeleo',             icon: FileText,      perfiles: ['admin'] },
-  { path: '/checklists',      label: 'Checklists',          icon: ClipboardList, perfiles: ['admin'] },
-  { path: '/manuales',        label: 'Manuales',            icon: BookOpen,      perfiles: ['admin'] },
-  { path: '/libro-facturas',  label: 'Libro registro',      icon: Library,       perfiles: ['admin'] },
-  { path: '/equipos',         label: 'Equipos',             icon: HardHat,       perfiles: ['admin'] },
-  { path: '/danos-vehiculos', label: 'Daños vehículos',     icon: CarFront,      perfiles: ['admin'] },
-  { path: '/pedidos',         label: 'Pedidos',             icon: ShoppingCart,  perfiles: ['admin'] },
-  { path: '/inventarios',     label: 'Inventarios',         icon: Boxes,         perfiles: ['admin'] },
-  { path: '/mantenimiento',   label: 'Mantenimiento',       icon: Wrench,        perfiles: ['admin'] },
-  { path: '/informes-equipo', label: 'Informes equipo',     icon: BarChart3,     perfiles: ['admin'] },
-  { path: '/configuracion',   label: 'Configuración',       icon: Settings,      perfiles: ['admin'] },
+/* Sistema decorativo: menú agrupado por áreas con cabecera de color sólido
+   (espejo estructural del sidebar Binagre, paleta mediterránea David). */
+const SECCIONES: NavSection[] = [
+  {
+    id: 'finanzas', label: 'Finanzas',
+    items: [
+      { path: '/finanzas',      label: 'Finanzas',           icon: Wallet,        perfiles: ['admin'], expandable: 'group', children: FINANZAS_CHILDREN },
+      { path: '/reclamaciones', label: 'Reclamaciones Cade', icon: AlertTriangle, perfiles: ['admin'] },
+    ],
+  },
+  {
+    id: 'operaciones', label: 'Operaciones',
+    items: [
+      { path: '/entregas',        label: 'Entregas',        icon: Truck,     perfiles: ['admin'] },
+      { path: '/flota',           label: 'Flota',           icon: RouteIcon, perfiles: ['admin'], expandable: 'flota' },
+      { path: '/danos-vehiculos', label: 'Daños vehículos', icon: CarFront,  perfiles: ['admin'] },
+      { path: '/mantenimiento',   label: 'Mantenimiento',   icon: Wrench,    perfiles: ['admin'] },
+    ],
+  },
+  {
+    id: 'equipo', label: 'Equipo',
+    items: [
+      { path: '/personal',        label: 'Personal',        icon: Users,         perfiles: ['admin'] },
+      { path: '/tareas',          label: 'Tareas',          icon: ListChecks,    perfiles: ['admin'] },
+      { path: '/checklists',      label: 'Checklists',      icon: ClipboardList, perfiles: ['admin'] },
+      { path: '/equipos',         label: 'Equipos',         icon: HardHat,       perfiles: ['admin'] },
+      { path: '/informes-equipo', label: 'Informes equipo', icon: BarChart3,     perfiles: ['admin'] },
+    ],
+  },
+  {
+    id: 'almacen', label: 'Almacén',
+    items: [
+      { path: '/pedidos',     label: 'Pedidos',     icon: ShoppingCart, perfiles: ['admin'] },
+      { path: '/inventarios', label: 'Inventarios', icon: Boxes,        perfiles: ['admin'] },
+    ],
+  },
+  {
+    id: 'documentos', label: 'Documentos',
+    items: [
+      { path: '/papeleo',        label: 'Papeleo',        icon: FileText, perfiles: ['admin'] },
+      { path: '/manuales',       label: 'Manuales',       icon: BookOpen, perfiles: ['admin'] },
+      { path: '/libro-facturas', label: 'Libro registro', icon: Library,  perfiles: ['admin'] },
+    ],
+  },
+  {
+    id: 'configuracion', label: 'Configuración',
+    items: [
+      { path: '/configuracion', label: 'Configuración', icon: Settings, perfiles: ['admin'] },
+    ],
+  },
 ]
 
 const TEXTO_SUAVE = 'rgba(245,236,217,0.72)' // ARENA al 72% para items inactivos
@@ -84,7 +122,6 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
   const location = useLocation()
 
   const sidebarWidth = collapsed ? SIDEBAR.widthCollapsed : SIDEBAR.widthOpen
-  const visibleItems = ITEMS.filter(i => i.perfiles.includes(perfil))
 
   const [furgos, setFurgos] = useState<Furgoneta[]>([])
   const [flotaExpanded, setFlotaExpanded] = useState<boolean>(location.pathname.startsWith('/flota'))
@@ -143,6 +180,24 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
     textOverflow: 'ellipsis',
   })
 
+  /** Cabecera decorativa de sección: bloque de color sólido con borde INK. */
+  const sectionHeaderStyle = (id: NavSection['id']): React.CSSProperties => {
+    const s = SIDEBAR_SECTION_BG[id]
+    return {
+      background: s.bg,
+      color: s.color,
+      fontFamily: OSW,
+      fontWeight: 600,
+      fontSize: 11,
+      letterSpacing: '2px',
+      textTransform: 'uppercase',
+      padding: '5px 14px',
+      margin: '14px 10px 4px',
+      border: `2px solid ${INK}`,
+      boxShadow: `3px 3px 0 ${INK}`,
+    }
+  }
+
   const chevron = (expanded: boolean, active: boolean, onClick: () => void, title: string) => (
     <button
       onClick={onClick}
@@ -161,6 +216,85 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
       />
     </button>
   )
+
+  const renderItem = (item: NavItem) => {
+    const Icon = item.icon
+    if (collapsed) {
+      const to = item.expandable === 'group' ? (item.children?.[0]?.path ?? item.path) : item.path
+      return (
+        <NavLink key={item.path} to={to} onClick={onClose} title={item.label}
+          style={{ width: '100%', height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>
+          {({ isActive }) => (<Icon size={20} strokeWidth={2} color={isActive ? NARANJA : TEXTO_SUAVE} />)}
+        </NavLink>
+      )
+    }
+
+    // Grupo Finanzas
+    if (item.expandable === 'group') {
+      const isActive = finanzasActiva
+      return (
+        <div key={item.path}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <div
+              onClick={() => setFinanzasExpanded(v => !v)}
+              style={itemStyle(isActive)}
+            >
+              <Icon size={18} strokeWidth={2} color={isActive ? ARENA : TEXTO_SUAVE} style={{ flexShrink: 0 }} />
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
+            </div>
+            {chevron(finanzasExpanded, isActive, () => setFinanzasExpanded(v => !v), finanzasExpanded ? 'Colapsar' : 'Expandir')}
+          </div>
+          {finanzasExpanded && item.children?.map(c => (
+            <NavLink key={c.path} to={c.path} onClick={onClose} style={({ isActive }) => subItemStyle(isActive)}>
+              <span style={{ width: 6, height: 6, background: AMBAR, flexShrink: 0 }} />
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.label}</span>
+            </NavLink>
+          ))}
+        </div>
+      )
+    }
+
+    // Flota expandible
+    if (item.expandable === 'flota') {
+      const isActive = location.pathname.startsWith('/flota')
+      return (
+        <div key={item.path}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <NavLink to={item.path} onClick={onClose} end style={() => itemStyle(isActive)}>
+              <Icon size={18} strokeWidth={2} color={isActive ? ARENA : TEXTO_SUAVE} style={{ flexShrink: 0 }} />
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
+            </NavLink>
+            {chevron(flotaExpanded, isActive, () => setFlotaExpanded(v => !v), flotaExpanded ? 'Colapsar' : 'Expandir')}
+          </div>
+
+          {flotaExpanded && furgos.map(f => (
+            <NavLink
+              key={f.id}
+              to={`/flota/${f.codigo}`}
+              onClick={onClose}
+              style={({ isActive }) => subItemStyle(isActive)}
+            >
+              <span style={{ width: 6, height: 6, background: AMBAR, flexShrink: 0 }} />
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {f.matricula} · {f.nombre_corto ?? f.conductor}
+              </span>
+            </NavLink>
+          ))}
+        </div>
+      )
+    }
+
+    // Item normal
+    return (
+      <NavLink key={item.path} to={item.path} onClick={onClose} end
+        style={({ isActive }) => itemStyle(isActive)}>
+        {({ isActive }) => (<>
+          <Icon size={18} strokeWidth={2} color={isActive ? ARENA : TEXTO_SUAVE} style={{ flexShrink: 0 }} />
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
+        </>)}
+      </NavLink>
+    )
+  }
 
   return (
     <>
@@ -217,82 +351,14 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
             </NavLink>
           )}
 
-          {visibleItems.map(item => {
-            const Icon = item.icon
-            if (collapsed) {
-              const to = item.expandable === 'group' ? (item.children?.[0]?.path ?? item.path) : item.path
-              return (
-                <NavLink key={item.path} to={to} onClick={onClose} title={item.label}
-                  style={{ width: '100%', height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>
-                  {({ isActive }) => (<Icon size={20} strokeWidth={2} color={isActive ? NARANJA : TEXTO_SUAVE} />)}
-                </NavLink>
-              )
-            }
-
-            // Grupo Finanzas
-            if (item.expandable === 'group') {
-              const isActive = finanzasActiva
-              return (
-                <div key={item.path}>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <div
-                      onClick={() => setFinanzasExpanded(v => !v)}
-                      style={itemStyle(isActive)}
-                    >
-                      <Icon size={18} strokeWidth={2} color={isActive ? ARENA : TEXTO_SUAVE} style={{ flexShrink: 0 }} />
-                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
-                    </div>
-                    {chevron(finanzasExpanded, isActive, () => setFinanzasExpanded(v => !v), finanzasExpanded ? 'Colapsar' : 'Expandir')}
-                  </div>
-                  {finanzasExpanded && item.children?.map(c => (
-                    <NavLink key={c.path} to={c.path} onClick={onClose} style={({ isActive }) => subItemStyle(isActive)}>
-                      <span style={{ width: 6, height: 6, background: AMBAR, flexShrink: 0 }} />
-                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.label}</span>
-                    </NavLink>
-                  ))}
-                </div>
-              )
-            }
-
-            // Flota expandible
-            if (item.expandable === 'flota') {
-              const isActive = location.pathname.startsWith('/flota')
-              return (
-                <div key={item.path}>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <NavLink to={item.path} onClick={onClose} end style={() => itemStyle(isActive)}>
-                      <Icon size={18} strokeWidth={2} color={isActive ? ARENA : TEXTO_SUAVE} style={{ flexShrink: 0 }} />
-                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
-                    </NavLink>
-                    {chevron(flotaExpanded, isActive, () => setFlotaExpanded(v => !v), flotaExpanded ? 'Colapsar' : 'Expandir')}
-                  </div>
-
-                  {flotaExpanded && furgos.map(f => (
-                    <NavLink
-                      key={f.id}
-                      to={`/flota/${f.codigo}`}
-                      onClick={onClose}
-                      style={({ isActive }) => subItemStyle(isActive)}
-                    >
-                      <span style={{ width: 6, height: 6, background: AMBAR, flexShrink: 0 }} />
-                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {f.matricula} · {f.nombre_corto ?? f.conductor}
-                      </span>
-                    </NavLink>
-                  ))}
-                </div>
-              )
-            }
-
-            // Item normal
+          {SECCIONES.map(sec => {
+            const items = sec.items.filter(i => i.perfiles.includes(perfil))
+            if (items.length === 0) return null
             return (
-              <NavLink key={item.path} to={item.path} onClick={onClose} end
-                style={({ isActive }) => itemStyle(isActive)}>
-                {({ isActive }) => (<>
-                  <Icon size={18} strokeWidth={2} color={isActive ? ARENA : TEXTO_SUAVE} style={{ flexShrink: 0 }} />
-                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
-                </>)}
-              </NavLink>
+              <div key={sec.id}>
+                {!collapsed && <div style={sectionHeaderStyle(sec.id)}>{sec.label}</div>}
+                {items.map(renderItem)}
+              </div>
             )
           })}
         </nav>
