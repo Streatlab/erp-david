@@ -211,26 +211,24 @@ export default function PanelGlobal() {
   return (
     <div className="-m-4 md:-m-6" style={{ fontFamily: LEX, color: INK, background: ARENA }}>
 
-      {/* BANDA TITULAR MARINO */}
-      <Banda bg={MARINO}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16 }}>
-          <div>
-            <span style={eyebrow(AMBAR)}>Panel Global</span>
-            <h1 style={{ ...d('clamp(24px,3vw,38px)', ARENA), margin: '10px 0 0' }}>
-              {tituloMes} {hoy.getFullYear()}
-            </h1>
-            <div style={{ fontFamily: LEX, fontSize: 13, fontWeight: 600, color: ARENA, opacity: 0.8, marginTop: 6 }}>
-              {subtitulo || '—'}
+      {/* CABECERA + PESTAÑAS (arena, patrón Binagre: título en bloque + tabs) */}
+      <Banda bg={ARENA} style={{ paddingTop: 24, paddingBottom: 18 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
+          <div style={{ ...card(MARINO), padding: '12px 20px' }}>
+            <div style={d('clamp(20px,2.2vw,28px)', ARENA)}>Panel global</div>
+            <div style={{ fontFamily: LEX, fontSize: 12, fontWeight: 600, color: AMBAR, marginTop: 5 }}>
+              {tituloMes} {hoy.getFullYear()} · {subtitulo || '—'}
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 0, flexWrap: 'wrap', border: BORDER_CARD, boxShadow: SHADOW }}>
-            {PERIODOS.map(p => {
+          <div style={{ display: 'flex', gap: 0, flexWrap: 'wrap', border: BORDER_CARD, boxShadow: SHADOW, background: BLANCO }}>
+            {PERIODOS.map((p, i) => {
               const active = periodo === p.key
               return (
                 <button key={p.key} onClick={() => setPeriodo(p.key)}
                   style={{
-                    padding: '8px 14px', border: 'none', borderRight: `3px solid ${INK}`,
-                    background: active ? NARANJA : ARENA, color: active ? ARENA : INK,
+                    padding: '9px 14px', border: 'none',
+                    borderRight: i < PERIODOS.length - 1 ? `3px solid ${INK}` : 'none',
+                    background: active ? NARANJA : BLANCO, color: active ? ARENA : INK,
                     fontFamily: OSW, fontSize: 12, fontWeight: 600, letterSpacing: 1,
                     textTransform: 'uppercase', cursor: 'pointer',
                   }}>
@@ -240,11 +238,8 @@ export default function PanelGlobal() {
             })}
           </div>
         </div>
-      </Banda>
 
-      {/* BARRA DE PESTAÑAS */}
-      <section style={{ background: ARENA, borderBottom: BORDER, padding: `16px ${PAD}` }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 20 }}>
           {MAIN_TABS.map(tab => {
             const active = mainTab === tab.id
             return (
@@ -252,7 +247,7 @@ export default function PanelGlobal() {
                 style={{
                   fontFamily: OSW, fontWeight: 600, fontSize: 14, letterSpacing: 1, textTransform: 'uppercase',
                   padding: '9px 18px', cursor: 'pointer', border: BORDER_CARD, borderRadius: 0,
-                  background: active ? NARANJA : ARENA, color: active ? ARENA : INK,
+                  background: active ? NARANJA : BLANCO, color: active ? ARENA : INK,
                   boxShadow: active ? SHADOW : 'none',
                 }}>
                 {tab.label}
@@ -260,7 +255,7 @@ export default function PanelGlobal() {
             )
           })}
         </div>
-      </section>
+      </Banda>
 
       {errMsg && (
         <Banda bg={TERRA}>
