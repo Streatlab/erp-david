@@ -1,11 +1,11 @@
 /**
  * neobrutal.ts — TOKENS CANÓNICOS · Neobrutal Mediterráneo · ERP David Reparte.
  *
- * Espejo ESTRUCTURAL del neobrutal.ts de Binagre (bloque, borde, sombra, dato)
- * con paleta mediterránea propia. PROHIBIDO usar colores Binagre
+ * Estilo neobrutalista PROPIO de David (bloque, borde, sombra, dato) con paleta
+ * mediterránea propia + acentos sólidos añadidos. PROHIBIDO usar colores Binagre
  * (#B01D23, #FF2E63, #FFC400, #FCEFD6). Aislamiento absoluto.
  *
- * Fuente de verdad: MANUAL DE ESTILO · Neobrutal Mediterráneo David (Notion, único·definitivo).
+ * Fuente de verdad: MANUAL DE ESTILO · Neobrutal Mediterráneo David (Notion).
  * Mantra: bloque, borde, sombra, dato — sol y mar.
  *
  * ROTUNDO (no se toca): sombra única 4px 4px 0 INK · bordes INK 3-4px · radio 0 ·
@@ -29,16 +29,18 @@ export const BLANCO   = '#FFFFFF'  // interior de tarjetas
 export const GRIS     = '#A89472'  // deshabilitado, estimado o vacío
 
 /* ── Acentos semánticos (significado FIJO) ───────── */
-export const OLIVA   = '#7A8C3E'  // positivo · cobrado · margen sano
-export const TERRA   = '#C94A2C'  // negativo real · recorte · vencido · pérdida
-export const NARANJA = '#F26B1F'  // coste · aviso · pendiente · CTA (naranja Valencia)
-export const CELESTE = '#2D7DD2'  // por cobrar · bruto · campos editables
-export const AMBAR   = '#F5B84A'  // foco · héroe · objetivos · días pico
+export const OLIVA     = '#7A8C3E'  // positivo · cobrado · margen sano
+export const TERRA     = '#C94A2C'  // negativo real · recorte · vencido · pérdida
+export const NARANJA   = '#F26B1F'  // coste · aviso · pendiente · CTA (naranja Valencia)
+export const CELESTE   = '#2D7DD2'  // por cobrar · bruto · campos editables · info
+export const AMBAR     = '#F5B84A'  // foco · héroe · objetivos · días pico
+export const BERENJENA = '#6A3D7A'  // categoría / etiqueta fuerte / higo mediterráneo
+export const VERDEMAR  = '#0E8C7F'  // agua / activo / segundo positivo
 
 /** Paleta agrupada (acceso por objeto). */
 export const NEO = {
   INK, MARINO, ARENA, ARENA_CL, BLANCO, GRIS,
-  OLIVA, TERRA, NARANJA, CELESTE, AMBAR,
+  OLIVA, TERRA, NARANJA, CELESTE, AMBAR, BERENJENA, VERDEMAR,
 } as const
 
 /* ── Operadores (clientes de reparto) ────────────── */
@@ -56,31 +58,31 @@ export const OPERADOR_CLARO: Record<string, boolean> = {
 
 /* ── Estructura (ADN) ────────────────────────────── */
 export const SHADOW      = `4px 4px 0 ${INK}`   // sombra ÚNICA de todo el ERP
+export const SHADOW3     = `3px 3px 0 ${INK}`   // sombra corta (chips, sub-cards)
 export const PAD         = '40px'               // padding lateral de sección
 export const BORDER      = `4px solid ${INK}`   // contenedores y secciones
 export const BORDER_CARD = `3px solid ${INK}`   // cards y barras
 
-/* ── Sidebar (marino sólido) ─────────────────────── */
+/* ── Sidebar (papel arena + bloques de color) ────── */
 export const SIDEBAR = {
-  BG: MARINO, TEXTO: ARENA, ACTIVO: NARANJA, INK,
-  widthOpen: 240, widthCollapsed: 56,
+  BG: ARENA, TEXTO: INK, ACTIVO: NARANJA, INK,
+  widthOpen: 248, widthCollapsed: 56,
   border: `4px solid ${INK}`, sep: `3px solid ${INK}`,
 } as const
 
 /**
- * Sistema decorativo del sidebar (espejo estructural del SIDEBAR_SECTION_BG
- * de Binagre, paleta mediterránea David). Cada área del menú lleva cabecera
- * en bloque de color sólido con significado fijo del manual:
+ * Sistema de bloques del sidebar (paleta mediterránea David, acentos sólidos).
+ * Cada área del menú lleva barra de color sólido con significado fijo:
  * finanzas=CELESTE (dinero/por cobrar) · operaciones=NARANJA (reparto/coste) ·
  * equipo=OLIVA (personas/positivo) · almacen=ÁMBAR (foco, texto INK) ·
- * documentos=INK (archivo) · configuracion=GRIS (neutro, texto INK).
+ * documentos=MARINO (archivo) · configuracion=GRIS (neutro, texto INK).
  */
 export const SIDEBAR_SECTION_BG: Record<string, { bg: string; color: string }> = {
   finanzas:      { bg: CELESTE, color: ARENA },
   operaciones:   { bg: NARANJA, color: ARENA },
   equipo:        { bg: OLIVA,   color: ARENA },
   almacen:       { bg: AMBAR,   color: INK },
-  documentos:    { bg: INK,     color: ARENA },
+  documentos:    { bg: MARINO,  color: ARENA },
   configuracion: { bg: GRIS,    color: INK },
 }
 
@@ -101,6 +103,14 @@ export const eyebrow = (bg: string, color: string = INK): CSSProperties => ({
 /** Tarjeta canónica: borde 3px + sombra dura + radio 0. */
 export const card = (bg: string = BLANCO): CSSProperties => ({
   background: bg, border: BORDER_CARD, boxShadow: SHADOW, borderRadius: 0,
+})
+
+/** Chip/pastilla de estado: borde 2px + sombra corta. */
+export const chip = (bg: string, color: string = INK): CSSProperties => ({
+  display: 'inline-flex', alignItems: 'center', gap: 6, background: bg, color,
+  border: `2px solid ${INK}`, boxShadow: SHADOW3, borderRadius: 0,
+  fontFamily: OSW, fontWeight: 600, fontSize: 12, letterSpacing: '1px',
+  textTransform: 'uppercase', padding: '4px 10px',
 })
 
 /* ── Formato de cifras es-ES ─────────────────────── */
