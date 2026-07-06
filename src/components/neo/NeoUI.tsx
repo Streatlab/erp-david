@@ -9,10 +9,19 @@ import {
   OSW, LEX, SHADOW, BORDER, BORDER_CARD, PAD, d, eyebrow, card,
 } from '@/styles/neobrutal'
 
-/* Página full-bleed: escapa el padding del Layout y pone papel arena + cierre */
+/* Papel mediterráneo: arena cálida con trama de puntos celeste + terracota. */
+export const PAPEL_MEDITERRANEO: CSSProperties = {
+  backgroundColor: '#F3E4C6',
+  backgroundImage:
+    'radial-gradient(rgba(45,125,210,0.13) 1.6px, transparent 1.7px), radial-gradient(rgba(201,74,44,0.10) 1.6px, transparent 1.7px)',
+  backgroundSize: '26px 26px, 26px 26px',
+  backgroundPosition: '0 0, 13px 13px',
+}
+
+/* Página full-bleed: escapa el padding del Layout y pone papel mediterráneo + cierre */
 export function PageNeo({ children }: { children: ReactNode }) {
   return (
-    <div className="-m-4 md:-m-6" style={{ fontFamily: LEX, color: INK, background: ARENA }}>
+    <div className="-m-4 md:-m-6" style={{ fontFamily: LEX, color: INK, ...PAPEL_MEDITERRANEO }}>
       {children}
       <section style={{ background: MARINO, padding: `22px ${PAD}` }}>
         <div style={{ ...d('16px', ARENA), letterSpacing: '1px' }}>DAVID REPARTE. ALCOI · ONTINYENT.</div>
