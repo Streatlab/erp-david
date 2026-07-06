@@ -2,15 +2,14 @@ import { useMemo, useState, type CSSProperties } from 'react'
 import { Search, Zap } from 'lucide-react'
 import { fmtEur } from '@/utils/format'
 import {
-  useTheme,
-  useThemeMode,
-  FONT,
-  tabActiveStyle,
-  tabInactiveStyle,
-  getOperadorStyle,
-  type Operador,
-} from '@/styles/tokens'
-import { KpiCard } from '@/components/KpiCard'
+  INK, MARINO, ARENA, ARENA_CL, BLANCO, GRIS,
+  OLIVA, TERRA, NARANJA, CELESTE, AMBAR,
+  OSW, LEX, SHADOW, BORDER_CARD, OPERADOR, card,
+} from '@/styles/neobrutal'
+import {
+  PageNeo, Banda, CabeceraNeo, AvisoNeo,
+  TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo, BotonNeo,
+} from '@/components/neo/NeoUI'
 import { ResumenDashboard } from '@/components/conciliacion/ResumenDashboard'
 import ImportDropzone, { type ParsedRow } from '@/components/conciliacion/ImportDropzone'
 import SelectorPeriodoDropdown, { type PeriodoKey } from '@/components/finanzas/running/SelectorPeriodoDropdown'
@@ -20,7 +19,7 @@ import type { Movimiento } from '@/types/conciliacion'
 import { useConciliacion } from '@/hooks/useConciliacion'
 
 /* ═══════════════════════════════════════════════════════════
-   HELPERS
+   HELPERS (lógica intacta)
    ═══════════════════════════════════════════════════════════ */
 
 const STOP_WORDS = new Set([
@@ -49,8 +48,9 @@ function fmtFecha(iso: string): string {
   return `${d}/${m}/${y.slice(2)}`
 }
 
-/** Detecta si la contraparte es uno de los 4 operadores Cade (Mercadona/Carrefour/Lidl/Día) para colorear el badge. */
-function detectarOperador(nombre: string): Operador | null {
+type OperadorKey = keyof typeof OPERADOR
+
+function detectarOperador(nombre: string): OperadorKey | null {
   const n = nombre.toLowerCase().trim()
   if (n.includes('mercadona')) return 'mercadona'
   if (n.includes('carrefour')) return 'carrefour'
@@ -82,9 +82,6 @@ function calcularLabelPeriodo(periodo: string, customDesde?: string, customHasta
 type Tab = 'resumen' | 'movimientos'
 
 export default function Conciliacion() {
-  const { T, isDark } = useTheme()
-  const themeMode = useThemeMode()
-
   const [tab, setTab] = useState<Tab>('resumen')
   const [periodo, setPeriodo] = useState<PeriodoKey>('mes')
   const [customDesde, setCustomDesde] = useState<string>('')
@@ -256,84 +253,25 @@ export default function Conciliacion() {
   const ultimoDiaMes = new Date(anioActual, hoyDate.getMonth() + 1, 0).getDate()
   const diasRestantes = Math.max(0, ultimoDiaMes - hoyDate.getDate())
 
-  /* ═══════════════════════════════════════════════════════════
-     STYLES INLINE
-     ═══════════════════════════════════════════════════════════ */
+  /* ═══ ESTILOS NEOBRUTAL ═══ */
 
   const labelStyle: CSSProperties = {
-    fontFamily: FONT.heading,
-    fontSize: 11,
-    letterSpacing: '1.5px',
-    textTransform: 'uppercase',
-    color: T.mut,
-    marginBottom: 6,
-    display: 'block',
+    fontFamily: OSW, fontSize: 12, fontWeight: 600, letterSpacing: 2,
+    textTransform: 'uppercase', color: INK, marginBottom: 6, display: 'block',
   }
 
   const inputStyle: CSSProperties = {
-    width: '100%',
-    backgroundColor: T.inp,
-    color: T.pri,
-    border: `1px solid ${T.brd}`,
-    borderRadius: 8,
-    padding: '9px 12px',
-    fontSize: 13,
-    fontFamily: FONT.body,
-    outline: 'none',
-    minHeight: 40,
+    width: '100%', backgroundColor: BLANCO, color: INK,
+    border: `2px dashed ${CELESTE}`, borderRadius: 0,
+    padding: '9px 12px', fontSize: 13, fontWeight: 600, fontFamily: LEX,
+    outline: 'none', minHeight: 40,
   }
-
-  const thStyle: CSSProperties = {
-    fontFamily: FONT.heading,
-    fontSize: 10,
-    letterSpacing: '2px',
-    textTransform: 'uppercase',
-    color: T.mut,
-    padding: '10px 12px',
-    textAlign: 'left',
-    background: T.group,
-    borderBottom: `0.5px solid ${T.brd}`,
-    fontWeight: 400,
-    whiteSpace: 'nowrap',
-  }
-
-  const tdStyle: CSSProperties = {
-    padding: '10px 12px',
-    fontSize: 13,
-    fontFamily: FONT.body,
-    color: T.pri,
-    borderBottom: `0.5px solid ${T.brd}`,
-    whiteSpace: 'nowrap',
-  }
-
-  /* ═══════════════════════════════════════════════════════════
-     RENDER
-     ═══════════════════════════════════════════════════════════ */
 
   return (
-    <div style={{ background: T.group, border: `0.5px solid ${T.brd}`, borderRadius: 16, padding: '24px 28px' }}>
-
-      {loadingBD && (
-        <div style={{ padding: 40, textAlign: 'center', color: T.mut, fontFamily: FONT.body }}>
-          Cargando movimientos…
-        </div>
-      )}
-
-      {/* HEADER — título + rango fechas + selector período */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22, flexWrap: 'wrap', gap: 12 }}>
-        <h2 style={{
-          color: 'var(--terra-500)',
-          fontFamily: FONT.heading,
-          fontSize: 22,
-          fontWeight: 500,
-          letterSpacing: '1px',
-          margin: 0,
-          textTransform: 'uppercase',
-        }}>
-          Resumen · Conciliación
-        </h2>
+    <PageNeo>
+      <CabeceraNeo eyebrowTxt="Conciliación" titulo="Banco · BBVA">
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 12, color: T.mut, fontFamily: FONT.body }}>{rangoFechasLegible}</span>
+          <span style={{ fontSize: 12, fontWeight: 600, color: ARENA, opacity: 0.85, fontFamily: LEX }}>{rangoFechasLegible}</span>
           <SelectorPeriodoDropdown
             value={periodo}
             onChange={setPeriodo}
@@ -343,399 +281,313 @@ export default function Conciliacion() {
             onRangoChange={(d, h) => { setCustomDesde(d); setCustomHasta(h); }}
           />
         </div>
-      </div>
+      </CabeceraNeo>
 
-      {/* TABS Resumen / Movimientos */}
-      <div style={{ display: 'flex', gap: 4, background: T.card, border: `0.5px solid ${T.brd}`, borderRadius: 10, padding: 4, width: 'fit-content', marginBottom: 18 }}>
-        {(['resumen', 'movimientos'] as Tab[]).map(k => (
-          <button
-            key={k}
-            onClick={() => setTab(k)}
-            style={tab === k ? tabActiveStyle(isDark) : tabInactiveStyle(T)}
-          >
-            {k === 'resumen' ? 'Resumen' : 'Movimientos'}
-          </button>
-        ))}
-      </div>
+      {loadingBD && (
+        <Banda bg={ARENA}>
+          <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 22, textTransform: 'uppercase', color: GRIS }}>Cargando movimientos…</div>
+        </Banda>
+      )}
+
+      {/* TABS neobrutal */}
+      <Banda bg={ARENA} style={{ padding: '18px 40px' }}>
+        <div style={{ display: 'flex', border: BORDER_CARD, boxShadow: SHADOW, width: 'fit-content' }}>
+          {(['resumen', 'movimientos'] as Tab[]).map(k => (
+            <button key={k} onClick={() => setTab(k)}
+              style={{
+                padding: '9px 20px', border: 'none', borderRight: `3px solid ${INK}`,
+                background: tab === k ? NARANJA : BLANCO, color: tab === k ? ARENA : INK,
+                fontFamily: OSW, fontSize: 13, fontWeight: 700, letterSpacing: 1.5,
+                textTransform: 'uppercase', cursor: 'pointer',
+              }}>
+              {k === 'resumen' ? 'Resumen' : 'Movimientos'}
+            </button>
+          ))}
+        </div>
+      </Banda>
 
       {/* Pestaña Resumen */}
       {tab === 'resumen' && (
-        <ResumenDashboard
-          movimientos={movimientosFiltrados}
-          movimientosAnterior={movimientosAnterior}
-          categorias={[]}
-          mesNombre={mesNombre}
-          anio={anioActual}
-          diasRestantes={diasRestantes}
-        />
+        <Banda bg={ARENA}>
+          <ResumenDashboard
+            movimientos={movimientosFiltrados}
+            movimientosAnterior={movimientosAnterior}
+            categorias={[]}
+            mesNombre={mesNombre}
+            anio={anioActual}
+            diasRestantes={diasRestantes}
+          />
+        </Banda>
       )}
 
       {/* Pestaña Movimientos */}
       {tab === 'movimientos' && (
         <>
-          {/* Sub-header: Dropzone + filtros Categoría / Buscar */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginBottom: 18 }}>
-            <ImportDropzone onFileLoaded={(rows: ParsedRow[], { fileName }) => {
-              const toInsert = rows.map(r => ({
-                fecha: r.fecha,
-                concepto: r.concepto,
-                importe: r.importe,
-                tipo: (r.importe >= 0 ? 'ingreso' : 'gasto') as 'ingreso' | 'gasto',
-                categoria: null,
-                proveedor: r.contraparte ?? null,
-                factura: null,
-                mes: r.fecha?.slice(0, 7) ?? null,
-                link_factura: null,
-                notas: r.notas ?? null,
-              }))
-              const toastId = toast.loading(`📥 Procesando ${fileName}...\n   Parseadas ${rows.length} filas`)
-              insertMovimientos(toInsert, (stage, current, total) => {
-                if (stage === 'saving') {
-                  toast.loading(`📥 Procesando ${fileName}...\n   Guardando ${current} / ${total} en BD`, { id: toastId })
-                } else {
-                  toast.loading(`⚙️ Aplicando reglas automáticas...\n   ${current} / ${total}`, { id: toastId })
-                }
-              })
-                .then(({ insertados, autoCategorizados, ignorados }) => {
-                  const pendientes = Math.max(0, insertados - autoCategorizados)
-                  const partes = [
-                    `✓ Importación completada`,
-                    `   ${rows.length} movimientos leídos`,
-                  ]
-                  if (autoCategorizados > 0) partes.push(`   ${autoCategorizados} categorizados automáticamente`)
-                  if (ignorados > 0)        partes.push(`   ${ignorados} ignorados (duplicados)`)
-                  if (pendientes > 0)       partes.push(`   ${pendientes} pendientes de categorizar`)
-                  toast.success(partes.join('\n'), { id: toastId })
+          {/* Importar + filtros */}
+          <Banda bg={ARENA_CL}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+              <ImportDropzone onFileLoaded={(rows: ParsedRow[], { fileName }) => {
+                const toInsert = rows.map(r => ({
+                  fecha: r.fecha,
+                  concepto: r.concepto,
+                  importe: r.importe,
+                  tipo: (r.importe >= 0 ? 'ingreso' : 'gasto') as 'ingreso' | 'gasto',
+                  categoria: null,
+                  proveedor: r.contraparte ?? null,
+                  factura: null,
+                  mes: r.fecha?.slice(0, 7) ?? null,
+                  link_factura: null,
+                  notas: r.notas ?? null,
+                }))
+                const toastId = toast.loading(`📥 Procesando ${fileName}...\n   Parseadas ${rows.length} filas`)
+                insertMovimientos(toInsert, (stage, current, total) => {
+                  if (stage === 'saving') {
+                    toast.loading(`📥 Procesando ${fileName}...\n   Guardando ${current} / ${total} en BD`, { id: toastId })
+                  } else {
+                    toast.loading(`⚙️ Aplicando reglas automáticas...\n   ${current} / ${total}`, { id: toastId })
+                  }
                 })
-                .catch(err => {
-                  console.error('Error importando:', err)
-                  toast.error(`✗ Error al importar\n   ${err?.message ?? err}`, { id: toastId })
-                })
-            }} />
-            <div>
-              <label style={labelStyle}>Categoría</label>
-              <select
-                value={catFiltro}
-                onChange={e => setCatFiltro(e.target.value)}
-                disabled={filtroCard === 'pendientes'}
-                style={{
-                  ...inputStyle,
-                  opacity: filtroCard === 'pendientes' ? 0.5 : 1,
-                  cursor: filtroCard === 'pendientes' ? 'not-allowed' : undefined,
-                }}
-              >
-                <option value="todas">Todas</option>
-                {dropdownGroups.ingresos.length > 0 && (
-                  <optgroup label="INGRESOS">
-                    {dropdownGroups.ingresos.map(c => (
-                      <option key={c.codigo} value={c.codigo}>{c.nombre}</option>
-                    ))}
-                  </optgroup>
-                )}
-                {dropdownGroups.gastosPorGrupo.map(g => (
-                  <optgroup key={g.grupo} label={g.grupo.toUpperCase()}>
-                    {g.items.map(c => (
-                      <option key={c.codigo} value={c.codigo}>{c.nombre}</option>
-                    ))}
-                  </optgroup>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label style={labelStyle}>Buscar concepto</label>
-              <div style={{ position: 'relative' }}>
-                <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: T.mut }} />
-                <input
-                  value={busqueda}
-                  onChange={e => setBusqueda(e.target.value)}
-                  placeholder="Ej: Iberdrola, Mercadona..."
-                  style={{ ...inputStyle, paddingLeft: 32 }}
-                />
+                  .then(({ insertados, autoCategorizados, ignorados }) => {
+                    const pendientes = Math.max(0, insertados - autoCategorizados)
+                    const partes = [
+                      `✓ Importación completada`,
+                      `   ${rows.length} movimientos leídos`,
+                    ]
+                    if (autoCategorizados > 0) partes.push(`   ${autoCategorizados} categorizados automáticamente`)
+                    if (ignorados > 0)        partes.push(`   ${ignorados} ignorados (duplicados)`)
+                    if (pendientes > 0)       partes.push(`   ${pendientes} pendientes de categorizar`)
+                    toast.success(partes.join('\n'), { id: toastId })
+                  })
+                  .catch(err => {
+                    console.error('Error importando:', err)
+                    toast.error(`✗ Error al importar\n   ${err?.message ?? err}`, { id: toastId })
+                  })
+              }} />
+              <div>
+                <label style={labelStyle}>Categoría</label>
+                <select
+                  value={catFiltro}
+                  onChange={e => setCatFiltro(e.target.value)}
+                  disabled={filtroCard === 'pendientes'}
+                  style={{
+                    ...inputStyle,
+                    opacity: filtroCard === 'pendientes' ? 0.5 : 1,
+                    cursor: filtroCard === 'pendientes' ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  <option value="todas">Todas</option>
+                  {dropdownGroups.ingresos.length > 0 && (
+                    <optgroup label="INGRESOS">
+                      {dropdownGroups.ingresos.map(c => (
+                        <option key={c.codigo} value={c.codigo}>{c.nombre}</option>
+                      ))}
+                    </optgroup>
+                  )}
+                  {dropdownGroups.gastosPorGrupo.map(g => (
+                    <optgroup key={g.grupo} label={g.grupo.toUpperCase()}>
+                      {g.items.map(c => (
+                        <option key={c.codigo} value={c.codigo}>{c.nombre}</option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={labelStyle}>Buscar concepto</label>
+                <div style={{ position: 'relative' }}>
+                  <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: GRIS }} />
+                  <input
+                    value={busqueda}
+                    onChange={e => setBusqueda(e.target.value)}
+                    placeholder="Ej: Iberdrola, Mercadona..."
+                    style={{ ...inputStyle, paddingLeft: 32 }}
+                  />
+                </div>
               </div>
             </div>
-          </div>
+          </Banda>
 
           {/* KPIs clicables → filtran tabla */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 20 }}>
-            <KpiClickable
-              activo={filtroCard === 'ingreso'}
-              onClick={() => toggleFiltroCard('ingreso')}
-              T={T}
-            >
-              <KpiCard
-                label="Ingresos netos"
-                period={periodoLabel}
-                value={fmtEur(datos.sumIng)}
-                delta={{ value: '+12.4% vs anterior', trend: 'up' }}
-                accent="success"
-              />
-            </KpiClickable>
-            <KpiClickable
-              activo={filtroCard === 'gasto'}
-              onClick={() => toggleFiltroCard('gasto')}
-              T={T}
-            >
-              <KpiCard
-                label="Gastos"
-                period={periodoLabel}
-                value={fmtEur(datos.sumGst)}
-                delta={{ value: '-5.2% vs anterior', trend: 'down' }}
-                accent="danger"
-              />
-            </KpiClickable>
-            <KpiCard
-              label="Balance neto"
-              period={periodoLabel}
-              value={fmtEur(datos.balance)}
-              accent={datos.balance >= 0 ? 'default' : 'danger'}
-            />
-            <KpiClickable
-              activo={filtroCard === 'pendientes'}
-              onClick={() => toggleFiltroCard('pendientes')}
-              T={T}
-            >
-              <KpiCard
-                label="Pendientes categorizar"
-                period={periodoLabel}
-                value={datos.pendientes > 0 ? String(datos.pendientes) : 'Todo al día ✓'}
-                accent="warning"
-                highlighted
-              />
-            </KpiClickable>
-          </div>
-
-          {/* Banner filtro activo */}
-          {filtroCard && (
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 12,
-              padding: '10px 16px', marginBottom: 14,
-              background: T.group, border: `1px solid ${T.brd}`,
-              borderLeft: '3px solid var(--terra-500)',
-              borderRadius: 8, fontFamily: FONT.body, fontSize: 13, color: T.pri,
-            }}>
-              <span>🔍</span>
-              <span>
-                Mostrando: <strong>{
-                  filtroCard === 'pendientes' ? 'Pendientes categorizar' :
-                  filtroCard === 'ingreso' ? 'Solo ingresos' : 'Solo gastos'
-                }</strong>
-                <span style={{ color: T.mut, marginLeft: 6 }}>
-                  ({movimientosFiltrados.length} {movimientosFiltrados.length === 1 ? 'movimiento' : 'movimientos'})
-                </span>
-              </span>
-              <button
-                onClick={() => setFiltroCard(null)}
-                style={{
-                  marginLeft: 'auto',
-                  background: 'transparent',
-                  border: `1px solid ${T.brd}`,
-                  borderRadius: 6,
-                  padding: '4px 10px',
-                  color: T.pri,
-                  fontFamily: FONT.heading,
-                  fontSize: 11,
-                  letterSpacing: 0.5,
-                  textTransform: 'uppercase',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >Quitar filtro ×</button>
+          <Banda bg={BLANCO}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 18 }}>
+              <KpiClick activo={filtroCard === 'ingreso'} onClick={() => toggleFiltroCard('ingreso')}
+                label="Ingresos" periodo={periodoLabel} valor={fmtEur(datos.sumIng)} color={OLIVA} />
+              <KpiClick activo={filtroCard === 'gasto'} onClick={() => toggleFiltroCard('gasto')}
+                label="Gastos" periodo={periodoLabel} valor={fmtEur(datos.sumGst)} color={NARANJA} />
+              <KpiClick activo={false} onClick={() => {}}
+                label="Balance neto" periodo={periodoLabel} valor={fmtEur(datos.balance)} color={datos.balance >= 0 ? OLIVA : TERRA} sinClick />
+              <KpiClick activo={filtroCard === 'pendientes'} onClick={() => toggleFiltroCard('pendientes')}
+                label="Pendientes categorizar" periodo={periodoLabel}
+                valor={datos.pendientes > 0 ? String(datos.pendientes) : 'Al día ✓'}
+                color={datos.pendientes > 0 ? AMBAR : OLIVA} />
             </div>
-          )}
+
+            {/* Banner filtro activo */}
+            {filtroCard && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                padding: '12px 16px', marginTop: 18,
+                background: AMBAR, border: BORDER_CARD, boxShadow: SHADOW,
+                fontFamily: LEX, fontSize: 13, fontWeight: 600, color: INK,
+              }}>
+                <span>
+                  Mostrando: <strong style={{ fontFamily: OSW, textTransform: 'uppercase' }}>{
+                    filtroCard === 'pendientes' ? 'Pendientes categorizar' :
+                    filtroCard === 'ingreso' ? 'Solo ingresos' : 'Solo gastos'
+                  }</strong>
+                  <span style={{ marginLeft: 6 }}>
+                    ({movimientosFiltrados.length} {movimientosFiltrados.length === 1 ? 'movimiento' : 'movimientos'})
+                  </span>
+                </span>
+                <div style={{ marginLeft: 'auto' }}>
+                  <BotonNeo onClick={() => setFiltroCard(null)} bg={BLANCO}>Quitar filtro ×</BotonNeo>
+                </div>
+              </div>
+            )}
+          </Banda>
 
           {/* TABLA */}
-          <div style={{ background: T.card, border: `0.5px solid ${T.brd}`, borderRadius: 10, overflow: 'hidden' }}>
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 720 }}>
-                <thead>
+          <Banda bg={ARENA}>
+            <TablaWrap>
+              <thead>
+                <tr>
+                  <th style={thNeo}>Fecha</th>
+                  <th style={thNeo}>Concepto</th>
+                  <th style={{ ...thNeo, textAlign: 'right' }}>Importe</th>
+                  <th style={thNeo}>Categoría</th>
+                  <th style={thNeo}>Contraparte</th>
+                </tr>
+              </thead>
+              <tbody>
+                {movimientosFiltrados.length === 0 ? (
                   <tr>
-                    <th style={thStyle}>Fecha</th>
-                    <th style={thStyle}>Concepto</th>
-                    <th style={{ ...thStyle, textAlign: 'right' }}>Importe</th>
-                    <th style={thStyle}>Categoría</th>
-                    <th style={thStyle}>Contraparte</th>
+                    <td colSpan={5} style={{ ...tdNeo(false), textAlign: 'center', color: GRIS, padding: '28px 12px' }}>
+                      Sin movimientos en este rango
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {movimientosFiltrados.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} style={{ ...tdStyle, textAlign: 'center', color: T.mut, padding: '28px 12px' }}>
-                        Sin movimientos en este rango
+                ) : movimientosFiltrados.map((m, i) => {
+                  const alt = i % 2 === 1
+                  const operador = detectarOperador(m.contraparte)
+                  const estadoColor = !m.categoria_id ? AMBAR : m.importe >= 0 ? OLIVA : NARANJA
+                  return (
+                    <tr key={m.id}>
+                      <td style={{ ...tdEstado(alt, estadoColor), fontFamily: OSW, fontWeight: 700 }}>{fmtFecha(m.fecha)}</td>
+                      <td style={{ ...tdNeo(alt), whiteSpace: 'normal' }}>
+                        <span>{m.concepto}</span>
+                        {m.gasto_id && (
+                          <span title="Movimiento sincronizado como gasto en Running" style={{ marginLeft: 8, verticalAlign: 'middle', display: 'inline-block' }}>
+                            <BadgeNeo color={OLIVA}>✓ Running</BadgeNeo>
+                          </span>
+                        )}
+                      </td>
+                      <td style={{
+                        ...tdNeo(alt), textAlign: 'right',
+                        color: m.importe >= 0 ? OLIVA : TERRA,
+                        fontFamily: OSW, fontWeight: 700, fontSize: 15,
+                      }}>
+                        {m.importe >= 0 ? '+' : ''}{fmtEur(m.importe)}
+                      </td>
+                      <td style={tdNeo(alt)}>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                          <select
+                            value={m.categoria_id ?? ''}
+                            onChange={e => handleCategorizar(m.id, e.target.value, m.concepto)}
+                            style={{
+                              backgroundColor: m.categoria_id ? BLANCO : ARENA,
+                              color: m.categoria_id ? INK : GRIS,
+                              border: `2px dashed ${m.categoria_id ? CELESTE : NARANJA}`,
+                              borderRadius: 0, padding: '4px 8px',
+                              fontFamily: OSW, fontSize: 11, fontWeight: 600,
+                              letterSpacing: 1, textTransform: 'uppercase',
+                              cursor: 'pointer', outline: 'none',
+                            }}
+                          >
+                            <option value="">— Categorizar —</option>
+                            {dropdownGroups.ingresos.length > 0 && (
+                              <optgroup label="INGRESOS">
+                                {dropdownGroups.ingresos.map(c => (
+                                  <option key={c.codigo} value={c.codigo}>{c.nombre}</option>
+                                ))}
+                              </optgroup>
+                            )}
+                            {dropdownGroups.gastosPorGrupo.map(g => (
+                              <optgroup key={g.grupo} label={g.grupo.toUpperCase()}>
+                                {g.items.map(c => (
+                                  <option key={c.codigo} value={c.codigo}>{c.nombre}</option>
+                                ))}
+                              </optgroup>
+                            ))}
+                          </select>
+                          {m.auto_categorizado && (
+                            <Zap size={12} color={AMBAR} aria-label="Auto: regla aplicada" />
+                          )}
+                        </div>
+                      </td>
+                      <td style={tdNeo(alt)}>
+                        {operador ? (
+                          <BadgeNeo color={OPERADOR[operador]}>{m.contraparte}</BadgeNeo>
+                        ) : (
+                          <span>{m.contraparte || '—'}</span>
+                        )}
                       </td>
                     </tr>
-                  ) : movimientosFiltrados.map(m => {
-                    const operador = detectarOperador(m.contraparte)
-                    const opStyle = operador ? getOperadorStyle(operador, themeMode) : null
-                    return (
-                      <tr key={m.id}>
-                        <td style={{ ...tdStyle, color: T.sec }}>{fmtFecha(m.fecha)}</td>
-                        <td style={{ ...tdStyle, color: T.pri, whiteSpace: 'normal' }}>
-                          <span>{m.concepto}</span>
-                          {m.gasto_id && (
-                            <span
-                              title="Movimiento sincronizado como gasto en Running"
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 4,
-                                marginLeft: 8,
-                                padding: '1px 8px',
-                                borderRadius: 10,
-                                background: 'rgba(122, 140, 62, 0.14)',
-                                color: 'var(--oliva-500)',
-                                fontFamily: FONT.heading,
-                                fontSize: 10,
-                                letterSpacing: '0.08em',
-                                textTransform: 'uppercase',
-                                fontWeight: 600,
-                                verticalAlign: 'middle',
-                              }}
-                            >✓ Running</span>
-                          )}
-                        </td>
-                        <td style={{
-                          ...tdStyle,
-                          textAlign: 'right',
-                          color: m.importe >= 0 ? 'var(--oliva-500)' : 'var(--terra-500)',
-                          fontFamily: FONT.heading,
-                          fontWeight: 600,
-                        }}>
-                          {m.importe >= 0 ? '+' : ''}{fmtEur(m.importe)}
-                        </td>
-                        <td style={tdStyle}>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                            <select
-                              value={m.categoria_id ?? ''}
-                              onChange={e => handleCategorizar(m.id, e.target.value, m.concepto)}
-                              style={{
-                                backgroundColor: T.inp,
-                                color: m.categoria_id ? T.pri : T.mut,
-                                border: `1px solid ${m.categoria_id ? T.brd : 'var(--ambar-500)'}`,
-                                borderRadius: 6,
-                                padding: '4px 8px',
-                                fontFamily: FONT.heading,
-                                fontSize: 11,
-                                letterSpacing: '1px',
-                                textTransform: 'uppercase',
-                                cursor: 'pointer',
-                                outline: 'none',
-                              }}
-                            >
-                              <option value="">— Categorizar —</option>
-                              {dropdownGroups.ingresos.length > 0 && (
-                                <optgroup label="INGRESOS">
-                                  {dropdownGroups.ingresos.map(c => (
-                                    <option key={c.codigo} value={c.codigo}>{c.nombre}</option>
-                                  ))}
-                                </optgroup>
-                              )}
-                              {dropdownGroups.gastosPorGrupo.map(g => (
-                                <optgroup key={g.grupo} label={g.grupo.toUpperCase()}>
-                                  {g.items.map(c => (
-                                    <option key={c.codigo} value={c.codigo}>{c.nombre}</option>
-                                  ))}
-                                </optgroup>
-                              ))}
-                            </select>
-                            {m.auto_categorizado && (
-                              <Zap size={12} color="var(--ambar-500)" aria-label="Auto: regla aplicada" />
-                            )}
-                          </div>
-                        </td>
-                        <td style={tdStyle}>
-                          {opStyle ? (
-                            <span style={{
-                              display: 'inline-block',
-                              padding: '3px 10px',
-                              borderRadius: 6,
-                              backgroundColor: opStyle.bg,
-                              color: opStyle.fg,
-                              border: `1px solid ${opStyle.bd}`,
-                              fontFamily: FONT.heading,
-                              fontSize: 11,
-                              fontWeight: 600,
-                              textTransform: 'uppercase',
-                              letterSpacing: 0.4,
-                            }}>
-                              {m.contraparte}
-                            </span>
-                          ) : (
-                            <span style={{ color: T.pri }}>{m.contraparte || '—'}</span>
-                          )}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Footer tabla */}
+                  )
+                })}
+              </tbody>
+            </TablaWrap>
             <div style={{
-              padding: '12px 16px',
-              borderTop: `1px solid ${T.brd}`,
-              color: T.mut,
-              fontFamily: FONT.body,
-              fontSize: 12,
-              textAlign: 'center',
+              padding: '12px 16px', marginTop: 0,
+              background: INK, color: ARENA,
+              fontFamily: OSW, fontSize: 12, fontWeight: 600, letterSpacing: 1.5,
+              textTransform: 'uppercase', textAlign: 'center',
             }}>
               {periodoLabel} · {movimientosFiltrados.length} movimientos
             </div>
-          </div>
+          </Banda>
         </>
       )}
-    </div>
+    </PageNeo>
   )
 }
 
-/* ─────────────  Wrapper clickeable para KpiCard  ───────────── */
+/* ─────────  KPI clicable neobrutal  ───────── */
 
-interface KpiClickableProps {
-  activo: boolean
-  onClick: () => void
-  T: ReturnType<typeof useTheme>['T']
-  children: React.ReactNode
-}
-
-function KpiClickable({ activo, onClick, T, children }: KpiClickableProps) {
+function KpiClick({ activo, onClick, label, periodo, valor, color, sinClick }: {
+  activo: boolean; onClick: () => void; label: string; periodo: string; valor: string; color: string; sinClick?: boolean
+}) {
   return (
     <div
-      onClick={onClick}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick() } }}
+      onClick={sinClick ? undefined : onClick}
+      role={sinClick ? undefined : 'button'}
+      tabIndex={sinClick ? undefined : 0}
+      onKeyDown={(e) => { if (!sinClick && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onClick() } }}
       style={{
+        ...card(activo ? ARENA_CL : BLANCO),
+        padding: '16px 18px',
         position: 'relative',
-        cursor: 'pointer',
-        borderRadius: 10,
-        outline: activo ? `2px solid var(--terra-500)` : 'none',
-        outlineOffset: -1,
-        transition: 'transform 120ms, opacity 120ms',
-        opacity: activo ? 1 : 0.97,
+        cursor: sinClick ? 'default' : 'pointer',
+        outline: activo ? `3px solid ${NARANJA}` : 'none',
+        outlineOffset: 2,
       }}
-      onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-1px)' }}
-      onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)' }}
     >
-      {children}
+      <div style={{ fontFamily: OSW, fontWeight: 600, fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 10, fontWeight: 600, color: GRIS, marginBottom: 8, fontFamily: LEX }}>{periodo}</div>
+      <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 'clamp(22px,3vw,36px)', lineHeight: 0.95, color }}>{valor}</div>
       {activo && (
         <span style={{
           position: 'absolute', top: 8, right: 8,
-          background: 'var(--terra-500)', color: '#fff',
-          fontFamily: 'Oswald, sans-serif', fontSize: 9, letterSpacing: 0.6,
-          textTransform: 'uppercase', fontWeight: 600,
-          padding: '2px 7px', borderRadius: 4,
-          pointerEvents: 'none',
+          background: NARANJA, color: ARENA, border: `2px solid ${INK}`,
+          fontFamily: OSW, fontSize: 9, letterSpacing: 0.6,
+          textTransform: 'uppercase', fontWeight: 700, padding: '2px 7px',
         }}>
           ✓ Filtrando
         </span>
       )}
-      <span style={{
-        position: 'absolute', bottom: 6, right: 10,
-        fontSize: 10, color: T.mut, fontFamily: 'Lexend, sans-serif',
-        opacity: activo ? 0 : 0.6, pointerEvents: 'none',
-      }}>
-        Click para filtrar
-      </span>
+      {!sinClick && !activo && (
+        <span style={{ position: 'absolute', bottom: 6, right: 10, fontSize: 10, color: GRIS, fontFamily: LEX, opacity: 0.7 }}>
+          Click para filtrar
+        </span>
+      )}
     </div>
   )
 }

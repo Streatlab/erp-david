@@ -1,21 +1,10 @@
 import { useState } from 'react'
 import type { CSSProperties } from 'react'
 import { useAuth } from '@/context/AuthContext'
-import {
-  useThemeMode,
-  getTokens,
-  FONT,
-  FS,
-  FW,
-  RADIUS,
-  SPACE,
-  TRACKING,
-} from '@/styles/tokens'
+import { INK, MARINO, ARENA, BLANCO, TERRA, NARANJA, CELESTE, AMBAR, OSW, LEX, SHADOW, BORDER_CARD } from '@/styles/neobrutal'
 
 export default function Login() {
   const { login } = useAuth()
-  const theme = useThemeMode()
-  const t = getTokens(theme)
 
   const [nombre, setNombre] = useState('')
   const [pin, setPin] = useState('')
@@ -40,152 +29,113 @@ export default function Login() {
   }
 
   const labelStyle: CSSProperties = {
-    fontFamily: FONT.sans,
-    fontSize: FS['2xs'],
-    letterSpacing: TRACKING.wide,
-    textTransform: 'uppercase',
-    color: t.textSecondary,
-    fontWeight: FW.medium,
-    marginBottom: 6,
-    display: 'block',
+    fontFamily: OSW, fontSize: 12, fontWeight: 600, letterSpacing: 2,
+    textTransform: 'uppercase', color: INK, marginBottom: 6, display: 'block',
   }
 
   const inputStyle = (focused: boolean): CSSProperties => ({
-    fontFamily: FONT.sans,
-    fontSize: FS.sm,
-    backgroundColor: t.bgSurface,
-    border: `0.5px solid ${focused ? t.brandAccent : t.borderDefault}`,
-    borderRadius: RADIUS.md,
-    padding: '10px 12px',
-    color: t.textPrimary,
-    outline: 'none',
-    width: '100%',
-    boxSizing: 'border-box',
-    transition: 'border-color var(--dur-fast) var(--ease-out)',
+    fontFamily: LEX, fontSize: 14, fontWeight: 600,
+    backgroundColor: BLANCO, color: INK,
+    border: `2px dashed ${focused ? NARANJA : CELESTE}`,
+    borderRadius: 0, padding: '11px 12px', outline: 'none',
+    width: '100%', boxSizing: 'border-box',
   })
 
   const pinInputStyle = (focused: boolean): CSSProperties => ({
     ...inputStyle(focused),
-    fontSize: FS.lg,
-    textAlign: 'center',
-    letterSpacing: '12px',
-    paddingLeft: 12,
-    paddingRight: 0,
+    fontFamily: OSW, fontSize: 24, fontWeight: 700,
+    textAlign: 'center', letterSpacing: '14px', paddingLeft: 14, paddingRight: 0,
   })
 
   return (
     <div
       style={{
-        minHeight: '100vh',
-        backgroundColor: t.bgApp,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: SPACE[4],
+        minHeight: '100vh', background: MARINO,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 16, fontFamily: LEX,
       }}
     >
-      <form
-        onSubmit={handleSubmit}
-        style={{
-          backgroundColor: t.bgSurface,
-          border: `0.5px solid ${t.borderDefault}`,
-          borderRadius: RADIUS.lg,
-          padding: SPACE[8],
-          width: '100%',
-          maxWidth: 340,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: SPACE[5],
-          boxShadow: t.shadowSm,
-        }}
-      >
-        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <img src="/logo-davidreparte.svg" alt="David Reparte" style={{ height: 96, width: 'auto', display: 'block' }} />
-          <p style={{
-            fontFamily: FONT.sans,
-            fontSize: FS['2xs'],
-            color: t.textSecondary,
-            letterSpacing: TRACKING.wider,
-            textTransform: 'uppercase',
-            fontWeight: FW.medium,
-            marginTop: SPACE[4],
-            marginBottom: 0,
-          }}>
-            Acceso
-          </p>
-        </div>
-
-        <div>
-          <label style={labelStyle} htmlFor="login-nombre">Usuario</label>
-          <input
-            id="login-nombre"
-            type="text"
-            name="nombre"
-            value={nombre}
-            onChange={e => setNombre(e.target.value)}
-            onFocus={() => setFocusField('nombre')}
-            onBlur={() => setFocusField(null)}
-            autoFocus
-            autoComplete="username"
-            required
-            style={inputStyle(focusField === 'nombre')}
-          />
-        </div>
-
-        <div>
-          <label style={labelStyle} htmlFor="login-pin">PIN</label>
-          <input
-            id="login-pin"
-            type="password"
-            name="pin"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            maxLength={4}
-            autoComplete="current-password"
-            value={pin}
-            onChange={e => handlePinChange(e.target.value)}
-            onFocus={() => setFocusField('pin')}
-            onBlur={() => setFocusField(null)}
-            required
-            style={pinInputStyle(focusField === 'pin')}
-          />
-        </div>
-
-        {error && (
-          <p style={{
-            fontFamily: FONT.sans,
-            fontSize: FS.xs,
-            color: t.dangerText,
-            textAlign: 'center',
-            margin: 0,
-          }}>
-            {error}
-          </p>
-        )}
-
-        <button
-          type="submit"
-          disabled={loading}
+      <div style={{ width: '100%', maxWidth: 380 }}>
+        <form
+          onSubmit={handleSubmit}
           style={{
-            fontFamily: FONT.sans,
-            fontSize: FS.sm,
-            fontWeight: FW.medium,
-            backgroundColor: t.brandAccent,
-            color: t.textOnAccent,
-            border: '0.5px solid transparent',
-            borderRadius: RADIUS.md,
-            padding: '12px 0',
-            width: '100%',
-            cursor: loading ? 'not-allowed' : 'pointer',
-            opacity: loading ? 0.6 : 1,
-            letterSpacing: TRACKING.wide,
-            textTransform: 'uppercase',
-            transition: 'background var(--dur-fast) var(--ease-out)',
+            background: ARENA, border: `4px solid ${INK}`, boxShadow: `8px 8px 0 ${INK}`,
+            borderRadius: 0, padding: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden',
           }}
         >
-          {loading ? 'Entrando…' : 'Entrar'}
-        </button>
-      </form>
+          {/* Franja ámbar con logo */}
+          <div style={{ background: AMBAR, borderBottom: `4px solid ${INK}`, padding: '22px 24px', textAlign: 'center' }}>
+            <img src="/logo-davidreparte.svg" alt="David Reparte" style={{ height: 84, width: 'auto', display: 'inline-block' }} />
+            <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 22, letterSpacing: '-0.5px', textTransform: 'uppercase', color: INK, marginTop: 10 }}>
+              David Reparte
+            </div>
+            <div style={{ fontFamily: OSW, fontWeight: 600, fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: INK, marginTop: 2 }}>
+              Alcoi · Ontinyent
+            </div>
+          </div>
+
+          <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 18 }}>
+            <div>
+              <label style={labelStyle} htmlFor="login-nombre">Usuario</label>
+              <input
+                id="login-nombre"
+                type="text"
+                name="nombre"
+                value={nombre}
+                onChange={e => setNombre(e.target.value)}
+                onFocus={() => setFocusField('nombre')}
+                onBlur={() => setFocusField(null)}
+                autoFocus
+                autoComplete="username"
+                required
+                style={inputStyle(focusField === 'nombre')}
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle} htmlFor="login-pin">PIN</label>
+              <input
+                id="login-pin"
+                type="password"
+                name="pin"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={4}
+                autoComplete="current-password"
+                value={pin}
+                onChange={e => handlePinChange(e.target.value)}
+                onFocus={() => setFocusField('pin')}
+                onBlur={() => setFocusField(null)}
+                required
+                style={pinInputStyle(focusField === 'pin')}
+              />
+            </div>
+
+            {error && (
+              <div style={{
+                background: TERRA, color: ARENA, border: BORDER_CARD,
+                fontFamily: OSW, fontWeight: 700, fontSize: 13, letterSpacing: 1,
+                textTransform: 'uppercase', textAlign: 'center', padding: '8px 10px',
+              }}>
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                fontFamily: OSW, fontSize: 16, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase',
+                background: NARANJA, color: ARENA, border: `3px solid ${INK}`, boxShadow: SHADOW,
+                borderRadius: 0, padding: '13px 0', width: '100%',
+                cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1,
+              }}
+            >
+              {loading ? 'Entrando…' : 'Entrar →'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }

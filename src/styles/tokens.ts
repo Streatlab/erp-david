@@ -1,10 +1,12 @@
 // ============================================================
 // DAVID ERP — DESIGN TOKENS (TypeScript)
-// v1.0 — Marino + Fuego · Mediterráneo vivo
+// v3.0 — Marino + Fuego · Mediterráneo vivo · NEOBRUTAL DURO
 // ------------------------------------------------------------
-// FUENTE ÚNICA DE VERDAD para estilos del ERP DavidReparte.
+// FUENTE ÚNICA DE VERDAD para estilos legacy del ERP DavidReparte.
+// Las páginas recompuestas usan src/styles/neobrutal.ts; este
+// archivo endurece todo lo que aún consume tokens antiguos:
+// radio 0, tinta INK #0B1524, bordes 3px, Lexend/Oswald.
 // NO MEZCLAR con tokens de Streat Lab / Binagre.
-// Todo componente debe consumir estos tokens, nunca hardcodear.
 // ============================================================
 
 import { useEffect, useState } from "react";
@@ -38,9 +40,6 @@ export function useThemeMode(): Theme {
 
 // ——————————————————————————————————————————————————————
 // TOKEN SET (forma Binagre: { T, isDark })
-// Compat layer para módulos portados desde Binagre que consumen
-// `const { T, isDark } = useTheme()` + acceso directo `T.bg`, `T.pri`, etc.
-// Derivado de los tokens semánticos David para mantener paleta coherente.
 // ——————————————————————————————————————————————————————
 
 export interface TokenSet {
@@ -62,7 +61,7 @@ function tokenSetFromTheme(theme: Theme): TokenSet {
     bg: t.bgApp,
     group: t.bgSurfaceAlt,
     card: t.bgSurface,
-    brd: t.borderDefault,
+    brd: t.neoInk,
     pri: t.textPrimary,
     sec: t.textSecondary,
     mut: t.textTertiary,
@@ -91,7 +90,7 @@ export const PALETTE = {
       300: "#EDE1C4",
       400: "#D9C9A3",
       700: "#7A5A3A",
-      900: "#1C1A14",
+      900: "#0B1524",
     },
     // Marino — ancla, confianza, primario
     marino: {
@@ -199,24 +198,36 @@ export const PALETTE = {
 export function getTokens(theme: Theme) {
   const p = PALETTE[theme];
 
+  // Tinta neobrutal DURA: bordes y sombras. Light: INK del manual.
+  const neoInk = theme === "light" ? "#0B1524" : "#4F7AAD";
+  const neoShadow = theme === "light" ? "#0B1524" : "rgba(79, 122, 173, 0.55)";
+
   return {
     // Fondos
     bgApp: p.sand[200],
-    bgSurface: p.sand[50],
-    bgSurfaceAlt: p.sand[100],
-    bgOverlay: theme === "light" ? "rgba(12, 20, 30, 0.55)" : "rgba(0, 0, 0, 0.75)",
+    bgSurface: theme === "light" ? "#FFFFFF" : p.sand[50],
+    bgSurfaceAlt: theme === "light" ? p.sand[300] : p.sand[100],
+    bgOverlay: theme === "light" ? "rgba(11, 21, 36, 0.55)" : "rgba(0, 0, 0, 0.75)",
 
     // Texto
     textPrimary: p.sand[900],
-    textSecondary: p.sand[700],
+    textSecondary: theme === "light" ? "#3B3427" : p.sand[700],
     textTertiary: theme === "light" ? "#A89472" : "#6E6250",
     textOnPrimary: p.sand[50],
-    textOnAccent: p.sand[50],
+    textOnAccent: theme === "light" ? "#F5ECD9" : p.sand[50],
 
-    // Bordes
-    borderSubtle: theme === "light" ? "rgba(22, 53, 92, 0.08)" : "rgba(255, 255, 255, 0.06)",
-    borderDefault: theme === "light" ? "rgba(22, 53, 92, 0.14)" : "rgba(255, 255, 255, 0.10)",
-    borderStrong: theme === "light" ? "rgba(22, 53, 92, 0.28)" : "rgba(255, 255, 255, 0.18)",
+    // Bordes (más presentes que en v2)
+    borderSubtle: theme === "light" ? "rgba(11, 21, 36, 0.15)" : "rgba(255, 255, 255, 0.06)",
+    borderDefault: theme === "light" ? "rgba(11, 21, 36, 0.35)" : "rgba(255, 255, 255, 0.10)",
+    borderStrong: theme === "light" ? "#0B1524" : "rgba(255, 255, 255, 0.18)",
+
+    // NEOBRUTAL
+    neoInk,
+    neoShadow,
+    neoBorder: `3px solid ${neoInk}`,
+    neoShadowCard: `4px 4px 0 ${neoShadow}`,
+    neoShadowBtn: `3px 3px 0 ${neoShadow}`,
+    neoShadowSm: `2px 2px 0 ${neoShadow}`,
 
     // Marca
     brandPrimary: p.marino[500],
@@ -227,36 +238,35 @@ export function getTokens(theme: Theme) {
     // Semánticos
     success: p.oliva[500],
     successBg: p.oliva[50],
-    successBorder: p.oliva[300],
+    successBorder: p.oliva[500],
     successText: p.oliva[700],
 
     warning: p.ambar[500],
     warningBg: p.ambar[50],
-    warningBorder: p.ambar[300],
+    warningBorder: p.ambar[500],
     warningText: p.ambar[700],
 
     danger: p.terra[500],
     dangerBg: p.terra[50],
-    dangerBorder: p.terra[300],
+    dangerBorder: p.terra[500],
     dangerText: p.terra[700],
 
     info: p.marino[500],
     infoBg: p.marino[50],
-    infoBorder: p.marino[300],
+    infoBorder: p.marino[500],
     infoText: p.marino[700],
 
-    // Sombras (planas por diseño)
+    // Sombras blandas eliminadas: todo sombra dura o nada
     shadowNone: "none",
-    shadowXs: theme === "light" ? "0 1px 2px rgba(22, 53, 92, 0.04)" : "0 1px 2px rgba(0, 0, 0, 0.25)",
-    shadowSm: theme === "light" ? "0 2px 6px rgba(22, 53, 92, 0.06)" : "0 2px 6px rgba(0, 0, 0, 0.35)",
-    shadowMd: theme === "light" ? "0 8px 24px rgba(22, 53, 92, 0.10)" : "0 8px 24px rgba(0, 0, 0, 0.45)",
-    shadowModal: theme === "light" ? "0 20px 48px rgba(12, 20, 30, 0.20)" : "0 20px 48px rgba(0, 0, 0, 0.65)",
+    shadowXs: "none",
+    shadowSm: `3px 3px 0 ${neoShadow}`,
+    shadowMd: `4px 4px 0 ${neoShadow}`,
+    shadowModal: `8px 8px 0 ${neoShadow}`,
   };
 }
 
 // ——————————————————————————————————————————————————————
-// OPERADORES (replica del sistema de canales de Streat Lab)
-// Mercadona, Carrefour, Lidl, Día — cada uno con su familia
+// OPERADORES — badges saturados neobrutal (viva el color)
 // ——————————————————————————————————————————————————————
 
 export type Operador = "mercadona" | "carrefour" | "lidl" | "dia";
@@ -267,39 +277,22 @@ export function getOperadorStyle(operador: Operador, theme: Theme) {
   const p = PALETTE[theme];
 
   const MAP = {
-    mercadona: {
-      fg: theme === "light" ? p.naranja[700] : "#FFB47A",
-      bg: theme === "light" ? "rgba(242, 107, 31, 0.12)" : "rgba(255, 138, 61, 0.14)",
-      bd: theme === "light" ? "rgba(242, 107, 31, 0.30)" : "rgba(255, 138, 61, 0.35)",
-    },
-    carrefour: {
-      fg: theme === "light" ? p.oliva[700] : "#C8D98B",
-      bg: theme === "light" ? "rgba(122, 140, 62, 0.14)" : "rgba(168, 184, 107, 0.14)",
-      bd: theme === "light" ? "rgba(122, 140, 62, 0.30)" : "rgba(168, 184, 107, 0.35)",
-    },
-    lidl: {
-      fg: theme === "light" ? p.ambar[700] : "#F5D78C",
-      bg: theme === "light" ? "rgba(245, 184, 74, 0.18)" : "rgba(245, 197, 109, 0.16)",
-      bd: theme === "light" ? "rgba(245, 184, 74, 0.40)" : "rgba(245, 197, 109, 0.40)",
-    },
-    dia: {
-      fg: theme === "light" ? p.terra[700] : "#F0A090",
-      bg: theme === "light" ? "rgba(201, 74, 44, 0.12)" : "rgba(232, 118, 92, 0.14)",
-      bd: theme === "light" ? "rgba(201, 74, 44, 0.30)" : "rgba(232, 118, 92, 0.35)",
-    },
+    mercadona: { fg: "#F5ECD9", bg: p.naranja[500], bd: "#0B1524" },
+    carrefour: { fg: "#F5ECD9", bg: p.oliva[500],   bd: "#0B1524" },
+    lidl:      { fg: "#0B1524", bg: p.ambar[500],   bd: "#0B1524" },
+    dia:       { fg: "#F5ECD9", bg: p.terra[500],   bd: "#0B1524" },
   };
 
   return MAP[operador];
 }
 
 // ——————————————————————————————————————————————————————
-// TIPOGRAFÍA
+// TIPOGRAFÍA — Lexend cuerpo, Oswald titulares (manual)
 // ——————————————————————————————————————————————————————
 
 export const FONT = {
-  sans: '"Inter", "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif',
+  sans: 'Lexend, "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif',
   mono: '"JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, monospace',
-  // Compat Binagre: body = Lexend, heading/title/pageTitle = Oswald
   body: 'Lexend, "Inter", sans-serif',
   heading: 'Oswald, "Inter", sans-serif',
   title: 'Oswald, "Inter", sans-serif',
@@ -319,7 +312,7 @@ export const FS = {
 
 export const FW = {
   regular: 400,
-  medium: 500,
+  medium: 600,
   bold: 700,
 } as const;
 
@@ -352,11 +345,12 @@ export const SPACE = {
   12: "48px",
 } as const;
 
+// RADIO 0 EN TODO (manual neobrutal). pill se mantiene para spinners circulares.
 export const RADIUS = {
-  sm: "6px",
-  md: "10px",
-  lg: "14px",
-  xl: "20px",
+  sm: "0px",
+  md: "0px",
+  lg: "0px",
+  xl: "0px",
   pill: "999px",
 } as const;
 
@@ -379,14 +373,12 @@ export const MOTION = {
 } as const;
 
 // ——————————————————————————————————————————————————————
-// ESTILOS PRE-COMPUESTOS (helpers comunes)
-// Consumen tokens semánticos según tema activo
+// ESTILOS PRE-COMPUESTOS (helpers comunes) — NEOBRUTAL DURO
 // ——————————————————————————————————————————————————————
 
 import type { CSSProperties } from "react";
 
-/** Card base — fondo surface, borde default, radio lg.
- *  Polimórfico: acepta Theme (David) o TokenSet (Binagre compat). */
+/** Card base neobrutal — fondo blanco, borde 3px INK, sombra dura, radio 0. */
 export function cardStyle(theme: Theme): CSSProperties;
 export function cardStyle(T: TokenSet): CSSProperties;
 export function cardStyle(arg: Theme | TokenSet): CSSProperties {
@@ -394,23 +386,26 @@ export function cardStyle(arg: Theme | TokenSet): CSSProperties {
     const t = getTokens(arg);
     return {
       background: t.bgSurface,
-      border: `0.5px solid ${t.borderDefault}`,
-      borderRadius: RADIUS.lg,
+      border: t.neoBorder,
+      borderRadius: 0,
+      boxShadow: t.neoShadowCard,
       padding: SPACE[6],
     };
   }
   return {
     background: arg.card,
-    border: `0.5px solid ${arg.brd}`,
-    borderRadius: 10,
+    border: `3px solid ${arg.brd}`,
+    borderRadius: 0,
+    boxShadow: `4px 4px 0 ${arg.brd}`,
     padding: "14px 16px",
   };
 }
 
-/** Título de sección — ALL CAPS, tracking wider, color accent */
+/** Título de sección — ALL CAPS Oswald, color accent */
 export function sectionTitleStyle(theme: Theme): CSSProperties {
   const t = getTokens(theme);
   return {
+    fontFamily: FONT.heading,
     fontSize: FS.xs,
     letterSpacing: TRACKING.wider,
     color: t.brandAccent,
@@ -419,10 +414,11 @@ export function sectionTitleStyle(theme: Theme): CSSProperties {
   };
 }
 
-/** Label micro — ALL CAPS, tracking wide, color secondary */
+/** Label micro — ALL CAPS Oswald */
 export function labelStyle(theme: Theme): CSSProperties {
   const t = getTokens(theme);
   return {
+    fontFamily: FONT.heading,
     fontSize: FS["2xs"],
     letterSpacing: TRACKING.wide,
     color: t.textSecondary,
@@ -431,10 +427,11 @@ export function labelStyle(theme: Theme): CSSProperties {
   };
 }
 
-/** KPI número grande — tight, bold, color primary */
+/** KPI número grande — Oswald bold */
 export function kpiStyle(theme: Theme): CSSProperties {
   const t = getTokens(theme);
   return {
+    fontFamily: FONT.heading,
     fontSize: FS.xl,
     fontWeight: FW.bold,
     color: t.textPrimary,
@@ -443,37 +440,43 @@ export function kpiStyle(theme: Theme): CSSProperties {
   };
 }
 
-/** Botón primario (CTA) — naranja */
+/** Botón primario (CTA) — naranja Valencia, neobrutal */
 export function btnPrimaryStyle(theme: Theme): CSSProperties {
   const t = getTokens(theme);
   return {
     background: t.brandAccent,
     color: t.textOnAccent,
     padding: `${SPACE[2]} ${SPACE[4]}`,
-    borderRadius: RADIUS.md,
-    border: "0.5px solid transparent",
+    borderRadius: 0,
+    border: t.neoBorder,
+    boxShadow: t.neoShadowBtn,
     fontSize: FS.sm,
-    fontWeight: FW.medium,
-    fontFamily: FONT.sans,
+    fontWeight: FW.bold,
+    fontFamily: FONT.heading,
+    textTransform: "uppercase",
+    letterSpacing: "1px",
     cursor: "pointer",
-    transition: `background ${MOTION.durFast} ${MOTION.easeOut}, transform ${MOTION.durFast} ${MOTION.easeOut}`,
+    transition: `transform ${MOTION.durFast} ${MOTION.easeOut}, box-shadow ${MOTION.durFast} ${MOTION.easeOut}`,
   };
 }
 
-/** Botón secundario — outline marino */
+/** Botón secundario — outline INK, neobrutal */
 export function btnSecondaryStyle(theme: Theme): CSSProperties {
   const t = getTokens(theme);
   return {
-    background: "transparent",
+    background: t.bgSurface,
     color: t.brandPrimary,
     padding: `${SPACE[2]} ${SPACE[4]}`,
-    borderRadius: RADIUS.md,
-    border: `0.5px solid ${t.brandPrimary}`,
+    borderRadius: 0,
+    border: t.neoBorder,
+    boxShadow: t.neoShadowSm,
     fontSize: FS.sm,
-    fontWeight: FW.medium,
-    fontFamily: FONT.sans,
+    fontWeight: FW.bold,
+    fontFamily: FONT.heading,
+    textTransform: "uppercase",
+    letterSpacing: "1px",
     cursor: "pointer",
-    transition: `background ${MOTION.durFast} ${MOTION.easeOut}`,
+    transition: `transform ${MOTION.durFast} ${MOTION.easeOut}, box-shadow ${MOTION.durFast} ${MOTION.easeOut}`,
   };
 }
 
@@ -484,8 +487,8 @@ export function btnGhostStyle(theme: Theme): CSSProperties {
     background: "transparent",
     color: t.textSecondary,
     padding: `${SPACE[2]} ${SPACE[4]}`,
-    borderRadius: RADIUS.md,
-    border: "0.5px solid transparent",
+    borderRadius: 0,
+    border: "2px solid transparent",
     fontSize: FS.sm,
     fontWeight: FW.medium,
     fontFamily: FONT.sans,
@@ -494,30 +497,34 @@ export function btnGhostStyle(theme: Theme): CSSProperties {
   };
 }
 
-/** Badge genérico — pill pequeña */
+/** Badge neobrutal — rectangular saturado con borde tinta */
 export function badgeStyle(
   theme: Theme,
   variant: "marino" | "naranja" | "oliva" | "ambar" | "terra" = "marino"
 ): CSSProperties {
   const p = PALETTE[theme];
+  const t = getTokens(theme);
   const MAP = {
-    marino: { bg: p.marino[500], fg: p.sand[50] },
-    naranja: { bg: p.naranja[500], fg: p.sand[50] },
-    oliva: { bg: p.oliva[500], fg: p.sand[50] },
-    ambar: { bg: p.ambar[500], fg: p.ambar[900] },
-    terra: { bg: p.terra[500], fg: p.sand[50] },
+    marino: { bg: p.marino[500], fg: "#F5ECD9" },
+    naranja: { bg: p.naranja[500], fg: "#F5ECD9" },
+    oliva: { bg: p.oliva[500], fg: "#F5ECD9" },
+    ambar: { bg: p.ambar[500], fg: "#0B1524" },
+    terra: { bg: p.terra[500], fg: "#F5ECD9" },
   };
   return {
     display: "inline-flex",
     alignItems: "center",
+    fontFamily: FONT.heading,
     fontSize: FS["2xs"],
     fontWeight: FW.bold,
     letterSpacing: TRACKING.wide,
     padding: "3px 10px",
-    borderRadius: RADIUS.pill,
+    borderRadius: 0,
     textTransform: "uppercase",
     background: MAP[variant].bg,
     color: MAP[variant].fg,
+    border: `2px solid ${t.neoInk}`,
+    boxShadow: `2px 2px 0 ${t.neoShadow}`,
   };
 }
 
@@ -529,34 +536,38 @@ export function semaforoColor(theme: Theme, valor: number): string {
   return t.info;
 }
 
-/** Group style — separador visual entre secciones.
- *  Polimórfico: acepta Theme (David) o TokenSet (Binagre compat). */
+/** Group style — bloque agrupador neobrutal. */
 export function groupStyle(theme: Theme): CSSProperties;
 export function groupStyle(T: TokenSet): CSSProperties;
 export function groupStyle(arg: Theme | TokenSet): CSSProperties {
   if (typeof arg === "string") {
     const t = getTokens(arg);
     return {
-      borderTop: `0.5px solid ${t.borderSubtle}`,
-      paddingTop: SPACE[6],
-      marginTop: SPACE[6],
+      background: t.bgSurfaceAlt,
+      border: t.neoBorder,
+      borderRadius: 0,
+      boxShadow: t.neoShadowCard,
+      padding: SPACE[6],
     };
   }
   return {
     background: arg.group,
-    border: `0.5px solid ${arg.brd}`,
-    borderRadius: 16,
+    border: `3px solid ${arg.brd}`,
+    borderRadius: 0,
+    boxShadow: `4px 4px 0 ${arg.brd}`,
     padding: "24px 28px",
   };
 }
 
-/** Estilo para cards tintadas por operador */
+/** Estilo para cards tintadas por operador — neobrutal saturado */
 export function cardOperadorStyle(theme: Theme, operador: Operador): CSSProperties {
   const op = getOperadorStyle(operador, theme);
   return {
     background: op.bg,
-    border: `0.5px solid ${op.bd}`,
-    borderRadius: RADIUS.md,
+    color: op.fg,
+    border: `3px solid ${op.bd}`,
+    borderRadius: 0,
+    boxShadow: `4px 4px 0 ${op.bd}`,
     padding: SPACE[4],
   };
 }
@@ -614,8 +625,7 @@ export function fmtDateFull(fecha: Date | string | null | undefined): string {
 }
 
 // ——————————————————————————————————————————————————————
-// COMPAT HELPERS BINAGRE (consumen TokenSet)
-// Añadidos para módulos portados que esperan estas signatures.
+// COMPAT HELPERS BINAGRE (consumen TokenSet) — NEOBRUTAL
 // ——————————————————————————————————————————————————————
 
 export const kpiLabelStyle = (T: TokenSet): CSSProperties => ({
@@ -629,33 +639,38 @@ export const kpiLabelStyle = (T: TokenSet): CSSProperties => ({
 export const kpiValueStyle = (T: TokenSet): CSSProperties => ({
   fontFamily: FONT.heading,
   fontSize: "2.4rem",
-  fontWeight: 600,
+  fontWeight: 700,
   color: T.pri,
   lineHeight: 1,
 });
 
 export const tabActiveStyle = (_isDark: boolean): CSSProperties => ({
   padding: "6px 14px",
-  borderRadius: 6,
-  border: "none",
-  background: "var(--brand-accent)",
-  color: "#ffffff",
-  fontFamily: FONT.body,
+  borderRadius: 0,
+  border: "2px solid #0B1524",
+  background: "#F26B1F",
+  color: "#F5ECD9",
+  fontFamily: FONT.heading,
   fontSize: 13,
-  fontWeight: 500,
+  fontWeight: 700,
+  letterSpacing: "1px",
+  textTransform: "uppercase",
   cursor: "pointer",
+  boxShadow: "2px 2px 0 #0B1524",
   transition: "background 150ms",
 });
 
 export const tabInactiveStyle = (T: TokenSet): CSSProperties => ({
   padding: "6px 14px",
-  borderRadius: 6,
-  border: `0.5px solid ${T.brd}`,
+  borderRadius: 0,
+  border: `2px solid ${T.brd}`,
   background: "none",
   color: T.sec,
-  fontFamily: FONT.body,
+  fontFamily: FONT.heading,
   fontSize: 13,
-  fontWeight: 500,
+  fontWeight: 600,
+  letterSpacing: "1px",
+  textTransform: "uppercase",
   cursor: "pointer",
   transition: "background 150ms",
 });
@@ -669,7 +684,7 @@ export const sectionLabelStyle = (T: TokenSet): CSSProperties => ({
 });
 
 export const dividerStyle = (T: TokenSet): CSSProperties => ({
-  height: 1,
+  height: 3,
   background: T.brd,
   margin: "12px 0",
 });

@@ -1,4 +1,5 @@
-import type { Furgoneta } from '../../lib/flota/queries';
+import type { Furgoneta } from '../../lib/flota/queries'
+import { INK, MARINO, ARENA, ARENA_CL, BLANCO, GRIS, OLIVA, TERRA, NARANJA, CELESTE, AMBAR, OSW, LEX, SHADOW, BORDER_CARD } from '@/styles/neobrutal'
 
 export default function FurgonetaCard({
   furgoneta,
@@ -6,60 +7,66 @@ export default function FurgonetaCard({
   combustibleMes,
   onClick,
 }: {
-  furgoneta: Furgoneta;
-  costeMes: number;
-  combustibleMes: number;
-  onClick: () => void;
+  furgoneta: Furgoneta
+  costeMes: number
+  combustibleMes: number
+  onClick: () => void
 }) {
   const fmtEur = (n: number) =>
-    n.toLocaleString('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
+    n.toLocaleString('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
 
-  const estadoColor =
-    furgoneta.estado === 'OPERATIVA'
-      ? 'bg-emerald-100 text-emerald-700'
-      : furgoneta.estado === 'EN_REVISION'
-        ? 'bg-amber-100 text-amber-700'
-        : 'bg-rose-100 text-rose-700';
+  const estado = furgoneta.estado
+  const estadoColor = estado === 'OPERATIVA' ? OLIVA : estado === 'EN_REVISION' ? AMBAR : TERRA
+  const estadoClaro = estadoColor === AMBAR
 
   return (
     <button
       onClick={onClick}
-      className="text-left p-5 bg-white rounded-2xl border border-[var(--arena)] hover:border-[var(--fuego)] transition-all shadow-sm hover:shadow-md"
+      style={{
+        textAlign: 'left', background: BLANCO, border: BORDER_CARD, boxShadow: SHADOW,
+        borderRadius: 0, padding: 0, cursor: 'pointer', fontFamily: LEX, color: INK,
+        display: 'block', width: '100%', overflow: 'hidden',
+      }}
     >
-      <div className="flex items-start justify-between mb-3">
+      {/* Franja superior marino con matrícula gigante */}
+      <div style={{ background: MARINO, borderBottom: BORDER_CARD, padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         <div>
-          <div className="text-lg font-bold text-[var(--marino)]">
-            {furgoneta.conductor} · {furgoneta.matricula}
+          <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 22, lineHeight: 0.95, letterSpacing: '-0.5px', textTransform: 'uppercase', color: ARENA }}>
+            {furgoneta.matricula}
           </div>
-          <div className="text-sm text-gray-500">
-            {furgoneta.modelo} · {furgoneta.ruta ?? '—'}
+          <div style={{ fontSize: 12, fontWeight: 600, color: ARENA, opacity: 0.8, marginTop: 4 }}>
+            {furgoneta.conductor} · {furgoneta.modelo} · {furgoneta.ruta ?? '—'}
           </div>
         </div>
-        <span className={`text-xs px-2 py-1 rounded-full font-semibold ${estadoColor}`}>
-          {furgoneta.estado}
+        <span style={{
+          fontFamily: OSW, fontWeight: 700, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase',
+          background: estadoColor, color: estadoClaro ? INK : ARENA, border: `2px solid ${INK}`, padding: '2px 8px',
+        }}>
+          {estado}
         </span>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 text-sm">
-        <div>
-          <div className="text-[11px] text-gray-400 uppercase">Coste mes</div>
-          <div className="font-bold text-[var(--fuego)]">{fmtEur(costeMes)}</div>
-        </div>
-        <div>
-          <div className="text-[11px] text-gray-400 uppercase">Combustible mes</div>
-          <div className="font-semibold text-[var(--marino)]">{fmtEur(combustibleMes)}</div>
-        </div>
-        <div>
-          <div className="text-[11px] text-gray-400 uppercase">ITV próxima</div>
-          <div className="text-[var(--marino)]">{furgoneta.itv_fecha ?? '—'}</div>
-        </div>
-        <div>
-          <div className="text-[11px] text-gray-400 uppercase">Seguro vence</div>
-          <div className="text-[var(--marino)]">{furgoneta.seguro_fecha_vencimiento ?? '—'}</div>
-        </div>
+      {/* Datos */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0 }}>
+        <Celda label="Coste mes" valor={fmtEur(costeMes)} color={NARANJA} borde />
+        <Celda label="Combustible" valor={fmtEur(combustibleMes)} color={AMBAR === '#F5B84A' ? '#B8860B' : AMBAR} />
+        <Celda label="ITV próxima" valor={furgoneta.itv_fecha ?? '—'} color={CELESTE} borde bg={ARENA_CL} />
+        <Celda label="Seguro vence" valor={furgoneta.seguro_fecha_vencimiento ?? '—'} color={MARINO} bg={ARENA_CL} />
       </div>
 
-      <div className="mt-3 text-xs text-[var(--fuego)] font-semibold">Ver ficha completa →</div>
+      {/* CTA naranja */}
+      <div style={{ background: NARANJA, borderTop: BORDER_CARD, padding: '8px 16px', fontFamily: OSW, fontWeight: 700, fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase', color: ARENA }}>
+        Ver ficha completa →
+      </div>
     </button>
-  );
+  )
+}
+
+function Celda({ label, valor, color, borde, bg }: { label: string; valor: string; color: string; borde?: boolean; bg?: string }) {
+  return (
+    <div style={{ padding: '10px 16px', borderRight: borde ? `2px solid ${ARENA_CL}` : 'none', background: bg ?? BLANCO }}>
+      <div style={{ fontFamily: OSW, fontWeight: 600, fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: GRIS }}>{label}</div>
+      <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 18, color, marginTop: 2 }}>{valor}</div>
+    </div>
+  )
 }

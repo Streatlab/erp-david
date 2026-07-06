@@ -1,103 +1,79 @@
-import type { CSSProperties } from 'react'
 import { useLocation } from 'react-router-dom'
 import { Construction } from 'lucide-react'
-import {
-  useThemeMode,
-  getTokens,
-  cardStyle,
-  FONT,
-  FS,
-  FW,
-  RADIUS,
-  SPACE,
-  TRACKING,
-} from '@/styles/tokens'
+import { INK, MARINO, ARENA, ARENA_CL, BLANCO, OLIVA, TERRA, NARANJA, CELESTE, AMBAR, OSW, LEX, SHADOW, BORDER_CARD } from '@/styles/neobrutal'
+import { PageNeo, Banda, CabeceraNeo } from '@/components/neo/NeoUI'
 
 const LABELS: Record<string, string> = {
   'personal':         'Personal',
   'flota':            'Flota',
-  'liquidacion-cade': 'Liquidación Cade',
   'punto-equilibrio': 'Punto equilibrio',
+  'ventas':           'Ventas',
+  'tareas':           'Tareas',
+  'papeleo':          'Papeleo',
+  'checklists':       'Checklists',
+  'manuales':         'Manuales',
+  'libro-facturas':   'Libro registro de facturas',
+  'equipos':          'Equipos',
+  'danos-vehiculos':  'Daños vehículos',
+  'pedidos':          'Pedidos',
+  'inventarios':      'Inventarios',
+  'mantenimiento':    'Mantenimiento',
+  'informes-equipo':  'Informes equipo',
   'contabilidad':     'Contabilidad',
   'hacienda':         'Hacienda',
   'operativa':        'Operativa',
 }
 
+/* Cada sección estrena un acento distinto: viva el color */
+const ACENTOS = [NARANJA, CELESTE, OLIVA, AMBAR, TERRA, MARINO]
+
+function acentoDe(slug: string): string {
+  let h = 0
+  for (let i = 0; i < slug.length; i++) h = (h * 31 + slug.charCodeAt(i)) >>> 0
+  return ACENTOS[h % ACENTOS.length]
+}
+
 export default function Placeholder() {
   const location = useLocation()
-  const theme = useThemeMode()
-  const t = getTokens(theme)
   const slug = location.pathname.split('/').filter(Boolean).pop() || ''
   const title = LABELS[slug] ?? slug.replace(/-/g, ' ').replace(/^./, c => c.toUpperCase())
-
-  const pageTitleStyle: CSSProperties = {
-    fontFamily: FONT.sans,
-    fontSize: FS.xs,
-    letterSpacing: TRACKING.wider,
-    color: t.brandAccent,
-    textTransform: 'uppercase',
-    fontWeight: FW.bold,
-    margin: 0,
-    marginBottom: SPACE[4],
-  }
+  const acento = acentoDe(slug)
+  const acentoClaro = acento === AMBAR
 
   return (
-    <div>
-      <h1 style={pageTitleStyle}>{title}</h1>
+    <PageNeo>
+      <CabeceraNeo eyebrowTxt="Próximamente" titulo={title} />
 
-      <div style={{ ...cardStyle(theme), padding: '48px 28px', textAlign: 'center' }}>
-        <div
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: 56,
-            height: 56,
-            borderRadius: RADIUS.pill,
-            background: t.bgSurfaceAlt,
-            border: `0.5px solid ${t.borderDefault}`,
-            color: t.brandPrimary,
-            marginBottom: SPACE[4],
-          }}
-        >
-          <Construction size={24} strokeWidth={1.5} />
+      <Banda bg={acento} style={{ padding: '48px 40px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            width: 84, height: 84, background: BLANCO, border: BORDER_CARD, boxShadow: SHADOW, flexShrink: 0,
+          }}>
+            <Construction size={40} strokeWidth={2} color={INK} />
+          </div>
+          <div>
+            <div style={{
+              fontFamily: OSW, fontWeight: 700, fontSize: 'clamp(28px,4vw,52px)',
+              lineHeight: 0.95, letterSpacing: '-0.5px', textTransform: 'uppercase',
+              color: acentoClaro ? INK : ARENA,
+            }}>
+              Aquí va a pasar algo <span style={{ background: INK, color: acentoClaro ? AMBAR : ARENA, padding: '0 10px' }}>gordo</span>.
+            </div>
+            <div style={{ fontFamily: LEX, fontSize: 14, fontWeight: 600, color: acentoClaro ? INK : ARENA, opacity: 0.9, marginTop: 10 }}>
+              Sección planificada. Se llena por fases, solo con datos reales.
+            </div>
+          </div>
         </div>
-        <p style={{
-          fontFamily: FONT.sans,
-          fontSize: FS.xs,
-          color: t.textSecondary,
-          letterSpacing: TRACKING.wide,
-          textTransform: 'uppercase',
-          fontWeight: FW.medium,
-          margin: 0,
-        }}>
-          En construcción
-        </p>
-        <p style={{
-          fontFamily: FONT.sans,
-          fontSize: FS.sm,
-          color: t.textSecondary,
-          marginTop: SPACE[2],
-        }}>
-          Este módulo está planificado y se implementará próximamente.
-        </p>
-        <code
-          style={{
-            display: 'inline-block',
-            marginTop: SPACE[5],
-            padding: '4px 12px',
-            borderRadius: RADIUS.sm,
-            fontFamily: FONT.mono,
-            fontSize: FS.xs,
-            background: t.bgSurfaceAlt,
-            color: t.brandPrimary,
-            border: `0.5px solid ${t.borderSubtle}`,
-            fontWeight: FW.medium,
-          }}
-        >
-          {location.pathname}
-        </code>
-      </div>
-    </div>
+      </Banda>
+
+      <Banda bg={ARENA_CL}>
+        <div style={{ display: 'inline-block', background: BLANCO, border: BORDER_CARD, boxShadow: SHADOW, padding: '10px 16px' }}>
+          <span style={{ fontFamily: OSW, fontWeight: 600, fontSize: 12, letterSpacing: 2, textTransform: 'uppercase' }}>
+            Mientras tanto → Panel Global, Finanzas, Conciliación y Flota ya funcionan con datos reales.
+          </span>
+        </div>
+      </Banda>
+    </PageNeo>
   )
 }
