@@ -28,7 +28,7 @@ import { useAuth } from '@/context/AuthContext'
 import { useSidebarState } from '@/hooks/useSidebarState'
 import {
   OSW, INK, ARENA, BLANCO, AMBAR, NARANJA,
-  CELESTE, OLIVA, MARINO, GRIS,
+  CELESTE, OLIVA, MARINO, GRIS, BERENJENA, VERDEMAR,
 } from '@/styles/neobrutal'
 
 interface NavItem { path: string; label: string; perfiles: string[] }
@@ -42,8 +42,7 @@ interface NavSection {
   items: NavItem[]
 }
 
-/* Sistema de bloques de color sólido (espejo estructural del sidebar Binagre,
-   paleta Neobrutal Mediterráneo David). Cada área = barra de color colapsable. */
+/* Bloques de color sólido sobre sidebar marino (mar) — Neobrutal Mediterráneo David. */
 const SECTIONS: NavSection[] = [
   {
     key: 'finanzas', label: 'Finanzas', icon: Wallet,
@@ -90,7 +89,7 @@ const SECTIONS: NavSection[] = [
   },
   {
     key: 'documentos', label: 'Documentos', icon: FileText,
-    headBg: MARINO, headColor: ARENA, perfiles: ['admin'],
+    headBg: BERENJENA, headColor: ARENA, perfiles: ['admin'],
     items: [
       { path: '/papeleo',        label: 'Papeleo',        perfiles: ['admin'] },
       { path: '/manuales',       label: 'Manuales',       perfiles: ['admin'] },
@@ -99,14 +98,13 @@ const SECTIONS: NavSection[] = [
   },
   {
     key: 'configuracion', label: 'Configuración', icon: Settings,
-    headBg: GRIS, headColor: INK, perfiles: ['admin'],
+    headBg: VERDEMAR, headColor: ARENA, perfiles: ['admin'],
     items: [
       { path: '/configuracion', label: 'Configuración', perfiles: ['admin'] },
     ],
   },
 ]
 
-// iconos secundarios por ruta (bullet cuadrado, no hace falta icono propio)
 const ICON_ROUTE: Record<string, LucideIcon> = {
   '/finanzas/liquidaciones': Wallet,
   '/reclamaciones': AlertTriangle,
@@ -123,6 +121,7 @@ const ICON_ROUTE: Record<string, LucideIcon> = {
 }
 
 const OPEN_LS_KEY = 'david.sidebar.openSections'
+const TEXTO_SUAVE = 'rgba(245,236,217,0.72)' // ARENA 72% sobre marino
 
 function loadOpen(pathname: string): string[] {
   if (typeof window === 'undefined') return ['finanzas']
@@ -163,7 +162,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
   const sidebarWidth = collapsed ? 56 : 248
 
   const asideStyle: CSSProperties = {
-    background: ARENA,
+    background: MARINO,
     borderRight: `4px solid ${INK}`,
     width: sidebarWidth, minWidth: sidebarWidth, maxWidth: sidebarWidth,
   }
@@ -178,22 +177,22 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
       >
         {/* HEADER */}
         {collapsed ? (
-          <div style={{ background: ARENA, borderBottom: `4px solid ${INK}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 64, padding: '6px 0', gap: 4 }}>
+          <div style={{ background: MARINO, borderBottom: `4px solid ${INK}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 64, padding: '6px 0', gap: 4 }}>
             <img src="/logo-davidreparte.svg" alt="David Reparte" style={{ height: 30, width: 'auto' }} />
             <button onClick={toggle} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 44, minHeight: 32 }} title="Abrir">
-              <ChevronRight size={18} color={INK} />
+              <ChevronRight size={18} color={ARENA} />
             </button>
           </div>
         ) : (
-          <div style={{ background: ARENA, borderBottom: `4px solid ${INK}`, display: 'flex', alignItems: 'center', gap: 11, padding: '14px 16px' }}>
+          <div style={{ background: MARINO, borderBottom: `4px solid ${INK}`, display: 'flex', alignItems: 'center', gap: 11, padding: '14px 16px' }}>
             <img src="/logo-davidreparte.svg" alt="David Reparte" style={{ height: 38, width: 'auto', flexShrink: 0 }} />
-            <span style={{ fontFamily: OSW, fontWeight: 800, letterSpacing: '2px', color: INK, fontSize: 18, textTransform: 'uppercase', flex: 1, lineHeight: 1.05 }}>David Reparte</span>
-            <button onClick={toggle} style={{ color: INK, background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, fontWeight: 800, minWidth: 30, minHeight: 30 }} title="Colapsar">«</button>
+            <span style={{ fontFamily: OSW, fontWeight: 800, letterSpacing: '2px', color: ARENA, fontSize: 18, textTransform: 'uppercase', flex: 1, lineHeight: 1.05 }}>David Reparte</span>
+            <button onClick={toggle} style={{ color: ARENA, background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, fontWeight: 800, minWidth: 30, minHeight: 30 }} title="Colapsar">«</button>
           </div>
         )}
 
         {/* NAV */}
-        <nav className="flex-1 overflow-y-auto" style={{ overflowX: 'hidden', background: ARENA }}>
+        <nav className="flex-1 overflow-y-auto" style={{ overflowX: 'hidden', background: MARINO }}>
 
           {/* Panel Global (directo) */}
           {!collapsed && perfil && (
@@ -202,10 +201,10 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
                 fontFamily: OSW, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: 17,
                 padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 11,
                 borderBottom: `3px solid ${INK}`, cursor: 'pointer', textDecoration: 'none',
-                color: isActive ? AMBAR : INK, background: isActive ? INK : ARENA,
+                color: isActive ? INK : ARENA, background: isActive ? AMBAR : MARINO,
               })}>
               {({ isActive }) => (<>
-                <LayoutDashboard size={20} strokeWidth={2.4} color={isActive ? AMBAR : INK} style={{ flexShrink: 0 }} />
+                <LayoutDashboard size={20} strokeWidth={2.4} color={isActive ? INK : AMBAR} style={{ flexShrink: 0 }} />
                 <span>Panel global</span>
               </>)}
             </NavLink>
@@ -214,9 +213,9 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
             <NavLink to="/" end onClick={onClose} title="Panel global"
               style={({ isActive }) => ({
                 width: '100%', height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none',
-                borderBottom: `3px solid ${INK}`, background: isActive ? INK : ARENA,
+                borderBottom: `3px solid ${INK}`, background: isActive ? AMBAR : MARINO,
               })}>
-              {({ isActive }) => <LayoutDashboard size={20} strokeWidth={2.4} color={isActive ? AMBAR : INK} />}
+              {({ isActive }) => <LayoutDashboard size={20} strokeWidth={2.4} color={isActive ? INK : AMBAR} />}
             </NavLink>
           )}
 
@@ -283,17 +282,17 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
 
         {/* FOOTER */}
         {collapsed ? (
-          <div style={{ marginTop: 'auto', background: ARENA, borderTop: `4px solid ${INK}`, padding: '10px 0', display: 'flex', justifyContent: 'center' }}>
-            <button onClick={logout} style={{ width: 44, height: 32, color: INK, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Cerrar sesión">
+          <div style={{ marginTop: 'auto', background: MARINO, borderTop: `4px solid ${INK}`, padding: '10px 0', display: 'flex', justifyContent: 'center' }}>
+            <button onClick={logout} style={{ width: 44, height: 32, color: ARENA, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Cerrar sesión">
               <LogOut size={16} strokeWidth={2.2} />
             </button>
           </div>
         ) : (
-          <div style={{ marginTop: 'auto', background: ARENA, borderTop: `4px solid ${INK}`, padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-            <div style={{ fontFamily: OSW, textTransform: 'uppercase', fontSize: 12, letterSpacing: '0.04em', color: INK, lineHeight: 1.4 }}>
-              {usuario?.nombre} — <span style={{ color: NARANJA, fontWeight: 700 }}>{usuario?.perfil}</span>
+          <div style={{ marginTop: 'auto', background: MARINO, borderTop: `4px solid ${INK}`, padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+            <div style={{ fontFamily: OSW, textTransform: 'uppercase', fontSize: 12, letterSpacing: '0.04em', color: TEXTO_SUAVE, lineHeight: 1.4 }}>
+              {usuario?.nombre} — <span style={{ color: AMBAR, fontWeight: 700 }}>{usuario?.perfil}</span>
             </div>
-            <button onClick={logout} style={{ color: NARANJA, background: 'none', border: 'none', cursor: 'pointer', fontFamily: OSW, textTransform: 'uppercase', fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', padding: 0 }}>
+            <button onClick={logout} style={{ color: AMBAR, background: 'none', border: 'none', cursor: 'pointer', fontFamily: OSW, textTransform: 'uppercase', fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', padding: 0 }}>
               Cerrar sesión
             </button>
           </div>
