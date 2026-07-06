@@ -1,101 +1,140 @@
 import { useEffect, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
+import type { CSSProperties } from 'react'
 import {
   LayoutDashboard,
-  Truck,
-  Users,
   Wallet,
-  Settings,
-  ChevronRight,
-  FileText,
+  AlertTriangle,
+  Truck,
+  Route as RouteIcon,
+  CarFront,
+  Wrench,
+  Users,
+  ListChecks,
+  ClipboardList,
+  HardHat,
+  BarChart3,
+  ShoppingCart,
   Boxes,
+  FileText,
+  BookOpen,
+  Library,
+  Settings,
+  LogOut,
+  ChevronRight,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { useSidebarState } from '@/hooks/useSidebarState'
-import { SIDEBAR, SIDEBAR_SECTION_BG, OSW, LEX, AMBAR, ARENA, BLANCO, INK, MARINO, NARANJA, TERRA } from '@/styles/neobrutal'
-import { getFurgonetas, type Furgoneta } from '@/lib/flota/queries'
+import {
+  OSW, INK, ARENA, BLANCO, AMBAR, NARANJA,
+  CELESTE, OLIVA, MARINO, GRIS,
+} from '@/styles/neobrutal'
 
-type IconType = React.ComponentType<{
-  size?: number
-  strokeWidth?: number
-  color?: string
-  style?: React.CSSProperties
-}>
-
-interface Row { path: string; label: string }
-
-interface Section {
-  id: keyof typeof SIDEBAR_SECTION_BG
+interface NavItem { path: string; label: string; perfiles: string[] }
+interface NavSection {
+  key: string
   label: string
-  icon: IconType
-  rows: Row[]
+  icon: LucideIcon
+  headBg: string
+  headColor: string
+  perfiles: string[]
+  items: NavItem[]
 }
 
-/* Sistema decorativo espejo de Binagre: bloques de sección a todo el ancho
-   en color sólido + filas blancas con tinta. Paleta mediterránea David. */
-const SECCIONES: Section[] = [
+/* Sistema de bloques de color sólido (espejo estructural del sidebar Binagre,
+   paleta Neobrutal Mediterráneo David). Cada área = barra de color colapsable. */
+const SECTIONS: NavSection[] = [
   {
-    id: 'finanzas', label: 'Finanzas', icon: Wallet,
-    rows: [
-      { path: '/finanzas/facturacion',   label: 'Facturación emitida' },
-      { path: '/finanzas/liquidaciones', label: 'Liquidaciones' },
-      { path: '/finanzas/pagos-cobros',  label: 'Pagos y cobros' },
-      { path: '/finanzas/ventas',        label: 'Ventas' },
-      { path: '/punto-equilibrio',       label: 'Punto equilibrio' },
-      { path: '/running',                label: 'Running' },
-      { path: '/conciliacion',           label: 'Conciliación' },
-      { path: '/reclamaciones',          label: 'Reclamaciones Cade' },
+    key: 'finanzas', label: 'Finanzas', icon: Wallet,
+    headBg: CELESTE, headColor: ARENA, perfiles: ['admin'],
+    items: [
+      { path: '/finanzas/facturacion',   label: 'Facturación emitida', perfiles: ['admin'] },
+      { path: '/finanzas/liquidaciones', label: 'Liquidaciones',       perfiles: ['admin'] },
+      { path: '/finanzas/pagos-cobros',  label: 'Pagos y Cobros',      perfiles: ['admin'] },
+      { path: '/finanzas/ventas',        label: 'Ventas',              perfiles: ['admin'] },
+      { path: '/punto-equilibrio',       label: 'Punto equilibrio',    perfiles: ['admin'] },
+      { path: '/running',                label: 'Running',             perfiles: ['admin'] },
+      { path: '/conciliacion',           label: 'Conciliación',        perfiles: ['admin'] },
+      { path: '/reclamaciones',          label: 'Reclamaciones Cade',  perfiles: ['admin'] },
     ],
   },
   {
-    id: 'operaciones', label: 'Operaciones', icon: Truck,
-    rows: [
-      { path: '/entregas',        label: 'Entregas' },
-      { path: '/flota',           label: 'Flota' },
-      { path: '/danos-vehiculos', label: 'Daños vehículos' },
-      { path: '/mantenimiento',   label: 'Mantenimiento' },
+    key: 'operaciones', label: 'Operaciones', icon: Truck,
+    headBg: NARANJA, headColor: ARENA, perfiles: ['admin'],
+    items: [
+      { path: '/entregas',        label: 'Entregas',        perfiles: ['admin'] },
+      { path: '/flota',           label: 'Flota',           perfiles: ['admin'] },
+      { path: '/danos-vehiculos', label: 'Daños vehículos', perfiles: ['admin'] },
+      { path: '/mantenimiento',   label: 'Mantenimiento',   perfiles: ['admin'] },
     ],
   },
   {
-    id: 'equipo', label: 'Equipo', icon: Users,
-    rows: [
-      { path: '/personal',        label: 'Personal' },
-      { path: '/tareas',          label: 'Tareas' },
-      { path: '/checklists',      label: 'Checklists' },
-      { path: '/equipos',         label: 'Equipos' },
-      { path: '/informes-equipo', label: 'Informes equipo' },
+    key: 'equipo', label: 'Equipo', icon: Users,
+    headBg: OLIVA, headColor: ARENA, perfiles: ['admin'],
+    items: [
+      { path: '/personal',        label: 'Personal',        perfiles: ['admin'] },
+      { path: '/tareas',          label: 'Tareas',          perfiles: ['admin'] },
+      { path: '/checklists',      label: 'Checklists',      perfiles: ['admin'] },
+      { path: '/equipos',         label: 'Equipos',         perfiles: ['admin'] },
+      { path: '/informes-equipo', label: 'Informes equipo', perfiles: ['admin'] },
     ],
   },
   {
-    id: 'almacen', label: 'Almacén', icon: Boxes,
-    rows: [
-      { path: '/pedidos',     label: 'Pedidos' },
-      { path: '/inventarios', label: 'Inventarios' },
+    key: 'almacen', label: 'Almacén', icon: Boxes,
+    headBg: AMBAR, headColor: INK, perfiles: ['admin'],
+    items: [
+      { path: '/pedidos',     label: 'Pedidos',     perfiles: ['admin'] },
+      { path: '/inventarios', label: 'Inventarios', perfiles: ['admin'] },
     ],
   },
   {
-    id: 'documentos', label: 'Documentos', icon: FileText,
-    rows: [
-      { path: '/papeleo',        label: 'Papeleo' },
-      { path: '/manuales',       label: 'Manuales' },
-      { path: '/libro-facturas', label: 'Libro registro' },
+    key: 'documentos', label: 'Documentos', icon: FileText,
+    headBg: MARINO, headColor: ARENA, perfiles: ['admin'],
+    items: [
+      { path: '/papeleo',        label: 'Papeleo',        perfiles: ['admin'] },
+      { path: '/manuales',       label: 'Manuales',       perfiles: ['admin'] },
+      { path: '/libro-facturas', label: 'Libro registro', perfiles: ['admin'] },
     ],
   },
   {
-    id: 'configuracion', label: 'Configuración', icon: Settings,
-    rows: [
-      { path: '/configuracion', label: 'Configuración' },
+    key: 'configuracion', label: 'Configuración', icon: Settings,
+    headBg: GRIS, headColor: INK, perfiles: ['admin'],
+    items: [
+      { path: '/configuracion', label: 'Configuración', perfiles: ['admin'] },
     ],
   },
 ]
 
-const LS_SECCIONES = 'david_sidebar_secciones'
+// iconos secundarios por ruta (bullet cuadrado, no hace falta icono propio)
+const ICON_ROUTE: Record<string, LucideIcon> = {
+  '/finanzas/liquidaciones': Wallet,
+  '/reclamaciones': AlertTriangle,
+  '/flota': RouteIcon,
+  '/danos-vehiculos': CarFront,
+  '/mantenimiento': Wrench,
+  '/tareas': ListChecks,
+  '/checklists': ClipboardList,
+  '/equipos': HardHat,
+  '/informes-equipo': BarChart3,
+  '/pedidos': ShoppingCart,
+  '/manuales': BookOpen,
+  '/libro-facturas': Library,
+}
 
-function seccionDeRuta(pathname: string): string | null {
-  for (const s of SECCIONES) {
-    if (s.rows.some(r => pathname === r.path || pathname.startsWith(r.path + '/'))) return s.id
-  }
-  return null
+const OPEN_LS_KEY = 'david.sidebar.openSections'
+
+function loadOpen(pathname: string): string[] {
+  if (typeof window === 'undefined') return ['finanzas']
+  try {
+    const raw = localStorage.getItem(OPEN_LS_KEY)
+    if (raw) {
+      const arr = JSON.parse(raw)
+      if (Array.isArray(arr)) return arr.filter((x) => typeof x === 'string')
+    }
+  } catch { /* noop */ }
+  const activa = SECTIONS.find((s) => s.items.some((i) => pathname.startsWith(i.path)))
+  return activa ? [activa.key] : ['finanzas']
 }
 
 export default function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -104,204 +143,161 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
   const perfil = usuario?.perfil ?? ''
   const location = useLocation()
 
-  const sidebarWidth = collapsed ? SIDEBAR.widthCollapsed : SIDEBAR.widthOpen
+  const [openSections, setOpenSections] = useState<string[]>(() => loadOpen(location.pathname))
 
-  const [furgos, setFurgos] = useState<Furgoneta[]>([])
-  const [expandidas, setExpandidas] = useState<Record<string, boolean>>(() => {
-    let base: Record<string, boolean> = {}
-    if (typeof window !== 'undefined') {
-      try { base = JSON.parse(localStorage.getItem(LS_SECCIONES) ?? '{}') } catch { base = {} }
+  useEffect(() => {
+    try { localStorage.setItem(OPEN_LS_KEY, JSON.stringify(openSections)) } catch { /* noop */ }
+  }, [openSections])
+
+  useEffect(() => {
+    const activa = SECTIONS.find((s) => s.items.some((i) => location.pathname.startsWith(i.path)))
+    if (activa && !openSections.includes(activa.key)) {
+      setOpenSections((prev) => [...prev, activa.key])
     }
-    const activa = seccionDeRuta(typeof window !== 'undefined' ? window.location.pathname : '')
-    if (activa) base[activa] = true
-    return base
-  })
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') localStorage.setItem(LS_SECCIONES, JSON.stringify(expandidas))
-  }, [expandidas])
-
-  useEffect(() => {
-    const activa = seccionDeRuta(location.pathname)
-    if (activa) setExpandidas(prev => (prev[activa] ? prev : { ...prev, [activa]: true }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname])
 
-  useEffect(() => {
-    if (perfil === 'admin') {
-      getFurgonetas().then(setFurgos).catch(() => setFurgos([]))
-    }
-  }, [perfil])
+  const toggleSection = (key: string) =>
+    setOpenSections((prev) => (prev.includes(key) ? prev.filter((s) => s !== key) : [...prev, key]))
 
-  const rowStyle = (isActive: boolean): React.CSSProperties => ({
-    display: 'flex',
-    alignItems: 'center',
-    gap: 10,
-    padding: '10px 14px 10px 18px',
-    background: isActive ? NARANJA : BLANCO,
-    color: isActive ? ARENA : INK,
-    fontFamily: OSW,
-    fontWeight: 600,
-    fontSize: 12.5,
-    letterSpacing: '0.6px',
-    textTransform: 'uppercase',
-    borderBottom: '1px solid rgba(11,21,36,0.18)',
-    textDecoration: 'none',
-    whiteSpace: 'nowrap' as const,
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-  })
+  const sidebarWidth = collapsed ? 56 : 248
 
-  const furgoStyle = (isActive: boolean): React.CSSProperties => ({
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-    padding: '7px 14px 7px 34px',
-    background: isActive ? NARANJA : BLANCO,
-    color: isActive ? ARENA : INK,
-    fontFamily: LEX,
-    fontWeight: isActive ? 700 : 500,
-    fontSize: 12,
-    borderBottom: '1px solid rgba(11,21,36,0.12)',
-    textDecoration: 'none',
-    whiteSpace: 'nowrap' as const,
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-  })
+  const asideStyle: CSSProperties = {
+    background: ARENA,
+    borderRight: `4px solid ${INK}`,
+    width: sidebarWidth, minWidth: sidebarWidth, maxWidth: sidebarWidth,
+  }
 
   return (
     <>
-      {open && <div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={onClose} />}
+      {open && <div className="fixed inset-0 bg-black/60 z-30 lg:hidden" onClick={onClose} />}
 
       <aside
-        style={{
-          background: collapsed ? MARINO : ARENA,
-          borderRight: `4px solid ${INK}`,
-          width: sidebarWidth, minWidth: sidebarWidth, maxWidth: sidebarWidth,
-        }}
-        className={`fixed top-0 left-0 z-40 h-full flex flex-col transition-all duration-200 overflow-hidden lg:translate-x-0 lg:static lg:z-auto ${open ? 'translate-x-0' : '-translate-x-full'}`}
+        style={asideStyle}
+        className={`fixed top-0 left-0 z-40 h-full flex flex-col overflow-hidden transition-all duration-200 lg:translate-x-0 lg:static lg:z-auto ${open ? 'translate-x-0' : '-translate-x-full'}`}
       >
-        {/* Cabecera de marca (bloque marino) */}
+        {/* HEADER */}
         {collapsed ? (
-          <div style={{ borderBottom: `3px solid ${INK}`, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 64, padding: '6px 0' }}>
-            <button onClick={toggle} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }} title="Expandir">
-              <img src="/logo-davidreparte.svg" alt="David Reparte" style={{ height: 32, width: 'auto', display: 'block' }} />
+          <div style={{ background: ARENA, borderBottom: `4px solid ${INK}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 64, padding: '6px 0', gap: 4 }}>
+            <img src="/logo-davidreparte.svg" alt="David Reparte" style={{ height: 30, width: 'auto' }} />
+            <button onClick={toggle} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 44, minHeight: 32 }} title="Abrir">
+              <ChevronRight size={18} color={INK} />
             </button>
           </div>
         ) : (
-          <div style={{ background: MARINO, borderBottom: `4px solid ${INK}`, padding: 14, display: 'flex', alignItems: 'center', gap: 12, minHeight: 80, position: 'relative' }}>
-            <img src="/logo-davidreparte.svg" alt="David Reparte" style={{ height: 40, width: 'auto', display: 'block' }} />
-            <span style={{ fontFamily: OSW, fontSize: 15, color: ARENA, letterSpacing: '1.5px', textTransform: 'uppercase', fontWeight: 700, lineHeight: 1.15 }}>
-              David<br />Reparte
-            </span>
-            <button onClick={toggle} style={{ color: ARENA, background: 'none', border: 'none', cursor: 'pointer', padding: 6, position: 'absolute', top: 6, right: 6, fontFamily: OSW, fontSize: 14 }} className="hidden lg:block" title="Colapsar">«</button>
+          <div style={{ background: ARENA, borderBottom: `4px solid ${INK}`, display: 'flex', alignItems: 'center', gap: 11, padding: '14px 16px' }}>
+            <img src="/logo-davidreparte.svg" alt="David Reparte" style={{ height: 38, width: 'auto', flexShrink: 0 }} />
+            <span style={{ fontFamily: OSW, fontWeight: 800, letterSpacing: '2px', color: INK, fontSize: 18, textTransform: 'uppercase', flex: 1, lineHeight: 1.05 }}>David Reparte</span>
+            <button onClick={toggle} style={{ color: INK, background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, fontWeight: 800, minWidth: 30, minHeight: 30 }} title="Colapsar">«</button>
           </div>
         )}
 
-        <nav className="flex-1 overflow-y-auto" style={{ overflowX: 'hidden' }}>
-          {/* Panel global: bloque tinta */}
-          {perfil && (collapsed ? (
-            <NavLink to="/" end onClick={onClose} title="Panel global"
-              style={{ width: '100%', height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>
-              {({ isActive }) => (<LayoutDashboard size={20} strokeWidth={2} color={isActive ? NARANJA : ARENA} />)}
-            </NavLink>
-          ) : (
+        {/* NAV */}
+        <nav className="flex-1 overflow-y-auto" style={{ overflowX: 'hidden', background: ARENA }}>
+
+          {/* Panel Global (directo) */}
+          {!collapsed && perfil && (
             <NavLink to="/" end onClick={onClose}
               style={({ isActive }) => ({
-                display: 'flex', alignItems: 'center', gap: 10,
-                padding: '13px 14px',
-                background: isActive ? NARANJA : INK,
-                color: ARENA,
-                fontFamily: OSW, fontWeight: 700, fontSize: 14, letterSpacing: '1.5px', textTransform: 'uppercase',
-                borderBottom: `3px solid ${INK}`,
-                textDecoration: 'none',
+                fontFamily: OSW, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: 17,
+                padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 11,
+                borderBottom: `3px solid ${INK}`, cursor: 'pointer', textDecoration: 'none',
+                color: isActive ? AMBAR : INK, background: isActive ? INK : ARENA,
               })}>
               {({ isActive }) => (<>
-                <LayoutDashboard size={18} strokeWidth={2.25} color={isActive ? ARENA : AMBAR} style={{ flexShrink: 0 }} />
+                <LayoutDashboard size={20} strokeWidth={2.4} color={isActive ? AMBAR : INK} style={{ flexShrink: 0 }} />
                 <span>Panel global</span>
               </>)}
             </NavLink>
-          ))}
+          )}
+          {collapsed && perfil && (
+            <NavLink to="/" end onClick={onClose} title="Panel global"
+              style={({ isActive }) => ({
+                width: '100%', height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none',
+                borderBottom: `3px solid ${INK}`, background: isActive ? INK : ARENA,
+              })}>
+              {({ isActive }) => <LayoutDashboard size={20} strokeWidth={2.4} color={isActive ? AMBAR : INK} />}
+            </NavLink>
+          )}
 
-          {perfil === 'admin' && SECCIONES.map(sec => {
-            const s = SIDEBAR_SECTION_BG[sec.id]
-            const Icon = sec.icon
-            const abierta = !!expandidas[sec.id]
+          {/* Secciones de color sólido */}
+          {SECTIONS.map((section) => {
+            const items = section.items.filter((i) => i.perfiles.includes(perfil))
+            if (!section.perfiles.includes(perfil) || items.length === 0) return null
+            const isOpen = openSections.includes(section.key)
+            const Icon = section.icon
 
             if (collapsed) {
-              const to = sec.rows[0].path
-              const activa = seccionDeRuta(location.pathname) === sec.id
               return (
-                <NavLink key={sec.id} to={to} onClick={onClose} title={sec.label}
-                  style={{ width: '100%', height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>
-                  <Icon size={20} strokeWidth={2} color={activa ? NARANJA : ARENA} />
-                </NavLink>
+                <button key={section.key} type="button" onClick={() => toggleSection(section.key)} title={section.label}
+                  style={{ width: '100%', height: 44, background: section.headBg, border: 'none', borderBottom: `3px solid ${INK}`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Icon size={20} strokeWidth={2.4} color={section.headColor} />
+                </button>
               )
             }
 
             return (
-              <div key={sec.id}>
-                {/* Bloque de sección a todo el ancho */}
-                <button
-                  onClick={() => setExpandidas(prev => ({ ...prev, [sec.id]: !prev[sec.id] }))}
+              <div key={section.key}>
+                <button type="button" onClick={() => toggleSection(section.key)}
                   style={{
-                    width: '100%', display: 'flex', alignItems: 'center', gap: 10,
-                    background: s.bg, color: s.color,
-                    border: 'none', borderBottom: `3px solid ${INK}`,
-                    padding: '12px 14px',
-                    fontFamily: OSW, fontWeight: 700, fontSize: 13.5, letterSpacing: '1.5px', textTransform: 'uppercase',
-                    cursor: 'pointer', textAlign: 'left',
+                    width: '100%', background: section.headBg, color: section.headColor,
+                    border: 'none', borderBottom: `3px solid ${INK}`, cursor: 'pointer',
+                    boxShadow: isOpen ? `inset 0 -5px 0 ${INK}` : 'none',
+                    display: 'flex', alignItems: 'center', gap: 11, padding: '11px 16px',
+                    fontFamily: OSW, fontWeight: 800, fontSize: 18, textTransform: 'uppercase', letterSpacing: '0.02em',
                   }}>
-                  <Icon size={17} strokeWidth={2.25} color={s.color} style={{ flexShrink: 0 }} />
-                  <span style={{ flex: 1 }}>{sec.label}</span>
-                  <ChevronRight size={15} strokeWidth={2.5} color={s.color}
-                    style={{ transform: abierta ? 'rotate(90deg)' : 'none', transition: 'transform 150ms' }} />
+                  <Icon size={20} strokeWidth={2.4} color={section.headColor} style={{ flexShrink: 0 }} />
+                  <span style={{ flex: 1, textAlign: 'left' }}>{section.label}</span>
+                  <span style={{ fontWeight: 800, fontSize: 17, display: 'inline-block', transition: 'transform .2s', transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)' }}>›</span>
                 </button>
 
-                {/* Filas blancas */}
-                {abierta && sec.rows.map(r => (
-                  <div key={r.path}>
-                    <NavLink to={r.path} onClick={onClose} end={r.path !== '/flota'}
-                      style={({ isActive }) => rowStyle(isActive)}>
-                      {({ isActive }) => (<>
-                        <span style={{ width: 6, height: 6, background: isActive ? ARENA : INK, flexShrink: 0 }} />
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.label}</span>
-                      </>)}
-                    </NavLink>
-                    {r.path === '/flota' && furgos.map(f => (
-                      <NavLink key={f.id} to={`/flota/${f.codigo}`} onClick={onClose}
-                        style={({ isActive }) => furgoStyle(isActive)}>
-                        {({ isActive }) => (<>
-                          <span style={{ width: 5, height: 5, background: isActive ? ARENA : AMBAR, flexShrink: 0 }} />
-                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {f.matricula} · {f.nombre_corto ?? f.conductor}
-                          </span>
-                        </>)}
-                      </NavLink>
-                    ))}
+                {isOpen && (
+                  <div style={{ background: BLANCO, borderBottom: `3px solid ${INK}` }}>
+                    {items.map((item, idx) => {
+                      const SubIcon = ICON_ROUTE[item.path]
+                      return (
+                        <NavLink key={item.path} to={item.path} end onClick={onClose}
+                          style={({ isActive }) => ({
+                            fontFamily: OSW, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.01em', fontSize: 15,
+                            padding: '8px 16px 8px 18px', display: 'flex', alignItems: 'center', gap: 9,
+                            cursor: 'pointer', textDecoration: 'none',
+                            borderTop: idx > 0 ? '1.5px solid rgba(11,21,36,.14)' : 'none',
+                            background: isActive ? INK : BLANCO,
+                            color: isActive ? AMBAR : INK,
+                          })}>
+                          {({ isActive }) => (<>
+                            {SubIcon
+                              ? <SubIcon size={14} strokeWidth={2.2} color={isActive ? AMBAR : INK} style={{ flexShrink: 0 }} />
+                              : <span style={{ width: 7, height: 7, flexShrink: 0, background: isActive ? AMBAR : INK, display: 'inline-block' }} />}
+                            <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
+                          </>)}
+                        </NavLink>
+                      )
+                    })}
                   </div>
-                ))}
+                )}
               </div>
             )
           })}
         </nav>
 
-        {/* Pie */}
-        <div style={{ padding: 12, borderTop: `3px solid ${INK}`, background: collapsed ? MARINO : ARENA, fontFamily: LEX, fontSize: 12, textAlign: collapsed ? 'center' : 'left' }}>
-          {!collapsed ? (
-            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
-              <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: INK, fontWeight: 700 }}>
-                {usuario?.nombre} <span style={{ color: NARANJA, fontFamily: OSW, fontWeight: 700, textTransform: 'uppercase', fontSize: 11, letterSpacing: '1px' }}>{usuario?.perfil}</span>
-              </div>
-              <button onClick={logout} style={{ color: TERRA, fontSize: 11, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: OSW, fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
-                Cerrar sesión
-              </button>
-            </div>
-          ) : (
-            <button onClick={logout} style={{ color: ARENA, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', fontFamily: OSW, fontSize: 11 }} title="Cerrar sesión">
-              ✕
+        {/* FOOTER */}
+        {collapsed ? (
+          <div style={{ marginTop: 'auto', background: ARENA, borderTop: `4px solid ${INK}`, padding: '10px 0', display: 'flex', justifyContent: 'center' }}>
+            <button onClick={logout} style={{ width: 44, height: 32, color: INK, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Cerrar sesión">
+              <LogOut size={16} strokeWidth={2.2} />
             </button>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div style={{ marginTop: 'auto', background: ARENA, borderTop: `4px solid ${INK}`, padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+            <div style={{ fontFamily: OSW, textTransform: 'uppercase', fontSize: 12, letterSpacing: '0.04em', color: INK, lineHeight: 1.4 }}>
+              {usuario?.nombre} — <span style={{ color: NARANJA, fontWeight: 700 }}>{usuario?.perfil}</span>
+            </div>
+            <button onClick={logout} style={{ color: NARANJA, background: 'none', border: 'none', cursor: 'pointer', fontFamily: OSW, textTransform: 'uppercase', fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', padding: 0 }}>
+              Cerrar sesión
+            </button>
+          </div>
+        )}
       </aside>
     </>
   )
