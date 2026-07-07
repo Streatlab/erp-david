@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { UserPlus, Archive, ArchiveRestore, Trash2 } from 'lucide-react'
 import {
   INK, MARINO, ARENA, BLANCO, GRIS, OLIVA, TERRA, CELESTE, NARANJA, AMBAR,
-  OSW, LEX, SHADOW, BORDER_CARD,
+  OSW, LEX,
 } from '@/styles/neobrutal'
 import { PageNeo, CabeceraNeo, Banda, TablaWrap, thNeo, tdNeo, BotonNeo } from '@/components/neo/NeoUI'
 
@@ -25,11 +25,11 @@ interface Empleado {
 }
 
 const DATOS_TEST: Empleado[] = [
-  { id: '1', nombre: 'TEST · David Reparte',   email: 'david@test.local',  nif: '00000000A', cargo: 'Administrador', fecha_alta: '2022-01-10', estado: 'activo' },
-  { id: '2', nombre: 'TEST · Repartidor Uno',  email: 'rep1@test.local',   nif: '11111111B', cargo: 'Repartidor',    fecha_alta: '2023-03-01', estado: 'activo' },
-  { id: '3', nombre: 'TEST · Repartidor Dos',  email: 'rep2@test.local',   nif: '22222222C', cargo: 'Repartidor',    fecha_alta: '2024-06-15', estado: 'vacaciones' },
-  { id: '4', nombre: 'TEST · Repartidor Tres', email: 'rep3@test.local',   nif: '33333333D', cargo: 'Repartidor',    fecha_alta: '2024-11-02', estado: 'baja' },
-  { id: '5', nombre: 'TEST · Antiguo',         email: 'ex@test.local',     nif: '44444444E', cargo: 'Repartidor',    fecha_alta: '2021-05-20', estado: 'despedido' },
+  { id: '1', nombre: 'TEST · David Reparte',   email: 'david@test.local', nif: '00000000A', cargo: 'Administrador', fecha_alta: '2022-01-10', estado: 'activo' },
+  { id: '2', nombre: 'TEST · Repartidor Uno',  email: 'rep1@test.local',  nif: '11111111B', cargo: 'Repartidor',    fecha_alta: '2023-03-01', estado: 'activo' },
+  { id: '3', nombre: 'TEST · Repartidor Dos',  email: 'rep2@test.local',  nif: '22222222C', cargo: 'Repartidor',    fecha_alta: '2024-06-15', estado: 'vacaciones' },
+  { id: '4', nombre: 'TEST · Repartidor Tres', email: 'rep3@test.local',  nif: '33333333D', cargo: 'Repartidor',    fecha_alta: '2024-11-02', estado: 'baja' },
+  { id: '5', nombre: 'TEST · Antiguo',         email: 'ex@test.local',    nif: '44444444E', cargo: 'Repartidor',    fecha_alta: '2021-05-20', estado: 'despedido' },
 ]
 
 function estadoColor(e: EstadoEmpleado): string {
@@ -163,7 +163,7 @@ export default function Personas() {
             })}
           </tbody>
         </TablaWrap>
-        <div style={{ fontFamily: LEX, fontSize: 12, fontWeight: 600, color: GRIS, marginTop: 12, boxShadow: SHADOW === '' ? undefined : undefined, borderTop: `0px solid ${BORDER_CARD}` }}>
+        <div style={{ fontFamily: LEX, fontSize: 12, fontWeight: 600, color: GRIS, marginTop: 12 }}>
           Clic en los iconos para archivar/reactivar o borrar (sobre datos TEST).
         </div>
       </Banda>
