@@ -11,6 +11,7 @@ import {
   CarFront,
   Wrench,
   Users,
+  User,
   ClipboardList,
   HardHat,
   BarChart3,
@@ -22,6 +23,12 @@ import {
   Clock,
   Banknote,
   UserCog,
+  Receipt,
+  TrendingUp,
+  ArrowLeftRight,
+  Scale,
+  Activity,
+  CheckCheck,
   ChevronRight,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -102,22 +109,31 @@ const SECTIONS: NavSection[] = [
   },
 ]
 
+/* Icono propio para CADA módulo (como en Binagre). */
 const ICON_ROUTE: Record<string, LucideIcon> = {
   '/papeleo': FileText,
+  '/finanzas/facturacion': Receipt,
+  '/finanzas/ventas': TrendingUp,
   '/finanzas/liquidaciones': Wallet,
+  '/finanzas/pagos-cobros': ArrowLeftRight,
+  '/punto-equilibrio': Scale,
+  '/running': Activity,
   '/finanzas/escenarios': Clock,
+  '/conciliacion': CheckCheck,
   '/reclamaciones': AlertTriangle,
+  '/entregas': Truck,
   '/flota': RouteIcon,
   '/danos-vehiculos': CarFront,
   '/mantenimiento': Wrench,
   '/checklists': ClipboardList,
   '/manuales': BookOpen,
   '/equipos': HardHat,
+  '/libro-facturas': Library,
+  '/personal': User,
   '/organigrama': Network,
   '/presencia': Clock,
   '/informes': BarChart3,
-  '/informes-equipo': BarChart3,
-  '/libro-facturas': Library,
+  '/informes-equipo': Users,
   '/configuracion/bancos': Banknote,
   '/configuracion/usuarios': UserCog,
 }
@@ -312,7 +328,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
                 {!collapsed && isOpen && (
                   <div style={{ background: BLANCO, borderBottom: `3px solid ${INK}` }}>
                     {visibleItems.map((item, idx) => {
-                      const SubIcon = ICON_ROUTE[item.path]
+                      const SubIcon = ICON_ROUTE[item.path] ?? FileText
                       return (
                         <NavLink key={`${item.path}-${idx}`} to={item.path} end onClick={onClose}
                           style={({ isActive }) => ({
@@ -324,9 +340,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
                             color: isActive ? AMBAR : INK,
                           })}>
                           {({ isActive }) => (<>
-                            {SubIcon
-                              ? <SubIcon size={15} strokeWidth={2.2} color={isActive ? AMBAR : INK} style={{ flexShrink: 0 }} />
-                              : <span style={{ width: 7, height: 7, flexShrink: 0, background: isActive ? AMBAR : INK, display: 'inline-block' }} />}
+                            <SubIcon size={15} strokeWidth={2.2} color={isActive ? AMBAR : INK} style={{ flexShrink: 0 }} />
                             <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
                           </>)}
                         </NavLink>
