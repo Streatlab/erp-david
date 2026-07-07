@@ -19,16 +19,15 @@ const PERIODOS: { key: PeriodoKey; label: string }[] = [
   { key: 'anio',         label: 'Año' },
 ]
 
-/* ── Pestañas principales (patrón estructural Binagre, paleta David) ── */
+/* ── Pestañas del panel: overview (Operaciones y Finanzas viven ahora como
+   secciones propias en el menú lateral) ── */
 
 type MainTab = 'resumen' | 'operaciones' | 'finanzas' | 'cashflow' | 'evolucion'
 
 const MAIN_TABS: { id: MainTab; label: string }[] = [
-  { id: 'resumen',     label: 'Resumen' },
-  { id: 'operaciones', label: 'Operaciones' },
-  { id: 'finanzas',    label: 'Finanzas' },
-  { id: 'cashflow',    label: 'Cashflow' },
-  { id: 'evolucion',   label: 'Evolución' },
+  { id: 'resumen',   label: 'Resumen' },
+  { id: 'cashflow',  label: 'Cashflow' },
+  { id: 'evolucion', label: 'Evolución' },
 ]
 
 const TAB_LS_KEY = 'david_panel_main_tab'
@@ -379,10 +378,9 @@ export default function PanelGlobal() {
           </Banda>
         </>)}
 
-        {/* ════════════════ TAB OPERACIONES ════════════════ */}
+        {/* ════════════════ TAB OPERACIONES (accesible desde el menú) ════════════════ */}
         {mainTab === 'operaciones' && (<>
 
-          {/* HERO ÁMBAR — has entregado (dato real de liquidaciones Cade) */}
           <Banda bg={AMBAR}>
             {liqUlt ? (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 28, alignItems: 'end' }}>
@@ -421,7 +419,6 @@ export default function PanelGlobal() {
             )}
           </Banda>
 
-          {/* Entregas por mes (BLANCO, barras reales) */}
           {liqPorMes.length > 0 && (
             <Banda bg={BLANCO}>
               <span style={eyebrow(MARINO, ARENA)}>Ritmo de reparto</span>
@@ -442,9 +439,6 @@ export default function PanelGlobal() {
                   ))
                 })()}
               </div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: GRIS, marginTop: 12 }}>
-                Barra terracota = mes con recortes de Cade. Detalle en Finanzas → Liquidaciones.
-              </div>
             </Banda>
           )}
 
@@ -455,10 +449,9 @@ export default function PanelGlobal() {
           />
         </>)}
 
-        {/* ════════════════ TAB FINANZAS ════════════════ */}
+        {/* ════════════════ TAB FINANZAS (accesible desde el menú) ════════════════ */}
         {mainTab === 'finanzas' && (<>
 
-          {/* Lo que te paga Cade (CELESTE = por cobrar/bruto) */}
           <Banda bg={CELESTE}>
             <span style={eyebrow(BLANCO)}>¿Cuándo cobras de Cade?</span>
             <h2 style={{ ...d('clamp(22px,2.6vw,32px)', ARENA), margin: '12px 0 20px' }}>Liquidaciones Cade · histórico</h2>
@@ -486,7 +479,6 @@ export default function PanelGlobal() {
             )}
           </Banda>
 
-          {/* Gastos (ARENA_CL) */}
           <Banda bg={ARENA_CL}>
             <span style={eyebrow(TERRA, ARENA)}>¿En qué se va?</span>
             <h2 style={{ ...d('clamp(22px,2.6vw,32px)'), margin: '12px 0 20px' }}>
@@ -505,7 +497,6 @@ export default function PanelGlobal() {
             </div>
           </Banda>
 
-          {/* Presupuestos (BLANCO) */}
           {bundle.presupuestos.length > 0 && (
             <Banda bg={BLANCO}>
               <span style={eyebrow(NARANJA, ARENA)}>Presupuestos · {tituloMes.toLowerCase()}</span>
@@ -533,7 +524,6 @@ export default function PanelGlobal() {
             </Banda>
           )}
 
-          {/* Objetivos (ÁMBAR) */}
           <Banda bg={AMBAR}>
             <span style={eyebrow(INK, AMBAR)}>Objetivos</span>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 28, marginTop: 16 }}>
@@ -587,7 +577,6 @@ export default function PanelGlobal() {
         {/* ════════════════ TAB CASHFLOW ════════════════ */}
         {mainTab === 'cashflow' && (<>
 
-          {/* Tesorería (MARINO) */}
           <Banda bg={MARINO}>
             <span style={eyebrow(AMBAR)}>Tesorería · BBVA</span>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 28, marginTop: 16, alignItems: 'start' }}>
@@ -616,7 +605,6 @@ export default function PanelGlobal() {
             </div>
           </Banda>
 
-          {/* Flujo del período (BLANCO) */}
           <Banda bg={BLANCO}>
             <span style={eyebrow(balance >= 0 ? OLIVA : TERRA, ARENA)}>Flujo del período</span>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 18, marginTop: 16 }}>
@@ -640,7 +628,6 @@ export default function PanelGlobal() {
         {/* ════════════════ TAB EVOLUCIÓN ════════════════ */}
         {mainTab === 'evolucion' && (<>
 
-          {/* Ingresos vs gastos 12 semanas (ARENA_CL) */}
           <Banda bg={ARENA_CL}>
             <span style={eyebrow(OLIVA, ARENA)}>Ritmo semanal</span>
             <h2 style={{ ...d('clamp(20px,2.4vw,28px)'), margin: '12px 0 20px' }}>Ingresos vs gastos · últimas 12 semanas</h2>
@@ -668,7 +655,6 @@ export default function PanelGlobal() {
             </div>
           </Banda>
 
-          {/* Ingresos vs gastos 4 semanas detalle (BLANCO) */}
           <Banda bg={BLANCO}>
             <span style={eyebrow(MARINO, ARENA)}>Últimas 4 semanas · detalle</span>
             <div style={{ display: 'grid', gridTemplateColumns: `repeat(${bundle.barrasSemanas.length}, 1fr)`, gap: 18, alignItems: 'end', minHeight: 180, marginTop: 16 }}>
