@@ -17,12 +17,15 @@ import Ventas from '@/pages/finanzas/Ventas'
 import Escenarios from '@/pages/finanzas/Escenarios'
 import ReclamacionesCade from '@/pages/ReclamacionesCade'
 import Papeleo from '@/pages/Papeleo'
+import Tareas from '@/pages/Tareas'
 import Personas from '@/pages/equipo/Personas'
 import Organigrama from '@/pages/equipo/Organigrama'
 import Presencia from '@/pages/equipo/Presencia'
 import Checklists from '@/pages/operaciones/Checklists'
 import Manuales from '@/pages/operaciones/Manuales'
 import LibroEquipos from '@/pages/operaciones/LibroEquipos'
+import DanosVehiculos from '@/pages/operaciones/DanosVehiculos'
+import Mantenimiento from '@/pages/operaciones/Mantenimiento'
 import Informes from '@/pages/informes/Informes'
 import InformesEquipo from '@/pages/informes/InformesEquipo'
 import Usuarios from '@/pages/configuracion/Usuarios'
@@ -36,12 +39,9 @@ function ProtectedRoute({ children, solo }: { children: React.ReactNode; solo?: 
 }
 
 const PLACEHOLDERS = [
-  'tareas',
   'libro-facturas',
-  'danos-vehiculos',
   'pedidos',
   'inventarios',
-  'mantenimiento',
 ]
 
 function AppRoutes() {
@@ -52,6 +52,8 @@ function AppRoutes() {
       <Route path="/login" element={usuario ? <Navigate to="/" replace /> : <Login />} />
       <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
         <Route index element={<PanelGlobal />} />
+
+        <Route path="tareas" element={<ProtectedRoute solo={['admin']}><Tareas /></ProtectedRoute>} />
 
         {/* Finanzas */}
         <Route path="papeleo"                element={<ProtectedRoute solo={['admin']}><Papeleo /></ProtectedRoute>} />
@@ -65,13 +67,15 @@ function AppRoutes() {
         <Route path="conciliacion"           element={<ProtectedRoute solo={['admin']}><Conciliacion /></ProtectedRoute>} />
 
         {/* Operación */}
-        <Route path="entregas"    element={<ProtectedRoute solo={['admin']}><Entregas /></ProtectedRoute>} />
-        <Route path="flota"       element={<ProtectedRoute solo={['admin']}><Flota /></ProtectedRoute>} />
+        <Route path="entregas"      element={<ProtectedRoute solo={['admin']}><Entregas /></ProtectedRoute>} />
+        <Route path="flota"         element={<ProtectedRoute solo={['admin']}><Flota /></ProtectedRoute>} />
         <Route path="flota/:codigo" element={<ProtectedRoute solo={['admin']}><FurgonetaDetalle /></ProtectedRoute>} />
         <Route path="reclamaciones" element={<ProtectedRoute solo={['admin']}><ReclamacionesCade /></ProtectedRoute>} />
-        <Route path="checklists"  element={<ProtectedRoute solo={['admin']}><Checklists /></ProtectedRoute>} />
-        <Route path="manuales"    element={<ProtectedRoute solo={['admin']}><Manuales /></ProtectedRoute>} />
-        <Route path="equipos"     element={<ProtectedRoute solo={['admin']}><LibroEquipos /></ProtectedRoute>} />
+        <Route path="danos-vehiculos" element={<ProtectedRoute solo={['admin']}><DanosVehiculos /></ProtectedRoute>} />
+        <Route path="mantenimiento" element={<ProtectedRoute solo={['admin']}><Mantenimiento /></ProtectedRoute>} />
+        <Route path="checklists"    element={<ProtectedRoute solo={['admin']}><Checklists /></ProtectedRoute>} />
+        <Route path="manuales"      element={<ProtectedRoute solo={['admin']}><Manuales /></ProtectedRoute>} />
+        <Route path="equipos"       element={<ProtectedRoute solo={['admin']}><LibroEquipos /></ProtectedRoute>} />
 
         {/* Equipo */}
         <Route path="personal"    element={<ProtectedRoute solo={['admin']}><Personas /></ProtectedRoute>} />
