@@ -36,7 +36,11 @@ const PLACEHOLDERS = [
   'inventarios',
   'mantenimiento',
   'informes-equipo',
+  'informes',
+  'organigrama',
+  'presencia',
   'finanzas/ventas',
+  'finanzas/escenarios',
 ]
 
 function AppRoutes() {
