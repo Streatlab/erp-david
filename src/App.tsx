@@ -14,6 +14,7 @@ import Liquidaciones from '@/pages/finanzas/Liquidaciones'
 import PagosCobros from '@/pages/finanzas/PagosCobros'
 import PuntoEquilibrio from '@/pages/finanzas/PuntoEquilibrio'
 import ReclamacionesCade from '@/pages/ReclamacionesCade'
+import Personas from '@/pages/equipo/Personas'
 import Placeholder from '@/pages/Placeholder'
 
 function ProtectedRoute({ children, solo }: { children: React.ReactNode; solo?: string[] }) {
@@ -24,7 +25,6 @@ function ProtectedRoute({ children, solo }: { children: React.ReactNode; solo?: 
 }
 
 const PLACEHOLDERS = [
-  'personal',
   'tareas',
   'papeleo',
   'checklists',
@@ -65,6 +65,9 @@ function AppRoutes() {
         <Route path="flota"            element={<ProtectedRoute solo={['admin']}><Flota /></ProtectedRoute>} />
         <Route path="flota/:codigo"    element={<ProtectedRoute solo={['admin']}><FurgonetaDetalle /></ProtectedRoute>} />
         <Route path="reclamaciones"    element={<ProtectedRoute solo={['admin']}><ReclamacionesCade /></ProtectedRoute>} />
+
+        {/* Equipo */}
+        <Route path="personal" element={<ProtectedRoute solo={['admin']}><Personas /></ProtectedRoute>} />
 
         {/* Secciones en fases (placeholder navegable) */}
         {PLACEHOLDERS.map(p => (
