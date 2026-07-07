@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import {
   LayoutDashboard,
+  BellRing,
   Wallet,
   AlertTriangle,
   Truck,
@@ -10,20 +11,22 @@ import {
   CarFront,
   Wrench,
   Users,
-  ListChecks,
   ClipboardList,
   HardHat,
   BarChart3,
-  ShoppingCart,
-  Boxes,
   FileText,
   BookOpen,
   Library,
   Settings,
+  Network,
+  Clock,
+  Banknote,
+  UserCog,
   ChevronRight,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import {
   OSW, INK, MARINO, ARENA, BLANCO, AMBAR, NARANJA,
   CELESTE, OLIVA, BERENJENA, VERDEMAR,
@@ -40,21 +43,23 @@ interface NavSection {
   items: NavItem[]
 }
 
-/* Bloques de color sólido sobre sidebar marino — Neobrutal Mediterráneo David.
-   Comportamiento espejo del sidebar Binagre (hover-abre, auto-colapsa 20s, máx 2 abiertas). */
+/* Estructura espejo de Binagre, adaptada a David. Bloques de color sólido sobre
+   sidebar marino. Comportamiento: hover-abre + auto-colapsa 20s + acordeón máx 2. */
 const SECTIONS: NavSection[] = [
   {
     key: 'finanzas', label: 'Finanzas', icon: Wallet,
     headBg: CELESTE, headColor: ARENA, perfiles: ['admin'],
     items: [
-      { path: '/finanzas/facturacion',   label: 'Facturación emitida', perfiles: ['admin'] },
-      { path: '/finanzas/liquidaciones', label: 'Liquidaciones',       perfiles: ['admin'] },
-      { path: '/finanzas/pagos-cobros',  label: 'Pagos y Cobros',      perfiles: ['admin'] },
-      { path: '/finanzas/ventas',        label: 'Ventas',              perfiles: ['admin'] },
-      { path: '/punto-equilibrio',       label: 'Punto equilibrio',    perfiles: ['admin'] },
-      { path: '/running',                label: 'Running',             perfiles: ['admin'] },
-      { path: '/conciliacion',           label: 'Conciliación',        perfiles: ['admin'] },
-      { path: '/reclamaciones',          label: 'Reclamaciones Cade',  perfiles: ['admin'] },
+      { path: '/papeleo',               label: 'Papeleo',             perfiles: ['admin'] },
+      { path: '/finanzas/facturacion',  label: 'Facturación',         perfiles: ['admin'] },
+      { path: '/finanzas/ventas',       label: 'Ventas',              perfiles: ['admin'] },
+      { path: '/finanzas/liquidaciones',label: 'Liquidaciones',       perfiles: ['admin'] },
+      { path: '/finanzas/pagos-cobros', label: 'Pagos y Cobros',      perfiles: ['admin'] },
+      { path: '/punto-equilibrio',      label: 'Punto equilibrio',    perfiles: ['admin'] },
+      { path: '/running',               label: 'Running',             perfiles: ['admin'] },
+      { path: '/finanzas/escenarios',   label: 'Escenarios',          perfiles: ['admin'] },
+      { path: '/conciliacion',          label: 'Conciliación',        perfiles: ['admin'] },
+      { path: '/reclamaciones',         label: 'Reclamaciones Cade',  perfiles: ['admin'] },
     ],
   },
   {
@@ -65,61 +70,60 @@ const SECTIONS: NavSection[] = [
       { path: '/flota',           label: 'Flota',           perfiles: ['admin'] },
       { path: '/danos-vehiculos', label: 'Daños vehículos', perfiles: ['admin'] },
       { path: '/mantenimiento',   label: 'Mantenimiento',   perfiles: ['admin'] },
+      { path: '/checklists',      label: 'Checklists',      perfiles: ['admin'] },
+      { path: '/manuales',        label: 'Manuales',        perfiles: ['admin'] },
+      { path: '/equipos',         label: 'Libro Equipos',   perfiles: ['admin'] },
     ],
   },
   {
     key: 'equipo', label: 'Equipo', icon: Users,
     headBg: OLIVA, headColor: ARENA, perfiles: ['admin'],
     items: [
-      { path: '/personal',        label: 'Personal',        perfiles: ['admin'] },
-      { path: '/tareas',          label: 'Tareas',          perfiles: ['admin'] },
-      { path: '/checklists',      label: 'Checklists',      perfiles: ['admin'] },
-      { path: '/equipos',         label: 'Equipos',         perfiles: ['admin'] },
-      { path: '/informes-equipo', label: 'Informes equipo', perfiles: ['admin'] },
+      { path: '/personal',    label: 'Personas',    perfiles: ['admin'] },
+      { path: '/organigrama', label: 'Organigrama', perfiles: ['admin'] },
+      { path: '/presencia',   label: 'Presencia',   perfiles: ['admin'] },
     ],
   },
   {
-    key: 'almacen', label: 'Almacén', icon: Boxes,
-    headBg: AMBAR, headColor: INK, perfiles: ['admin'],
-    items: [
-      { path: '/pedidos',     label: 'Pedidos',     perfiles: ['admin'] },
-      { path: '/inventarios', label: 'Inventarios', perfiles: ['admin'] },
-    ],
-  },
-  {
-    key: 'documentos', label: 'Documentos', icon: FileText,
+    key: 'informes', label: 'Informes', icon: BarChart3,
     headBg: BERENJENA, headColor: ARENA, perfiles: ['admin'],
     items: [
-      { path: '/papeleo',        label: 'Papeleo',        perfiles: ['admin'] },
-      { path: '/manuales',       label: 'Manuales',       perfiles: ['admin'] },
-      { path: '/libro-facturas', label: 'Libro registro', perfiles: ['admin'] },
+      { path: '/informes',         label: 'Panel informes',  perfiles: ['admin'] },
+      { path: '/informes-equipo',  label: 'Informes equipo', perfiles: ['admin'] },
     ],
   },
   {
     key: 'configuracion', label: 'Configuración', icon: Settings,
     headBg: VERDEMAR, headColor: ARENA, perfiles: ['admin'],
     items: [
-      { path: '/configuracion', label: 'Configuración', perfiles: ['admin'] },
+      { path: '/configuracion/bancos',   label: 'Bancos y Cuentas', perfiles: ['admin'] },
+      { path: '/configuracion/usuarios', label: 'Usuarios',         perfiles: ['admin'] },
     ],
   },
 ]
 
 const ICON_ROUTE: Record<string, LucideIcon> = {
+  '/papeleo': FileText,
   '/finanzas/liquidaciones': Wallet,
+  '/finanzas/escenarios': Clock,
   '/reclamaciones': AlertTriangle,
   '/flota': RouteIcon,
   '/danos-vehiculos': CarFront,
   '/mantenimiento': Wrench,
-  '/tareas': ListChecks,
   '/checklists': ClipboardList,
-  '/equipos': HardHat,
-  '/informes-equipo': BarChart3,
-  '/pedidos': ShoppingCart,
   '/manuales': BookOpen,
+  '/equipos': HardHat,
+  '/organigrama': Network,
+  '/presencia': Clock,
+  '/informes': BarChart3,
+  '/informes-equipo': BarChart3,
   '/libro-facturas': Library,
+  '/configuracion/bancos': Banknote,
+  '/configuracion/usuarios': UserCog,
 }
 
 const OPEN_SECTIONS_LS_KEY = 'david.sidebar.openSections'
+const TEXTO_SUAVE = 'rgba(245,236,217,0.72)' // ARENA 72% sobre marino
 
 function loadOpenSections(): string[] {
   if (typeof window === 'undefined') return []
@@ -132,13 +136,11 @@ function loadOpenSections(): string[] {
   } catch { return [] }
 }
 
-const TEXTO_SUAVE = 'rgba(245,236,217,0.72)' // ARENA 72% sobre marino
-
 export default function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { usuario, logout } = useAuth()
   const perfil = usuario?.perfil ?? ''
 
-  // ── Detección de móvil (equivalente a useEsMovil de Binagre) ──
+  // Detección de móvil (equivalente a useEsMovil de Binagre)
   const [esMovil, setEsMovil] = useState(false)
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -155,7 +157,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
     try { localStorage.setItem(OPEN_SECTIONS_LS_KEY, JSON.stringify(openSections)) } catch { /* noop */ }
   }, [openSections])
 
-  // ── Colapso Binagre: al interactuar (clic o HOVER) se ABRE y queda 20s; luego autocolapsa ──
+  // Colapso Binagre: hover/clic ABRE y queda 20s; luego autocolapsa
   const [abierto, setAbierto] = useState(false)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const OPEN_MS = 20000
@@ -185,7 +187,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
   }
 
   const filterItems = (items: NavItem[]) => items.filter((i) => i.perfiles.includes(perfil))
-  const sidebarWidth = collapsed ? 56 : 248
+  const sidebarWidth = collapsed ? 72 : 252
 
   const asideStyle: CSSProperties = {
     background: MARINO,
@@ -207,10 +209,10 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
 
         {/* HEADER */}
         {collapsed ? (
-          <div style={{ background: MARINO, borderBottom: `4px solid ${INK}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 64, padding: '6px 0', gap: 4 }}>
-            <img src="/logo-davidreparte.svg" alt="David Reparte" style={{ height: 30, width: 'auto' }} />
-            <button onClick={abrir20s} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 44, minHeight: 36 }} title="Abrir">
-              <ChevronRight size={18} color={ARENA} />
+          <div style={{ background: MARINO, borderBottom: `4px solid ${INK}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 64, padding: '8px 0', gap: 4 }}>
+            <img src="/logo-davidreparte.svg" alt="David Reparte" style={{ height: 34, width: 'auto' }} />
+            <button onClick={abrir20s} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 44, minHeight: 34 }} title="Abrir">
+              <ChevronRight size={20} color={ARENA} />
             </button>
           </div>
         ) : (
@@ -246,10 +248,35 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
           {collapsed && perfil && (
             <NavLink to="/" end onClick={() => { abrir20s(); onClose() }} title="Panel Global"
               style={({ isActive }) => ({
-                width: '100%', height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', borderBottom: `3px solid ${INK}`,
+                width: '100%', height: 46, display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', borderBottom: `3px solid ${INK}`,
                 background: isActive ? AMBAR : MARINO,
               })}>
-              {({ isActive }) => <LayoutDashboard size={20} strokeWidth={2.4} color={isActive ? INK : AMBAR} />}
+              {({ isActive }) => <LayoutDashboard size={22} strokeWidth={2.4} color={isActive ? INK : AMBAR} />}
+            </NavLink>
+          )}
+
+          {/* Tareas (directo) */}
+          {!collapsed && perfil && (
+            <NavLink to="/tareas" onClick={onClose}
+              style={({ isActive }) => ({
+                fontFamily: OSW, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: 18,
+                padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 11,
+                borderBottom: `3px solid ${INK}`, cursor: 'pointer', textDecoration: 'none',
+                color: isActive ? INK : ARENA, background: isActive ? AMBAR : MARINO,
+              })}>
+              {({ isActive }) => (<>
+                <BellRing size={20} strokeWidth={2.4} color={isActive ? INK : AMBAR} style={{ flexShrink: 0 }} />
+                <span>Tareas</span>
+              </>)}
+            </NavLink>
+          )}
+          {collapsed && perfil && (
+            <NavLink to="/tareas" onClick={() => { abrir20s(); onClose() }} title="Tareas"
+              style={({ isActive }) => ({
+                width: '100%', height: 46, display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', borderBottom: `3px solid ${INK}`,
+                background: isActive ? AMBAR : MARINO,
+              })}>
+              {({ isActive }) => <BellRing size={22} strokeWidth={2.4} color={isActive ? INK : AMBAR} />}
             </NavLink>
           )}
 
@@ -264,8 +291,8 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
               <div key={section.key}>
                 {collapsed ? (
                   <button type="button" onClick={() => toggleSection(section.key)} title={section.label}
-                    style={{ width: '100%', height: 44, background: section.headBg, border: 'none', borderBottom: `3px solid ${INK}`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Icon size={20} strokeWidth={2.4} color={section.headColor} />
+                    style={{ width: '100%', height: 46, background: section.headBg, border: 'none', borderBottom: `3px solid ${INK}`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Icon size={22} strokeWidth={2.4} color={section.headColor} />
                   </button>
                 ) : (
                   <button type="button" onClick={() => toggleSection(section.key)}
@@ -312,19 +339,25 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
           })}
         </nav>
 
-        {/* FOOTER */}
+        {/* FOOTER con toggle modo oscuro */}
         {collapsed ? (
-          <div style={{ marginTop: 'auto', background: MARINO, borderTop: `4px solid ${INK}`, padding: '10px 0', display: 'flex', justifyContent: 'center' }}>
-            <button onClick={logout} style={{ width: 44, height: 32, color: ARENA, background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Cerrar sesión">⏏</button>
+          <div style={{ marginTop: 'auto', background: MARINO, borderTop: `4px solid ${INK}`, padding: '10px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+            <div style={{ background: ARENA, border: `2px solid ${INK}`, width: 40, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <ThemeToggle />
+            </div>
+            <button onClick={logout} style={{ width: 44, height: 30, color: ARENA, background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Cerrar sesión">⏏</button>
           </div>
         ) : (
           <div style={{ marginTop: 'auto', background: MARINO, borderTop: `4px solid ${INK}`, padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-            <div style={{ fontFamily: OSW, textTransform: 'uppercase', fontSize: 12, letterSpacing: '0.04em', color: TEXTO_SUAVE, lineHeight: 1.4 }}>
-              {usuario?.nombre} — <span style={{ color: AMBAR, fontWeight: 700 }}>{usuario?.perfil}</span>
+            <div style={{ background: ARENA, border: `2px solid ${INK}`, width: 40, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <ThemeToggle />
             </div>
-            <button onClick={logout} style={{ color: AMBAR, background: 'none', border: 'none', cursor: 'pointer', fontFamily: OSW, textTransform: 'uppercase', fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', padding: 0 }}>
-              Cerrar sesión
-            </button>
+            <div style={{ fontFamily: OSW, textTransform: 'uppercase', fontSize: 12, letterSpacing: '0.04em', color: TEXTO_SUAVE, lineHeight: 1.4, textAlign: 'right' }}>
+              {usuario?.nombre} — <span style={{ color: AMBAR, fontWeight: 700 }}>{usuario?.perfil}</span><br />
+              <button onClick={logout} style={{ color: AMBAR, background: 'none', border: 'none', cursor: 'pointer', fontFamily: OSW, textTransform: 'uppercase', fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', padding: 0 }}>
+                Cerrar sesión
+              </button>
+            </div>
           </div>
         )}
       </aside>
