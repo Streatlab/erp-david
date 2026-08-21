@@ -3,13 +3,13 @@
  * Dice cuándo toca cambiar cada furgoneta y cuánto hay que apartar cada mes
  * desde hoy para pagarla al contado, sin encadenar préstamos.
  */
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts'
 import {
-  cargarDatos, guardarParams, calcular, resumirFlota, aportacionPorAnio,
+  cargarDatos, guardarParams, calcular, resumirFlota, aportacionPorAnio, DEFAULTS,
   type ParamsReposicion, type ResultadoReposicion, type PrestamoVivo,
 } from '@/lib/flota/reposicion'
 import type { Furgoneta } from '@/lib/flota/queries'
@@ -92,10 +92,9 @@ export default function Reposicion() {
   }
 
   const resultados: ResultadoReposicion[] = useMemo(
-    () => furgos.map((f) => calcular(f, params[f.id] ?? {
-      furgonetaId: f.id, fechaCompra: '', kmActual: 0, kmAnio: 0, vidaKm: 200000,
-      vidaAnios: 8, precioNuevoHoy: 0, inflacion: 3, residualPct: 12, ahorroAcumulado: 0,
-    }, prestamos[f.id])),
+    () => furgos.map((f) =>
+      calcular(f, params[f.id] ?? { ...DEFAULTS, furgonetaId: f.id }, prestamos[f.id]),
+    ),
     [furgos, params, prestamos],
   )
 
@@ -153,8 +152,9 @@ export default function Reposicion() {
               label="Próximo cambio"
               valor={resumen.proxima ? resumen.proxima.fechaReposicion : '—'}
               color={resumen.proxima ? AMBAR : GRIS}
-              bg={resumen.proxima ? BLANCO : BLANCO}
-              sub={resumen.proxima ? `${resumen.proxima.furgoneta.matricula} · ${resumen.proxima.limitante === 'KM' ? 'por kilómetros' : 'por años'}` : 'Faltan datos'}
+              sub={resumen.proxima
+                ? `${resumen.proxima.furgoneta.matricula} · ${resumen.proxima.limitante === 'KM' ? 'por kilómetros' : 'por años'}`
+                : 'Faltan datos'}
             />
           </div>
 
@@ -200,7 +200,7 @@ export default function Reposicion() {
                 <th style={thNeo}>Coste estimado</th>
                 <th style={thNeo}>Falta reunir</th>
                 <th style={thNeo}>Ahorro / mes</th>
-                <th style={thNeo}></th>
+                <th style={thNeo}>&nbsp;</th>
               </tr>
             </thead>
             <tbody>
@@ -211,8 +211,8 @@ export default function Reposicion() {
                 const abierto = editando === r.furgoneta.id
 
                 return (
-                  <>
-                    <tr key={r.furgoneta.id}>
+                  <Fragment key={r.furgoneta.id}>
+                    <tr>
                       <td style={tdEstado(alt, color)}>
                         <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 15 }}>
                           {r.furgoneta.matricula}
@@ -240,7 +240,7 @@ export default function Reposicion() {
                       </td>
                       <td style={tdNeo(alt)}>{r.completo ? EUR(r.costeFuturo) : '—'}</td>
                       <td style={tdNeo(alt)}>{r.completo ? EUR(r.necesidad) : '—'}</td>
-                      <td style={{ ...tdNeo(alt), background: r.completo ? AMBAR : tdNeo(alt).background }}>
+                      <td style={r.completo ? { ...tdNeo(alt), background: AMBAR } : tdNeo(alt)}>
                         <span style={{ fontFamily: OSW, fontWeight: 700, fontSize: 17 }}>
                           {r.completo ? EUR(r.cuotaMensual) : '—'}
                         </span>
@@ -256,7 +256,7 @@ export default function Reposicion() {
                     </tr>
 
                     {abierto && (
-                      <tr key={`${r.furgoneta.id}-edit`}>
+                      <tr>
                         <td colSpan={9} style={{ background: ARENA, borderBottom: BORDER_CARD, padding: '18px 14px' }}>
                           <div style={{
                             display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 14,
@@ -306,7 +306,7 @@ export default function Reposicion() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 )
               })}
             </tbody>
@@ -335,12 +335,23 @@ export default function Reposicion() {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={porAnio} margin={{ top: 6, right: 12, left: 6, bottom: 6 }}>
                     <CartesianGrid stroke={ARENA_CL} strokeWidth={2} vertical={false} />
-                    <XAxis dataKey="anio" tick={{ fontFamily: OSW, fontSize: 13, fill: INK }} axisLine={{ stroke: INK, strokeWidth: 2 }} tickLine={false} />
-                    <YAxis tick={{ fontFamily: OSW, fontSize: 12, fill: INK }} axisLine={{ stroke: INK, strokeWidth: 2 }} tickLine={false} width={64} tickFormatter={(v: number) => E(v)} />
+                    <XAxis
+                      dataKey="anio"
+                      tick={{ fontFamily: OSW, fontSize: 13, fill: INK }}
+                      axisLine={{ stroke: INK, strokeWidth: 2 }}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{ fontFamily: OSW, fontSize: 12, fill: INK }}
+                      axisLine={{ stroke: INK, strokeWidth: 2 }}
+                      tickLine={false}
+                      width={64}
+                      tickFormatter={(v) => E(Number(v))}
+                    />
                     <Tooltip
                       cursor={{ fill: 'rgba(11,21,36,0.06)' }}
                       contentStyle={{ border: `3px solid ${INK}`, borderRadius: 0, background: BLANCO, fontFamily: OSW, fontWeight: 700 }}
-                      formatter={(v: number) => [EUR(v), 'A apartar']}
+                      formatter={(v) => [EUR(Number(v)), 'A apartar']}
                     />
                     <Bar dataKey="aportacion" stroke={INK} strokeWidth={2}>
                       {porAnio.map((a) => (
