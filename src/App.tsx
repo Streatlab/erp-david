@@ -7,6 +7,7 @@ import Entregas from '@/pages/Entregas'
 import Conciliacion from '@/pages/Conciliacion'
 import Flota from '@/pages/Flota'
 import FurgonetaDetalle from '@/pages/FurgonetaDetalle'
+import Reposicion from '@/pages/flota/Reposicion'
 import BancosPage from '@/pages/configuracion/bancos/BancosPage'
 import Running from '@/pages/finanzas/Running'
 import FacturacionEmitida from '@/pages/finanzas/FacturacionEmitida'
@@ -68,8 +69,9 @@ function AppRoutes() {
 
         {/* Operación */}
         <Route path="entregas"      element={<ProtectedRoute solo={['admin']}><Entregas /></ProtectedRoute>} />
-        <Route path="flota"         element={<ProtectedRoute solo={['admin']}><Flota /></ProtectedRoute>} />
-        <Route path="flota/:codigo" element={<ProtectedRoute solo={['admin']}><FurgonetaDetalle /></ProtectedRoute>} />
+        <Route path="flota"             element={<ProtectedRoute solo={['admin']}><Flota /></ProtectedRoute>} />
+        <Route path="flota/reposicion"  element={<ProtectedRoute solo={['admin']}><Reposicion /></ProtectedRoute>} />
+        <Route path="flota/:codigo"     element={<ProtectedRoute solo={['admin']}><FurgonetaDetalle /></ProtectedRoute>} />
         <Route path="reclamaciones" element={<ProtectedRoute solo={['admin']}><ReclamacionesCade /></ProtectedRoute>} />
         <Route path="danos-vehiculos" element={<ProtectedRoute solo={['admin']}><DanosVehiculos /></ProtectedRoute>} />
         <Route path="mantenimiento" element={<ProtectedRoute solo={['admin']}><Mantenimiento /></ProtectedRoute>} />
