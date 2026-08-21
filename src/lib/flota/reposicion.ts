@@ -10,7 +10,8 @@
  *  3. Necesidad = coste futuro − valor residual de la vieja − ahorro ya hecho.
  *  4. Cuota mensual = necesidad / meses que faltan.
  *
- * Los parámetros del plan se guardan en localStorage (solo los usa admin).
+ * Los parámetros del plan se guardan en Supabase (tabla furgonetas_reposicion_params),
+ * con el navegador como respaldo si la base de datos no responde.
  * Los datos duros (km, préstamos) vienen de Supabase.
  */
 import { supabase } from '../supabase'
@@ -61,8 +62,9 @@ export interface ResultadoReposicion {
   esfuerzoMensual: number      // préstamo + ahorro
 }
 
-/* ── Persistencia local ─────────────────────────────────────── */
+/* ── Persistencia local (respaldo si Supabase falla) ────────── */
 const LS_KEY = 'david.reposicion.params.v1'
+const TABLA_PARAMS = 'furgonetas_reposicion_params'
 
 export function cargarParams(): Record<string, ParamsReposicion> {
   if (typeof window === 'undefined') return {}
@@ -82,6 +84,80 @@ export function guardarParams(map: Record<string, ParamsReposicion>): void {
     localStorage.setItem(LS_KEY, JSON.stringify(map))
   } catch {
     /* noop */
+  }
+}
+
+/* ── Persistencia remota (fuente de verdad) ─────────────────── */
+
+interface FilaParams {
+  furgoneta_id: string
+  fecha_compra: string | null
+  km_actual: number | null
+  km_anio: number | null
+  vida_km: number | null
+  vida_anios: number | null
+  precio_nuevo_hoy: number | null
+  inflacion: number | null
+  residual_pct: number | null
+  ahorro_acumulado: number | null
+}
+
+function filaAParams(f: FilaParams): ParamsReposicion {
+  return {
+    furgonetaId: f.furgoneta_id,
+    fechaCompra: f.fecha_compra ?? '',
+    kmActual: Number(f.km_actual ?? 0),
+    kmAnio: Number(f.km_anio ?? 0),
+    vidaKm: Number(f.vida_km ?? DEFAULTS.vidaKm),
+    vidaAnios: Number(f.vida_anios ?? DEFAULTS.vidaAnios),
+    precioNuevoHoy: Number(f.precio_nuevo_hoy ?? 0),
+    inflacion: Number(f.inflacion ?? DEFAULTS.inflacion),
+    residualPct: Number(f.residual_pct ?? DEFAULTS.residualPct),
+    ahorroAcumulado: Number(f.ahorro_acumulado ?? 0),
+  }
+}
+
+function paramsAFila(p: ParamsReposicion): FilaParams {
+  return {
+    furgoneta_id: p.furgonetaId,
+    fecha_compra: p.fechaCompra || null,
+    km_actual: p.kmActual,
+    km_anio: p.kmAnio,
+    vida_km: p.vidaKm,
+    vida_anios: p.vidaAnios,
+    precio_nuevo_hoy: p.precioNuevoHoy,
+    inflacion: p.inflacion,
+    residual_pct: p.residualPct,
+    ahorro_acumulado: p.ahorroAcumulado,
+  }
+}
+
+/** Lee el plan guardado en la base de datos. Nunca lanza: si falla, devuelve {}. */
+export async function cargarParamsRemoto(): Promise<Record<string, ParamsReposicion>> {
+  try {
+    const { data, error } = await supabase.from(TABLA_PARAMS).select('*')
+    if (error || !data) return {}
+    const out: Record<string, ParamsReposicion> = {}
+    for (const fila of data as FilaParams[]) {
+      if (!fila.furgoneta_id) continue
+      out[fila.furgoneta_id] = filaAParams(fila)
+    }
+    return out
+  } catch {
+    return {}
+  }
+}
+
+/** Guarda el plan de una furgoneta. Devuelve false si no se pudo (sin lanzar). */
+export async function guardarParamRemoto(p: ParamsReposicion): Promise<boolean> {
+  if (!p.furgonetaId) return false
+  try {
+    const { error } = await supabase
+      .from(TABLA_PARAMS)
+      .upsert(paramsAFila(p), { onConflict: 'furgoneta_id' })
+    return !error
+  } catch {
+    return false
   }
 }
 
@@ -150,19 +226,26 @@ export interface DatosReposicion {
 }
 
 export async function cargarDatos(): Promise<DatosReposicion> {
-  const [furgos, kmAnio, prestamos] = await Promise.all([
+  const [furgos, kmAnio, prestamos, remotos] = await Promise.all([
     getFurgonetas(),
     getKmAnioPorFurgo(),
     getPrestamosPorFurgo(),
+    cargarParamsRemoto(),
   ])
 
   const activas = furgos.filter((f) => f.activa !== false)
-  const guardados = cargarParams()
+  const locales = cargarParams()
   const params: Record<string, ParamsReposicion> = {}
+  const aMigrar: ParamsReposicion[] = []
 
   for (const f of activas) {
-    const prev = guardados[f.id]
-    params[f.id] = {
+    // La base de datos manda. El navegador solo se usa si el remoto no
+    // tiene todavía nada para esta furgoneta (plan guardado antes de la
+    // migración), y en ese caso se sube.
+    const remoto = remotos[f.id]
+    const prev = remoto ?? locales[f.id]
+
+    const p: ParamsReposicion = {
       ...DEFAULTS,
       furgonetaId: f.id,
       fechaCompra: prev?.fechaCompra || prestamos[f.id]?.fechaInicio || '',
@@ -175,6 +258,14 @@ export async function cargarDatos(): Promise<DatosReposicion> {
       residualPct: prev?.residualPct ?? DEFAULTS.residualPct,
       ahorroAcumulado: prev?.ahorroAcumulado ?? 0,
     }
+
+    params[f.id] = p
+    if (!remoto && locales[f.id]) aMigrar.push(p)
+  }
+
+  // Migración silenciosa de lo que ya había en este navegador.
+  if (aMigrar.length > 0) {
+    await Promise.all(aMigrar.map((p) => guardarParamRemoto(p)))
   }
 
   return { furgonetas: activas, params, prestamos }
