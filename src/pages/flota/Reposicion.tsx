@@ -3,13 +3,14 @@
  * Dice cuándo toca cambiar cada furgoneta y cuánto hay que apartar cada mes
  * desde hoy para pagarla al contado, sin encadenar préstamos.
  */
-import { Fragment, useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts'
 import {
-  cargarDatos, guardarParams, calcular, resumirFlota, aportacionPorAnio, DEFAULTS,
+  cargarDatos, guardarParams, guardarParamRemoto, calcular, resumirFlota,
+  aportacionPorAnio, DEFAULTS,
   type ParamsReposicion, type ResultadoReposicion, type PrestamoVivo,
 } from '@/lib/flota/reposicion'
 import type { Furgoneta } from '@/lib/flota/queries'
@@ -54,6 +55,28 @@ function CampoNeo({
   )
 }
 
+/* ── Estado de guardado ─────────────────────────────────────── */
+type EstadoGuardado = 'guardando' | 'guardado' | 'local'
+
+const TEXTO_GUARDADO: Record<EstadoGuardado, string> = {
+  guardando: 'Guardando…',
+  guardado: 'Guardado',
+  local: 'Solo en este navegador',
+}
+
+function EtiquetaGuardado({ estado }: { estado?: EstadoGuardado }) {
+  if (!estado) return null
+  const color = estado === 'guardado' ? OLIVA : estado === 'local' ? TERRA : GRIS
+  return (
+    <div style={{
+      marginTop: 6, fontFamily: OSW, fontWeight: 700, fontSize: 10,
+      letterSpacing: 1, textTransform: 'uppercase', color,
+    }}>
+      {TEXTO_GUARDADO[estado]}
+    </div>
+  )
+}
+
 /* ── Página ─────────────────────────────────────────────────── */
 export default function Reposicion() {
   const [furgos, setFurgos] = useState<Furgoneta[]>([])
@@ -61,6 +84,13 @@ export default function Reposicion() {
   const [prestamos, setPrestamos] = useState<Record<string, PrestamoVivo>>({})
   const [loading, setLoading] = useState(true)
   const [editando, setEditando] = useState<string | null>(null)
+  const [guardado, setGuardado] = useState<Record<string, EstadoGuardado>>({})
+  const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
+
+  useEffect(() => {
+    const pendientes = timers.current
+    return () => { Object.values(pendientes).forEach(clearTimeout) }
+  }, [])
 
   useEffect(() => {
     (async () => {
@@ -79,14 +109,24 @@ export default function Reposicion() {
     setParams((prev) => {
       const actual = prev[id]
       if (!actual) return prev
-      const next: Record<string, ParamsReposicion> = {
-        ...prev,
-        [id]: {
-          ...actual,
-          [campo]: campo === 'fechaCompra' ? valor : Number(valor === '' ? 0 : valor),
-        },
+      const actualizado: ParamsReposicion = {
+        ...actual,
+        [campo]: campo === 'fechaCompra' ? valor : Number(valor === '' ? 0 : valor),
       }
+      const next: Record<string, ParamsReposicion> = { ...prev, [id]: actualizado }
+
+      // Respaldo inmediato en el navegador.
       guardarParams(next)
+
+      // Guardado en base de datos con retardo, para no escribir en cada tecla.
+      setGuardado((g) => ({ ...g, [id]: 'guardando' }))
+      const anterior = timers.current[id]
+      if (anterior) clearTimeout(anterior)
+      timers.current[id] = setTimeout(async () => {
+        const ok = await guardarParamRemoto(actualizado)
+        setGuardado((g) => ({ ...g, [id]: ok ? 'guardado' : 'local' }))
+      }, 600)
+
       return next
     })
   }
@@ -252,6 +292,7 @@ export default function Reposicion() {
                         >
                           {abierto ? 'Cerrar' : 'Datos'}
                         </BotonNeo>
+                        <EtiquetaGuardado estado={guardado[r.furgoneta.id]} />
                       </td>
                     </tr>
 
@@ -313,7 +354,7 @@ export default function Reposicion() {
           </TablaWrap>
 
           <div style={{ marginTop: 14, fontSize: 12, fontWeight: 600, color: GRIS, fontFamily: LEX }}>
-            Los km al año salen de los partes semanales. Los datos que tú metes se guardan en este navegador.
+            Los km al año salen de los partes semanales. Los datos que tú metes se guardan en la base de datos y se ven desde cualquier dispositivo.
           </div>
         </Banda>
 
