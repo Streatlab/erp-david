@@ -1,5 +1,7 @@
 {
+  "model": "sonnet",
   "permissions": {
+    "defaultMode": "acceptEdits",
     "allow": [
       "Bash(*)",
       "Read(*)",
