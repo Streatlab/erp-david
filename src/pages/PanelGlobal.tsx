@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, type CSSProperties, type ReactNode } from 'react'
 import { supabase } from '@/lib/supabase'
 import {
-  cargarPanel, getBarrasSemanas, NOMBRE_MES, setObjetivoDia, setObjetivoMensual,
+  cargarPanel, getBarrasSemanas, NOMBRE_MES, setObjetivoMensual,
   type PanelBundle, type PeriodoKey, type BarraSemana,
 } from '@/lib/panel/queries'
 import {
@@ -32,12 +32,13 @@ const MAIN_TABS: { id: MainTab; label: string }[] = [
 
 const TAB_LS_KEY = 'david_panel_main_tab'
 
-/* Colores de operador según manual Neobrutal Mediterráneo */
+/* Origen de los ingresos. Cade llega agrupado en el banco (no se desglosa por
+   supermercado), Prior factura cada quince días y Portes son trabajos sueltos. */
 const COLOR_OP_NEO: Record<string, string> = {
-  mercadona: '#F26B1F', carrefour: '#7A8C3E', lidl: '#F5B84A', dia: '#C94A2C', prior: '#0B1524', cadeOtro: '#A89472',
+  cade: '#F26B1F', prior: '#0B1524', portes: '#7A8C3E', sinClasificar: '#A89472',
 }
 const COLOR_GASTO_NEO: Record<string, string> = {
-  rrhh: MARINO, renting: NARANJA, combustible: AMBAR, controlables: TERRA, otros: GRIS,
+  rrhh: MARINO, vehiculos: NARANJA, recargas: AMBAR, controlables: TERRA, sinCategorizar: GRIS,
 }
 
 /* ── Liquidaciones Cade (datos reales para Operaciones/Finanzas) ── */
@@ -168,6 +169,17 @@ export default function PanelGlobal() {
   const ratioColor = ratio == null ? GRIS : ratio >= 1.25 ? OLIVA : ratio >= 1 ? NARANJA : TERRA
   const ratioTxt = ratio == null ? 'SIN DATO' : ratio >= 1.25 ? 'SANO' : ratio >= 1 ? 'JUSTO' : 'CRÍTICO'
 
+  /* Margen neto: de cada 100 € facturados, cuántos son beneficio.
+     Complementa al ratio: el ratio dice cuánto ingresas por € gastado,
+     el margen dice qué parte de lo facturado te queda. */
+  const margen = ing > 0 ? (ing - gas) / ing : null
+  const margenPct = margen == null ? null : margen * 100
+  const margenColor = margenPct == null ? GRIS : margenPct >= 35 ? OLIVA : margenPct >= 20 ? CELESTE : margenPct >= 10 ? NARANJA : TERRA
+  const margenTxt = margenPct == null ? 'SIN DATO' : margenPct >= 35 ? 'SANO' : margenPct >= 20 ? 'OK' : margenPct >= 10 ? 'AJUSTADO' : 'CRÍTICO'
+  const margenAnt = bundle && bundle.ingresos.totalAnterior > 0
+    ? (bundle.ingresos.totalAnterior - bundle.gastos.totalAnterior) / bundle.ingresos.totalAnterior
+    : null
+
   /* Agregados liquidaciones (todo dato real de liquidaciones_cade) */
   const liqPorMes = (() => {
     const map = new Map<string, { entregas: number; total: number; recortes: number }>()
@@ -196,14 +208,6 @@ export default function PanelGlobal() {
     const n = Number(v.replace(/\./g, '').replace(',', '.'))
     if (isNaN(n) || n <= 0) return
     await setObjetivoMensual(f.periodo, f.fechaInicio, f.fechaFin, n)
-    cargar()
-  }
-  const editarDia = async (f: PanelBundle['objetivosDia'][number]) => {
-    const v = window.prompt(`Objetivo ${f.diaSemana} ${f.fecha.slice(8)}/${f.fecha.slice(5, 7)} (€):`, String(f.objetivo))
-    if (v == null) return
-    const n = Number(v.replace(/\./g, '').replace(',', '.'))
-    if (isNaN(n) || n <= 0) return
-    await setObjetivoDia(f.fecha, n)
     cargar()
   }
 
@@ -294,8 +298,9 @@ export default function PanelGlobal() {
                 </div>
                 {[
                   { l: 'Gastos', v: EUR(gas), c: NARANJA },
-                  { l: 'Balance neto', v: ES(balance), c: balance >= 0 ? OLIVA : TERRA },
+                  { l: 'Resultado', v: ES(balance), c: balance >= 0 ? OLIVA : TERRA },
                   { l: 'Ratio ing/gas', v: ratio == null ? '—' : ratio.toFixed(2).replace('.', ','), c: ratioColor },
+                  { l: 'Margen neto', v: margenPct == null ? '—' : `${margenPct.toFixed(1).replace('.', ',')}%`, c: margenColor },
                 ].map(r => (
                   <div key={r.l} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '10px 0', borderBottom: `1px solid ${ARENA_CL}` }}>
                     <span style={{ fontSize: 13, fontWeight: 600 }}>{r.l}</span>
@@ -309,7 +314,7 @@ export default function PanelGlobal() {
           {/* ¿Quién te paga? (CELESTE) */}
           <Banda bg={CELESTE}>
             <span style={eyebrow(BLANCO)}>¿Quién te paga?</span>
-            <h2 style={{ ...d('clamp(22px,2.6vw,32px)', ARENA), margin: '12px 0 20px' }}>Ingresos por supermercado</h2>
+            <h2 style={{ ...d('clamp(22px,2.6vw,32px)', ARENA), margin: '12px 0 20px' }}>Ingresos por origen</h2>
             <div style={{ display: 'grid', gap: 14 }}>
               {bundle.ingresos.filas.map(f => {
                 const color = COLOR_OP_NEO[f.key] ?? GRIS
@@ -346,7 +351,7 @@ export default function PanelGlobal() {
             </div>
           </Banda>
 
-          {/* Ratio + salud (BLANCO 50/50) */}
+          {/* Los dos ratios, uno al lado del otro (BLANCO 50/50) */}
           <Banda bg={BLANCO}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 28 }}>
               <div>
@@ -361,18 +366,41 @@ export default function PanelGlobal() {
                     <span>0</span><span>1,0</span><span>Objetivo ≥ 1,25</span><span>2,0+</span>
                   </div>
                 </div>
+                <div style={{ fontSize: 13, fontWeight: 600, marginTop: 10 }}>
+                  {ratio == null
+                    ? 'Sin gastos en el período'
+                    : `Por cada € gastado, ingresas ${ratio.toFixed(2).replace('.', ',')} €`}
+                </div>
                 {ratioAnt != null && (
-                  <div style={{ fontSize: 13, fontWeight: 600, marginTop: 10 }}>
-                    Período anterior: <span style={{ fontFamily: OSW, fontWeight: 700 }}>{ratioAnt.toFixed(2).replace('.', ',')}</span>
+                  <div style={{ fontSize: 13, fontWeight: 600, marginTop: 6, color: GRIS }}>
+                    Período anterior: <span style={{ fontFamily: OSW, fontWeight: 700, color: INK }}>{ratioAnt.toFixed(2).replace('.', ',')}</span>
                   </div>
                 )}
               </div>
               <div>
-                <span style={eyebrow(balance >= 0 ? OLIVA : TERRA, ARENA)}>Balance neto</span>
-                <div style={{ ...d('clamp(44px,5vw,72px)', balance >= 0 ? OLIVA : TERRA), marginTop: 12 }}>{ES(balance)}</div>
-                <div style={{ fontSize: 13, fontWeight: 600, marginTop: 10 }}>
-                  Ingresos {EUR(ing)} − Gastos {EUR(gas)}
+                <span style={eyebrow(margenColor, ARENA)}>Margen neto</span>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, marginTop: 12 }}>
+                  <span style={{ ...d('clamp(44px,5vw,72px)', margenColor) }}>
+                    {margenPct == null ? '—' : `${margenPct.toFixed(1).replace('.', ',')}%`}
+                  </span>
+                  <span style={{ fontFamily: OSW, fontWeight: 700, fontSize: 16, background: margenColor, color: ARENA, border: BORDER_CARD, padding: '2px 12px' }}>{margenTxt}</span>
                 </div>
+                <div style={{ marginTop: 14 }}>
+                  <BarraH pct={margenPct == null ? 0 : Math.max(0, Math.min(1, margenPct / 50))} color={margenColor} alto={26} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: OSW, fontSize: 12, marginTop: 4 }}>
+                    <span>0%</span><span>20%</span><span>Objetivo ≥ 35%</span><span>50%+</span>
+                  </div>
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 600, marginTop: 10 }}>
+                  {margenPct == null
+                    ? 'Sin facturación en el período'
+                    : `De cada 100 € facturados, ${margenPct.toFixed(0)} € son resultado`}
+                </div>
+                {margenAnt != null && (
+                  <div style={{ fontSize: 13, fontWeight: 600, marginTop: 6, color: GRIS }}>
+                    Período anterior: <span style={{ fontFamily: OSW, fontWeight: 700, color: INK }}>{(margenAnt * 100).toFixed(1).replace('.', ',')}%</span>
+                  </div>
+                )}
               </div>
             </div>
           </Banda>
@@ -547,27 +575,15 @@ export default function PanelGlobal() {
               </div>
               <div style={{ ...card(BLANCO), padding: '16px' }}>
                 <div style={{ fontFamily: OSW, fontWeight: 600, fontSize: 13, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>
-                  Semana en curso · clic en un día para editar
+                  Por qué no hay objetivo diario
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 8 }}>
-                  {bundle.objetivosDia.map(f => {
-                    const c = f.esFuturo ? GRIS : f.pct >= 1 ? OLIVA : f.pct >= 0.7 ? NARANJA : TERRA
-                    return (
-                      <div key={f.fecha} onClick={() => editarDia(f)} title="Editar objetivo del día"
-                        style={{
-                          border: f.esHoy ? BORDER_CARD : `2px solid ${INK}`,
-                          boxShadow: f.esHoy ? SHADOW : 'none',
-                          background: f.esHoy ? AMBAR : ARENA,
-                          padding: '8px 4px', textAlign: 'center', cursor: 'pointer',
-                        }}>
-                        <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 12 }}>{f.diaSemana}</div>
-                        <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 15, color: c, marginTop: 4 }}>
-                          {f.esFuturo ? '—' : P0(f.pct * 100)}
-                        </div>
-                        <div style={{ fontSize: 10, fontWeight: 600, color: GRIS, marginTop: 2 }}>{E(f.objetivo)}</div>
-                      </div>
-                    )
-                  })}
+                <div style={{ fontSize: 13, fontWeight: 600, color: GRIS, lineHeight: 1.5 }}>
+                  La facturación de David es recurrente y estable: Cade liquida 2-3 veces al mes
+                  y Prior cada quince días. Perseguir una cifra de ventas cada día no mide nada,
+                  porque los días que no hay liquidación siempre saldrían a cero.
+                  <br /><br />
+                  Lo que sí se vigila a diario es que los gastos no se salgan del presupuesto:
+                  eso está en la banda de presupuestos, justo arriba.
                 </div>
               </div>
             </div>
