@@ -10,6 +10,7 @@ import FurgonetaDetalle from '@/pages/FurgonetaDetalle'
 import Reposicion from '@/pages/flota/Reposicion'
 import BancosPage from '@/pages/configuracion/bancos/BancosPage'
 import Running from '@/pages/finanzas/Running'
+import RunningFamilia from '@/pages/finanzas/RunningFamilia'
 import FacturacionEmitida from '@/pages/finanzas/FacturacionEmitida'
 import Liquidaciones from '@/pages/finanzas/Liquidaciones'
 import PagosCobros from '@/pages/finanzas/PagosCobros'
@@ -64,6 +65,7 @@ function AppRoutes() {
         <Route path="finanzas/pagos-cobros"  element={<ProtectedRoute solo={['admin']}><PagosCobros /></ProtectedRoute>} />
         <Route path="punto-equilibrio"       element={<ProtectedRoute solo={['admin']}><PuntoEquilibrio /></ProtectedRoute>} />
         <Route path="running"                element={<ProtectedRoute solo={['admin']}><Running /></ProtectedRoute>} />
+        <Route path="finanzas/running-familia" element={<ProtectedRoute solo={['admin']}><RunningFamilia /></ProtectedRoute>} />
         <Route path="finanzas/escenarios"    element={<ProtectedRoute solo={['admin']}><Escenarios /></ProtectedRoute>} />
         <Route path="conciliacion"           element={<ProtectedRoute solo={['admin']}><Conciliacion /></ProtectedRoute>} />
 
