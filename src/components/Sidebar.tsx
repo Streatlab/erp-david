@@ -28,6 +28,7 @@ import {
   ArrowLeftRight,
   Scale,
   Activity,
+  Home,
   CheckCheck,
   ChevronRight,
 } from 'lucide-react'
@@ -64,6 +65,7 @@ const SECTIONS: NavSection[] = [
       { path: '/finanzas/pagos-cobros', label: 'Pagos y Cobros',      perfiles: ['admin'] },
       { path: '/punto-equilibrio',      label: 'Punto equilibrio',    perfiles: ['admin'] },
       { path: '/running',               label: 'Running',             perfiles: ['admin'] },
+      { path: '/finanzas/running-familia', label: 'Running Familia',  perfiles: ['admin'] },
       { path: '/finanzas/escenarios',   label: 'Escenarios',          perfiles: ['admin'] },
       { path: '/conciliacion',          label: 'Conciliación',        perfiles: ['admin'] },
       { path: '/reclamaciones',         label: 'Reclamaciones Cade',  perfiles: ['admin'] },
@@ -119,6 +121,7 @@ const ICON_ROUTE: Record<string, LucideIcon> = {
   '/finanzas/pagos-cobros': ArrowLeftRight,
   '/punto-equilibrio': Scale,
   '/running': Activity,
+  '/finanzas/running-familia': Home,
   '/finanzas/escenarios': Clock,
   '/conciliacion': CheckCheck,
   '/reclamaciones': AlertTriangle,
