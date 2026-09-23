@@ -30,19 +30,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [usuario])
 
+  /* El PIN se verifica en el servidor (función login_pin). La web ya no puede
+     leer la tabla de usuarios ni ningún PIN: solo recibe nombre + perfil si acierta. */
   async function login(nombre: string, pin: string): Promise<string | null> {
     const { supabase } = await import('@/lib/supabase')
 
-    const { data, error } = await supabase
-      .from('usuarios')
-      .select('nombre, perfil, pin')
-      .eq('nombre', nombre)
-      .maybeSingle()
+    const { data, error } = await supabase.rpc('login_pin', {
+      p_nombre: nombre.trim(),
+      p_pin: String(pin).trim(),
+    })
 
-    if (error || !data) return 'Usuario o PIN incorrecto'
-    if (String(data.pin) !== String(pin)) return 'Usuario o PIN incorrecto'
+    if (error) return 'No se pudo comprobar el acceso. Inténtalo de nuevo.'
+    const fila = Array.isArray(data) ? data[0] : data
+    if (!fila) return 'Usuario o PIN incorrecto'
 
-    setUsuario({ nombre: data.nombre, perfil: data.perfil })
+    setUsuario({ nombre: fila.nombre, perfil: fila.perfil })
     return null
   }
 
