@@ -102,3 +102,7 @@ revoke all on function public.acceso_pin_guardar(integer, text, text) from publi
 revoke all on function public.acceso_pin_comprobar(integer, text, text) from public, anon, authenticated;
 grant execute on function public.acceso_pin_guardar(integer, text, text) to service_role;
 grant execute on function public.acceso_pin_comprobar(integer, text, text) to service_role;
+
+-- Con sesión real, el ERP entra como `authenticated`: equipo solo tenía política anon
+create policy equipo_auth on public.equipo for all to authenticated using (true) with check (true);
+create policy equipo_benef_auth on public.equipo_beneficiarios for all to authenticated using (true) with check (true);
