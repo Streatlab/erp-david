@@ -1,8 +1,8 @@
-# 🚂 TREN DAVID-ERP — misiones encadenadas T1–T15 (sep 2026)
+# 🚂 TREN DAVID-ERP — misiones encadenadas T1–T15 (sep–oct 2026)
 
 Fuente única: página Notion "🚂 TREN DAVID-ERP" en 99 Claude. Este fichero es su espejo para Claude Code.
 Método: FLUJO ÓPTIMO v2 (contrato de tarea con DoD ≤ 3 criterios · gate vitest+tsc+build · regla 2-strikes · rama `trabajo`, commits con `[deploy]` para preview · master solo con "publica" de Rubén).
-Aislamiento ABSOLUTO: solo repo erp-david, Supabase David (rribmludsuirmyprfkop), deploy davidparte. Nada de Binagre: ni código, ni tokens, ni datos.
+Aislamiento ABSOLUTO: solo repo erp-david, Supabase David (rribmludsuirmyprfkop), deploy davidparte. Nada de Binagre: ni código, ni tokens, ni datos. **Única excepción: T1 copia el mecanismo de acceso (no sus datos ni estilos).**
 Estilo visual: kit NeoUI (`src/components/neo/NeoUI.tsx`) + tokens `src/styles/neobrutal.ts`. Patrón: `src/pages/finanzas/Liquidaciones.tsx` y `RunningFamilia.tsx`.
 
 ## Reglas transversales (aplican a TODAS las misiones)
@@ -20,23 +20,30 @@ Estilo visual: kit NeoUI (`src/components/neo/NeoUI.tsx`) + tokens `src/styles/n
 
 ## Ya hecho fuera del tren (no repetir)
 - Migración Supabase a cuenta de David (completa, verificada).
-- Login: PIN con hash verificado en servidor (`login_pin`), tabla `usuarios` cerrada al público.
+- Login: PIN con hash verificado en servidor (`login_pin`), tabla `usuarios` cerrada al público. Google activado en Supabase Auth, `usuarios.email` dado de alta (Rubén y David), RPC `login_google`, botón "Entrar con Google" en `Login.tsx`.
 - P&G: `v_pyg_mensual`, `v_pyg_resumen`, `v_pyg_hogar`, `v_pyg_global`, `v_pyg_hogar_semana`, `v_pyg_global_semana`, `v_efectivo`, `presupuestos_hogar`, `ambito` en categorías, `origen_efectivo` en conciliación.
 - Emisores: `emisores_transportistas`, `emisor_de()`, `v_facturacion_consolidada`, `v_facturacion_total_david`.
-- Enable Banking: `cuentas_bancarias` (+cuenta_uid, titular, descargar, personal), `banco_sesiones`, `banco_movimientos_raw`, `robot_credenciales`, `robot_log`, `robot_salud`. Función `banco-auth` desplegada.
-- Cartero/liquidaciones: `correo_entrante`, `correo_reglas`, `reglas_liquidacion`, `liquidaciones_cade_lineas`, `envios_cade`, `documentacion_cade`, `v_liquidacion_repartidor`. Función `correo-auth` desplegada.
+- Enable Banking: `cuentas_bancarias` (+cuenta_uid, titular, descargar, personal), `banco_sesiones` (BBVA y N26 autorizados hasta 28-dic-2026), `banco_movimientos_raw`, `robot_credenciales`, `robot_log`, `robot_salud`. Función `banco-auth` desplegada.
+- Cartero/liquidaciones: `correo_entrante`, `correo_reglas`, `reglas_liquidacion`, `liquidaciones_cade_lineas`, `envios_cade`, `documentacion_cade`, `v_liquidacion_repartidor`. Función `correo-auth` desplegada; **buzón davidsanzn@gmail.com conectado** (token en `robot_credenciales` google/cartero).
 - Pantalla Running Familia (semanas/meses) publicada.
 
 ---
 
-## BLOQUE A — DINERO
+## BLOQUE A — DINERO Y ACCESO
 
-### T1 · Login con Google (BLOQUEADO: credenciales OAuth de Rubén)
-Qué: botón "Entrar con Google" en `src/pages/Login.tsx` vía Supabase Auth; PIN se mantiene como respaldo.
-- `usuarios` gana `email` (única). Rubén → admin, David → admin.
-- Tras `signInWithOAuth`, resolver perfil por email con RPC security definer; si no existe, denegar con mensaje claro.
-- `AuthContext` acepta las dos vías y expone el mismo `usuario`.
-DoD: (1) Google entra como admin con el email correcto; (2) PIN sigue funcionando; (3) un email no dado de alta no entra.
+### T1 · Acceso calcado del sistema de Binagre (Google + enlace mágico + PIN por dispositivo + huella)
+Excepción autorizada por Rubén (oct-2026) al aislamiento: se copia el **mecanismo** de acceso de Binagre, NUNCA sus datos, tokens visuales, permisos de cocina ni tablas. Referencia de lectura (solo leer, no importar): repo `Streatlab/binagre` → `src/context/AuthContext.tsx`, `src/lib/accesoRapido.ts`, `src/lib/dispositivo.ts`, `src/lib/passkey.ts`, la pantalla de PIN (`PinScreen`) y `api/_puertas/acceso-rapido.ts`.
+Base de partida en David: Google activado en Supabase Auth; `usuarios.email` (rubenrodriguezvinagre@gmail.com → Rubén admin, davidsanzn@gmail.com → David admin); RPC `login_google(email)`; PIN con hash `login_pin`; botón Google en `Login.tsx`.
+Qué hay que dejar igual que Binagre:
+1. **Sesión real de Supabase Auth** como única verdad. Lista blanca por email en `usuarios` (añadir `activo boolean default true`); fuera de lista → `signOut` + "Este correo no tiene acceso al ERP". Reintento ×3 (500 ms / 1500 ms) antes de echar a nadie por fallo de red.
+2. **Primera entrada en un dispositivo:** Google o **enlace mágico por email** (`signInWithOtp`, previa RPC `email_autorizado(email)` security definer). Pantalla de login: Entrar con Google · Recibir enlace por email · (si el dispositivo ya tiene PIN/huella del último usuario) Entrar con PIN / huella.
+3. **PIN de 4 cifras por dispositivo + usuario** (`dispositivoId()` síncrono en localStorage). Tras la primera entrada se pide crear PIN y opcionalmente registrar huella (WebAuthn/passkey). Tablas: `accesos_pin` (usuario, dispositivo, pin_hash bcrypt, intentos, bloqueado_hasta) y `accesos_huella` (usuario, dispositivo, credential_id, public_key). Bloqueo tras 5 fallos durante 15 min.
+4. **Entrada rápida sin sesión:** UNA función Supabase `acceso` (Deno; no Vercel, para no chocar con el límite de funciones del plan Hobby) con acciones `metodos`, `pin-crear`, `pin-entrar`, `huella-registrar`, `huella-reto`, `huella-entrar`. Comprueba PIN/firma con service role y devuelve `token_hash` de `auth.admin.generateLink({ type: 'magiclink' })`; el cliente lo canjea con `verifyOtp({ token_hash, type: 'magiclink' })`. Guardar último acceso (email + nombre) para ofrecer PIN directamente la próxima vez.
+5. **Desbloqueo persistente** por dispositivo+usuario en localStorage (F5 y pestaña nueva no piden PIN); se borra al "Cerrar sesión". Un SIGNED_IN interactivo desbloquea.
+6. Retirar de la pantalla el login antiguo nombre+PIN una vez funcione el PIN por dispositivo; mantener la RPC `login_pin` hasta verificar.
+7. Supabase Auth: comprobar Site URL `https://davidparte.vercel.app` y redirect `https://davidparte.vercel.app/**`; si faltan, avisar a Rubén con enlace directo, no inventar.
+Estilo: NeoUI de David, no copiar estilos de Binagre.
+DoD: (1) desde un navegador nuevo se entra con Google y con enlace mágico, y un email fuera de lista es rechazado; (2) tras crear PIN, cerrar y reabrir el navegador permite entrar solo con PIN (y huella en móvil compatible) sin volver a Google; (3) 5 PIN erróneos bloquean ese dispositivo 15 min y "Cerrar sesión" exige volver a entrar.
 
 ### T2 · Robot bancario nocturno `banco-sync`
 Qué: función Supabase `banco-sync` (Deno) que, por cada `banco_sesiones` `autorizada`, descarga transacciones de cada cuenta con `descargar = true` desde la última fecha conocida (o 2026-06-01 la primera vez) con Enable Banking (JWT RS256, `robot_credenciales` plataforma=enablebanking cuenta=david; firma igual que `banco-auth`).
@@ -63,8 +70,8 @@ Qué: en `src/pages/Conciliacion.tsx` y `useConciliacion.ts`:
 - KPI "Efectivo sin justificar" desde `v_efectivo`. Selector Semana/Mes.
 DoD: (1) 22 retiradas pequeñas visibles con filtro; (2) asignar destino crea regla; (3) KPI cuadra con `v_efectivo`.
 
-### T5 · Cartero de correo `correo-cartero` (BLOQUEADO: permiso Gmail)
-Qué: función Supabase que lee Gmail (token `robot_credenciales` plataforma=google cuenta=cartero), clasifica por `correo_reglas`, guarda en `correo_entrante` con adjuntos en Storage bucket `correo`.
+### T5 · Cartero de correo `correo-cartero` (DESBLOQUEADO: buzón conectado)
+Qué: función Supabase que lee Gmail (token `robot_credenciales` plataforma=google cuenta=cartero; credenciales de la app en plataforma=google cuenta=app), clasifica por `correo_reglas`, guarda en `correo_entrante` con adjuntos en Storage bucket `correo`.
 - `liquidacion` → llama a `liquidacion-parser` (T6). `penalizacion` → crea `reclamaciones_cade` abierta.
 - pg_cron 05:00 Europe/Madrid. `robot_salud` fuente `cartero`.
 DoD: (1) correo de prueba con adjunto queda en `correo_entrante` y Storage; (2) clasificación correcta; (3) cron visible.
@@ -109,9 +116,9 @@ DoD: (1) cuadra con el total de la liquidación; (2) filtro por repartidor; (3) 
 ## BLOQUE C — FUERA DATOS INVENTADOS
 
 ### T13 · Usuarios reales + limpieza de repo
-Qué: `Usuarios.tsx` vía RPC de solo lectura (`usuarios_listado`: id, nombre, perfil, email, activo); cambio de PIN con RPC `usuario_cambiar_pin` (hash); activar/desactivar.
+Qué: `Usuarios.tsx` vía RPC de solo lectura (`usuarios_listado`: id, nombre, perfil, email, activo); alta/baja de emails en la lista blanca de T1; reseteo de PIN de un dispositivo; activar/desactivar.
 - Borrar documentación heredada de Binagre (docs/, README) y generar `docs/MAPA-CONTEXTO.md` con módulos, tablas y funciones reales de David.
-DoD: (1) sin TEST en Usuarios; (2) cambiar PIN funciona y no expone hash; (3) `grep -ri binagre docs/` = 0.
+DoD: (1) sin TEST en Usuarios; (2) dar de alta un email permite entrar y darlo de baja lo impide; (3) `grep -ri binagre docs/` = 0 (salvo la referencia de T1 en este fichero).
 
 ### T14 · Personas y Organigrama reales
 Qué: `equipo/Personas.tsx` y `equipo/Organigrama.tsx` sobre `equipo`/`empleados`/`conductores` reales: David, Juan, Joel, Saad (+ quien haya). Cada uno con código Cade, emisor vigente (`emisor_de`) y furgoneta asignada. Organigrama muestra quién factura a quién desde sep-2026. `Presencia.tsx`: sin datos → aviso holder honesto.
@@ -122,7 +129,8 @@ Qué: `informes/Informes.tsx` e `InformesEquipo.tsx` se reconstruyen sobre `v_py
 DoD: (1) informes cuadran con las vistas; (2) cero datos TEST en todo el ERP (`grep -ri "TEST ·" src/` = 0); (3) holders visibles con aviso.
 
 ---
-Orden: T2 → T3 → T4 → T7 → T8 → T9 → T11 → T13 → T14 → T15 → T10 → (T1, T5, T6, T12 al desbloquear).
+Orden: T1 → T2 → T3 → T4 → T5 → T7 → T8 → T9 → T11 → T13 → T14 → T15 → T10 → (T6, T12 al desbloquear).
 Cierre de cada misión: LOG de 1 línea al final de este fichero y en Notion, pendings al día, preview en rama `trabajo` con `[deploy]`. No se publica a master sin "publica" de Rubén.
 
 ## LOG
+- 2026-10-02 · fuera del tren: Google activado + botón en login + lista blanca por email (Rubén, David). T1 amplía a sistema completo de Binagre.
