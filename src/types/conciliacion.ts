@@ -10,6 +10,7 @@ export interface Movimiento {
   furgoneta_id?: string | null
   prorrateo?: boolean
   proveedor_id?: string | null
+  origen_efectivo?: boolean
 }
 
 export interface Furgoneta {
