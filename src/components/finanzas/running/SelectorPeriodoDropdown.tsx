@@ -1,6 +1,8 @@
 import { useTheme, FONT } from '@/styles/tokens';
 
 export type PeriodoKey =
+  | 'semana'
+  | 'semana_anterior'
   | 'mes'
   | 'mes_anterior'
   | '30d'
@@ -15,6 +17,7 @@ interface Props {
   desde?: string;
   hasta?: string;
   onRangoChange?: (desde: string, hasta: string) => void;
+  conSemana?: boolean;
 }
 
 const BASE_OPTIONS: { value: PeriodoKey; label: string }[] = [
@@ -24,7 +27,12 @@ const BASE_OPTIONS: { value: PeriodoKey; label: string }[] = [
   { value: 'trimestre',    label: 'Trimestre' },
 ];
 
-export default function SelectorPeriodoDropdown({ value, onChange, anios, desde, hasta, onRangoChange }: Props) {
+const SEMANA_OPTIONS: { value: PeriodoKey; label: string }[] = [
+  { value: 'semana',          label: 'Esta semana' },
+  { value: 'semana_anterior', label: 'Semana anterior' },
+];
+
+export default function SelectorPeriodoDropdown({ value, onChange, anios, desde, hasta, onRangoChange, conSemana }: Props) {
   const { T } = useTheme();
 
   const selectStyle = {
@@ -57,6 +65,7 @@ export default function SelectorPeriodoDropdown({ value, onChange, anios, desde,
         onChange={e => onChange(e.target.value as PeriodoKey)}
         style={selectStyle}
       >
+        {conSemana && SEMANA_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         {BASE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         {(anios ?? []).map(a => (
           <option key={`anio_${a}`} value={`anio_${a}`}>{`Año ${a}`}</option>

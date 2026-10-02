@@ -25,7 +25,7 @@ Sin tocar. `calcular`, `resumirFlota` y `aportacionPorAnio` quedan idénticas.
 - `npx tsc --noEmit` → 0 errores, ejecutado sobre el repo ya subido (no sobre el local).
 - `npm run build` → OK, 2,15 s.
 - Huellas md5 del repo remoto idénticas a las del contenedor.
-- Greps de aislamiento Binagre (B01D23, 1e2233, e8f442, escandallo, Uber Eats,
+- Greps de aislamiento con el otro ERP (B01D23, 1e2233, e8f442, escandallo, Uber Eats,
   Glovo, eryauogxcpbgdryeimdq) → 0 coincidencias en los archivos tocados.
 
 ## Pendiente de Rubén

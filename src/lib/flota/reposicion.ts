@@ -200,6 +200,7 @@ export async function getPrestamosPorFurgo(): Promise<Record<string, PrestamoViv
   const { data } = await supabase
     .from('furgonetas_prestamos')
     .select('furgoneta_id, cuota_mensual, fecha_fin, fecha_inicio')
+    .not('entidad', 'ilike', '%mockup%') // los préstamos de relleno no cuentan
 
   const out: Record<string, PrestamoVivo> = {}
   for (const p of (data ?? []) as {

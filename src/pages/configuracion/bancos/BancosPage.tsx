@@ -5,24 +5,24 @@ import { ConfigShell } from '@/components/configuracion/ConfigShell'
 import ProveedoresPanel from './ProveedoresPanel'
 import CategoriasPanel from './CategoriasPanel'
 import ReglasPanel from './ReglasPanel'
-import CuentasPanel from './CuentasPanel'
+import CuentasBancoPanel from './CuentasBancoPanel'
 import PresupuestosPanel from './PresupuestosPanel'
 import ProvisionesPanel from './ProvisionesPanel'
 
 type Sub = 'proveedores' | 'categorias' | 'reglas' | 'cuentas' | 'presupuestos' | 'provisiones'
 
 const PILLS: { id: Sub; label: string }[] = [
+  { id: 'cuentas',      label: 'Cuentas bancarias' },
   { id: 'proveedores',  label: 'Proveedores' },
   { id: 'categorias',   label: 'Categorías de conciliación' },
   { id: 'reglas',       label: 'Reglas automáticas' },
-  { id: 'cuentas',      label: 'Cuentas bancarias' },
   { id: 'presupuestos', label: 'Presupuestos mensuales' },
   { id: 'provisiones',  label: 'Provisiones IVA/IRPF' },
 ]
 
 export default function BancosPage() {
   const { T } = useTheme()
-  const [sub, setSub] = useState<Sub>('proveedores')
+  const [sub, setSub] = useState<Sub>('cuentas')
 
   return (
     <ConfigShell>
@@ -55,7 +55,7 @@ export default function BancosPage() {
       {sub === 'proveedores' && <ProveedoresPanel />}
       {sub === 'categorias' && <CategoriasPanel />}
       {sub === 'reglas' && <ReglasPanel />}
-      {sub === 'cuentas' && <CuentasPanel />}
+      {sub === 'cuentas' && <CuentasBancoPanel />}
       {sub === 'presupuestos' && <PresupuestosPanel />}
       {sub === 'provisiones' && <ProvisionesPanel />}
     </ConfigShell>
