@@ -140,3 +140,4 @@ Cierre de cada misión: LOG de 1 línea al final de este fichero y en Notion, pe
 - 2026-10-02 · T4 ✅ Conciliación: filtro «Solo efectivo», columna Destino (7 destinos) que aprende regla, chip de ámbito por categoría, KPI «Efectivo sin justificar» desde v_efectivo y selector Semana.
 - 2026-10-02 · T5 ✅ correo-cartero: lee Gmail de David, clasifica por reglas, adjuntos a Storage «correo», penalización → reclamación, cron 05:00 Madrid; primera pasada: 9 liquidaciones reales de Cade (jun–ago) con 18 adjuntos.
 - 2026-10-02 · T7 ✅ Pagos y Cobros real: pendientes con días sin cobrar, casado automático con banco (±1 €, 15 días; 6 facturas casadas), cuadre mensual con v_facturacion_total_david, pagos desde conciliación.
+- 2026-10-02 · T8 ✅ Ventas real desde v_facturacion_consolidada: total negocio (4 códigos), emitido David/Juan, desglose por código y repartidor, evolución mensual; Semana con aviso honesto (Cade factura por mes); fuera datos TEST.
