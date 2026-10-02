@@ -100,8 +100,8 @@ Deno.serve(async (req) => {
       const u = body.email ? await usuarioPorEmail(body.email) : null
       if (!u || !dispositivo) return json({ pin: false, huella: false })
       const [{ data: p }, { count }] = await Promise.all([
-        sb.from('accesos_pin').select('bloqueado_hasta').eq('usuario_id', u.id).eq('dispositivo', dispositivo).maybeSingle(),
-        sb.from('accesos_huella').select('id', { count: 'exact', head: true }).eq('usuario_id', u.id).eq('dispositivo', dispositivo),
+        sb.from('accesos_pin').select('bloqueado_hasta').eq('usuario_id', u.id).eq('dispositivo', dispositivo).eq('revocado', false).maybeSingle(),
+        sb.from('accesos_huella').select('id', { count: 'exact', head: true }).eq('usuario_id', u.id).eq('dispositivo', dispositivo).eq('revocado', false),
       ])
       return json({ pin: !!p, huella: (count ?? 0) > 0, bloqueado_hasta: p?.bloqueado_hasta ?? null })
     }
@@ -131,7 +131,7 @@ Deno.serve(async (req) => {
       if (!body.credential_id || !body.public_key || !dispositivo) return json({ error: 'Datos de huella incompletos' }, 400)
       const { error } = await sb.from('accesos_huella').upsert({
         usuario_id: u.id, dispositivo, credential_id: body.credential_id,
-        public_key: body.public_key, alg: Number(body.alg ?? -7),
+        public_key: body.public_key, alg: Number(body.alg ?? -7), revocado: false,
       }, { onConflict: 'credential_id' })
       if (error) throw error
       return json({ ok: true })
@@ -140,7 +140,7 @@ Deno.serve(async (req) => {
     if (accion === 'huella-reto') {
       const u = body.email ? await usuarioPorEmail(body.email) : null
       if (!u || !dispositivo) return json({ error: 'Este correo no tiene acceso al ERP' }, 403)
-      const { data: creds } = await sb.from('accesos_huella').select('credential_id').eq('usuario_id', u.id).eq('dispositivo', dispositivo)
+      const { data: creds } = await sb.from('accesos_huella').select('credential_id').eq('usuario_id', u.id).eq('dispositivo', dispositivo).eq('revocado', false)
       if (!creds?.length) return json({ error: 'Sin huella en este dispositivo' }, 404)
       const reto = bytesToB64url(crypto.getRandomValues(new Uint8Array(32)))
       await sb.from('accesos_retos').delete().lt('expira', new Date().toISOString())
@@ -152,7 +152,7 @@ Deno.serve(async (req) => {
       const u = body.email ? await usuarioPorEmail(body.email) : null
       if (!u || !dispositivo) return json({ error: 'Este correo no tiene acceso al ERP' }, 403)
       const { data: cred } = await sb.from('accesos_huella').select('public_key, alg')
-        .eq('usuario_id', u.id).eq('credential_id', body.credential_id ?? '').maybeSingle()
+        .eq('usuario_id', u.id).eq('credential_id', body.credential_id ?? '').eq('revocado', false).maybeSingle()
       if (!cred) return json({ error: 'Huella no registrada' }, 403)
 
       const clientDataBytes = b64urlToBytes(body.client_data ?? '')
