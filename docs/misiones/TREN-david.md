@@ -134,3 +134,4 @@ Cierre de cada misión: LOG de 1 línea al final de este fichero y en Notion, pe
 
 ## LOG
 - 2026-10-02 · fuera del tren: Google activado + botón en login + lista blanca por email (Rubén, David). T1 amplía a sistema completo de Binagre.
+- 2026-10-02 · T1 ✅ acceso calcado: sesión Supabase real + lista blanca (activo), Google, enlace mágico, PIN por dispositivo (bloqueo 5×15 min) y huella vía función `acceso`; probado PIN→sesión real en servidor. Pendiente Rubén: confirmar Site URL/redirect en Supabase Auth.

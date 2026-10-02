@@ -34,7 +34,8 @@ import Usuarios from '@/pages/configuracion/Usuarios'
 import Placeholder from '@/pages/Placeholder'
 
 function ProtectedRoute({ children, solo }: { children: React.ReactNode; solo?: string[] }) {
-  const { usuario } = useAuth()
+  const { usuario, estado } = useAuth()
+  if (estado === 'cargando') return null
   if (!usuario) return <Navigate to="/login" replace />
   if (solo && !solo.includes(usuario.perfil)) return <Navigate to="/" replace />
   return <>{children}</>
