@@ -1,59 +1,92 @@
-import { INK, ARENA, BLANCO, GRIS, OLIVA, TERRA, NARANJA, CELESTE, AMBAR, OSW } from '@/styles/neobrutal'
-import { PageNeo, CabeceraNeo, Banda, TablaWrap, thNeo, tdNeo, KpiNeo } from '@/components/neo/NeoUI'
+import { useEffect, useMemo, useState } from 'react'
+import { supabase } from '@/lib/supabase'
+import { fmtEur } from '@/lib/format'
+import { INK, ARENA, GRIS, MARINO, AMBAR, OSW } from '@/styles/neobrutal'
+import { PageNeo, CabeceraNeo, Banda, TablaWrap, thNeo, tdNeo, tdEstado, AvisoNeo, BadgeNeo } from '@/components/neo/NeoUI'
 
-/* Informes de equipo — rendimiento por repartidor, datos TEST, neobrutal. */
+/* Informes de equipo: facturación por repartidor (v_facturacion_consolidada) y, cuando existan,
+   entregas y penalizaciones por repartidor (v_liquidacion_repartidor). */
 
-interface Fila { nombre: string; entregas: number; horas: number; incidencias: number }
+interface Fac { mes: string; transportista: string | null; repartidor: string | null; emisor: string | null; total: number }
+interface Liq { mes: string; repartidor: string; transportista: string; dias_trabajados: number; entregas: number; penalizaciones: number; dias_con_penalizacion: number; total: number }
 
-const FILAS: Fila[] = [
-  { nombre: 'TEST · Repartidor Uno',  entregas: 512, horas: 168, incidencias: 3 },
-  { nombre: 'TEST · Repartidor Dos',  entregas: 468, horas: 160, incidencias: 5 },
-  { nombre: 'TEST · Repartidor Tres', entregas: 260, horas: 88,  incidencias: 1 },
-]
+const mesCorto = (iso: string) => new Date(iso + 'T00:00:00').toLocaleDateString('es-ES', { month: 'short', year: '2-digit' })
 
 export default function InformesEquipo() {
-  const totalEnt = FILAS.reduce((s, f) => s + f.entregas, 0)
-  const totalInc = FILAS.reduce((s, f) => s + f.incidencias, 0)
+  const [fac, setFac] = useState<Fac[]>([])
+  const [liq, setLiq] = useState<Liq[]>([])
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    Promise.all([
+      supabase.from('v_facturacion_consolidada').select('mes, transportista, repartidor, emisor, total').not('transportista', 'is', null),
+      supabase.from('v_liquidacion_repartidor').select('*'),
+    ]).then(([f, l]) => {
+      if (f.error ?? l.error) setError((f.error ?? l.error)!.message)
+      setFac(((f.data ?? []) as any[]).map(r => ({ ...r, total: Number(r.total) })))
+      setLiq((l.data ?? []) as Liq[])
+    })
+  }, [])
+
+  const meses = useMemo(() => [...new Set(fac.map(f => f.mes))].sort().reverse().slice(0, 6), [fac])
+  const reps = useMemo(() => [...new Set(fac.map(f => f.repartidor ?? f.transportista ?? '—'))].sort(), [fac])
+  const celda = (rep: string, mes: string) => fac.filter(f => (f.repartidor ?? f.transportista) === rep && f.mes === mes)
 
   return (
     <PageNeo>
       <CabeceraNeo eyebrowTxt="Informes" titulo="Informes de equipo" />
+      {error && <AvisoNeo>ERROR: {error}</AvisoNeo>}
 
-      <Banda bg={AMBAR} style={{ padding: '14px 40px' }}>
-        <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 13, letterSpacing: 1, textTransform: 'uppercase', color: INK }}>
-          Datos TEST · rendimiento por repartidor (entregas, horas, incidencias).
-        </div>
+      <Banda bg={ARENA}>
+        <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 13, letterSpacing: 2, textTransform: 'uppercase', color: INK, marginBottom: 14 }}>Facturación por repartidor (con IVA)</div>
+        {fac.length === 0 ? (
+          <div style={{ fontFamily: OSW, fontWeight: 700, textTransform: 'uppercase', color: GRIS }}>En construcción · sin datos</div>
+        ) : (
+          <TablaWrap>
+            <thead><tr><th style={thNeo}>Repartidor</th>{meses.map(m => <th key={m} style={{ ...thNeo, textAlign: 'right' }}>{mesCorto(m)}</th>)}</tr></thead>
+            <tbody>
+              {reps.map((r, i) => (
+                <tr key={r}>
+                  <td style={{ ...tdEstado(i % 2 === 1, MARINO), fontFamily: OSW, fontWeight: 700 }}>{r}</td>
+                  {meses.map(m => {
+                    const cs = celda(r, m)
+                    const t = cs.reduce((s, c) => s + c.total, 0)
+                    return (
+                      <td key={m} style={{ ...tdNeo(i % 2 === 1), textAlign: 'right' }}>
+                        {cs.length ? <>{fmtEur(t)} {cs.some(c => c.emisor === 'JUAN') && <BadgeNeo color={AMBAR}>Juan</BadgeNeo>}</> : '—'}
+                      </td>
+                    )
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </TablaWrap>
+        )}
       </Banda>
 
-      <Banda bg={BLANCO}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 22 }}>
-          <KpiNeo label="Entregas equipo" valor={totalEnt.toLocaleString('es-ES')} color={NARANJA} />
-          <KpiNeo label="Repartidores" valor={String(FILAS.length)} color={CELESTE} />
-          <KpiNeo label="Incidencias" valor={String(totalInc)} color={totalInc > 5 ? TERRA : OLIVA} />
-        </div>
-
-        <TablaWrap>
-          <thead>
-            <tr>
-              <th style={thNeo}>Repartidor</th>
-              <th style={{ ...thNeo, textAlign: 'right' }}>Entregas</th>
-              <th style={{ ...thNeo, textAlign: 'right' }}>Horas</th>
-              <th style={{ ...thNeo, textAlign: 'right' }}>Entregas/hora</th>
-              <th style={{ ...thNeo, textAlign: 'right' }}>Incidencias</th>
-            </tr>
-          </thead>
-          <tbody>
-            {FILAS.map((f, i) => (
-              <tr key={f.nombre}>
-                <td style={{ ...tdNeo(i % 2 === 1), fontFamily: OSW, fontWeight: 700 }}>{f.nombre}</td>
-                <td style={{ ...tdNeo(i % 2 === 1), textAlign: 'right', fontFamily: OSW, fontWeight: 700 }}>{f.entregas}</td>
-                <td style={{ ...tdNeo(i % 2 === 1), textAlign: 'right', color: GRIS }}>{f.horas}</td>
-                <td style={{ ...tdNeo(i % 2 === 1), textAlign: 'right', fontFamily: OSW, fontWeight: 700, color: OLIVA }}>{(f.entregas / f.horas).toFixed(1).replace('.', ',')}</td>
-                <td style={{ ...tdNeo(i % 2 === 1), textAlign: 'right', color: f.incidencias > 4 ? TERRA : INK, fontWeight: 700 }}>{f.incidencias}</td>
-              </tr>
-            ))}
-          </tbody>
-        </TablaWrap>
+      <Banda bg={ARENA}>
+        <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 13, letterSpacing: 2, textTransform: 'uppercase', color: INK, marginBottom: 14 }}>Entregas y penalizaciones por repartidor</div>
+        {liq.length === 0 ? (
+          <div style={{ fontFamily: OSW, fontWeight: 700, textTransform: 'uppercase', color: GRIS }}>En construcción · sin datos (llegan con el lector de liquidaciones de Cade)</div>
+        ) : (
+          <TablaWrap>
+            <thead><tr>{['Mes', 'Repartidor', 'Código', 'Días', 'Entregas', 'Días con penalización', 'Penalizaciones', 'Total'].map(h => <th key={h} style={thNeo}>{h}</th>)}</tr></thead>
+            <tbody>
+              {liq.map((l, i) => (
+                <tr key={`${l.mes}-${l.transportista}-${l.repartidor}`}>
+                  <td style={{ ...tdNeo(i % 2 === 1), fontFamily: OSW, fontWeight: 700 }}>{mesCorto(l.mes)}</td>
+                  <td style={tdNeo(i % 2 === 1)}>{l.repartidor}</td>
+                  <td style={tdNeo(i % 2 === 1)}>{l.transportista}</td>
+                  <td style={tdNeo(i % 2 === 1)}>{l.dias_trabajados}</td>
+                  <td style={tdNeo(i % 2 === 1)}>{l.entregas}</td>
+                  <td style={tdNeo(i % 2 === 1)}>{l.dias_con_penalizacion}</td>
+                  <td style={tdNeo(i % 2 === 1)}>{fmtEur(Number(l.penalizaciones), { decimals: 2 })}</td>
+                  <td style={{ ...tdNeo(i % 2 === 1), fontFamily: OSW, fontWeight: 700 }}>{fmtEur(Number(l.total), { decimals: 2 })}</td>
+                </tr>
+              ))}
+            </tbody>
+          </TablaWrap>
+        )}
       </Banda>
     </PageNeo>
   )
