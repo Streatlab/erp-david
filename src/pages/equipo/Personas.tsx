@@ -1,171 +1,85 @@
 import { useState } from 'react'
-import { UserPlus, Archive, ArchiveRestore, Trash2 } from 'lucide-react'
-import {
-  INK, MARINO, ARENA, BLANCO, GRIS, OLIVA, TERRA, CELESTE, NARANJA, AMBAR,
-  OSW, LEX,
-} from '@/styles/neobrutal'
-import { PageNeo, CabeceraNeo, Banda, TablaWrap, thNeo, tdNeo, BotonNeo } from '@/components/neo/NeoUI'
+import { Archive, ArchiveRestore } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
+import { INK, MARINO, ARENA, BLANCO, GRIS, OLIVA, AMBAR, OSW } from '@/styles/neobrutal'
+import { PageNeo, CabeceraNeo, Banda, TablaWrap, thNeo, tdNeo, tdEstado, BotonNeo, BadgeNeo, KpiNeo, AvisoNeo } from '@/components/neo/NeoUI'
+import { useEquipo, hoyISO } from '@/hooks/useEquipo'
+import { codigosDe } from '@/lib/equipo'
 
-/* ── Módulo Personas ──────────────────────────────────────────────
-   Mismo contenido y funcionamiento que "Empleados" de Binagre
-   (alta, estado, antigüedad, archivar/reactivar, borrar), con datos
-   TEST y pasado por el filtro Neobrutal Mediterráneo de David.
-   Cuando exista la tabla real de David, se cambia el TEST por Supabase. */
-
-type EstadoEmpleado = 'activo' | 'vacaciones' | 'baja' | 'despedido'
-
-interface Empleado {
-  id: string
-  nombre: string
-  email: string
-  nif: string
-  cargo: string
-  fecha_alta: string
-  estado: EstadoEmpleado
-}
-
-const DATOS_TEST: Empleado[] = [
-  { id: '1', nombre: 'TEST · David Reparte',   email: 'david@test.local', nif: '00000000A', cargo: 'Administrador', fecha_alta: '2022-01-10', estado: 'activo' },
-  { id: '2', nombre: 'TEST · Repartidor Uno',  email: 'rep1@test.local',  nif: '11111111B', cargo: 'Repartidor',    fecha_alta: '2023-03-01', estado: 'activo' },
-  { id: '3', nombre: 'TEST · Repartidor Dos',  email: 'rep2@test.local',  nif: '22222222C', cargo: 'Repartidor',    fecha_alta: '2024-06-15', estado: 'vacaciones' },
-  { id: '4', nombre: 'TEST · Repartidor Tres', email: 'rep3@test.local',  nif: '33333333D', cargo: 'Repartidor',    fecha_alta: '2024-11-02', estado: 'baja' },
-  { id: '5', nombre: 'TEST · Antiguo',         email: 'ex@test.local',    nif: '44444444E', cargo: 'Repartidor',    fecha_alta: '2021-05-20', estado: 'despedido' },
-]
-
-function estadoColor(e: EstadoEmpleado): string {
-  if (e === 'activo') return OLIVA
-  if (e === 'vacaciones') return CELESTE
-  if (e === 'baja') return GRIS
-  return TERRA
-}
-function esArchivado(e: EstadoEmpleado): boolean {
-  return e === 'baja' || e === 'despedido'
-}
-function calcAntiguedad(fechaAlta: string): string {
-  const diff = Date.now() - new Date(fechaAlta + 'T12:00:00').getTime()
-  const years = Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25))
-  const months = Math.floor((diff % (1000 * 60 * 60 * 24 * 365.25)) / (1000 * 60 * 60 * 24 * 30.44))
-  if (years > 0) return `${years}a ${months}m`
-  return `${months} mes${months !== 1 ? 'es' : ''}`
-}
-
-function Avatar({ nombre, archivado }: { nombre: string; archivado: boolean }) {
-  const initials = nombre.replace('TEST · ', '').split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()
-  return (
-    <div style={{
-      width: 38, height: 38, border: `3px solid ${INK}`, flexShrink: 0,
-      background: archivado ? GRIS : NARANJA, color: ARENA,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontFamily: OSW, fontSize: 14, fontWeight: 700,
-    }}>
-      {initials}
-    </div>
-  )
-}
+/* Personas: equipo real de David con su código Cade, quién le factura (emisor vigente a la fecha elegida) y su furgoneta. */
 
 export default function Personas() {
-  const [empleados, setEmpleados] = useState<Empleado[]>(DATOS_TEST)
+  const [tick, setTick] = useState(0)
+  const [fecha, setFecha] = useState(hoyISO())
+  const [verArchivo, setVerArchivo] = useState(false)
+  const { personas, emisores, furgoDe, error, cargando } = useEquipo(tick)
+  const [errGuardar, setErrGuardar] = useState<string | null>(null)
 
-  const toggleArchivo = (emp: Empleado) => {
-    setEmpleados(prev => prev.map(e => {
-      if (e.id !== emp.id) return e
-      return { ...e, estado: esArchivado(e.estado) ? 'activo' : 'baja' }
-    }))
-  }
-  const borrar = (emp: Empleado) => {
-    if (!window.confirm(`BORRAR a ${emp.nombre}. No se puede deshacer. ¿Continuar?`)) return
-    setEmpleados(prev => prev.filter(e => e.id !== emp.id))
-  }
-  const nuevo = () => {
-    const n = empleados.length + 1
-    setEmpleados(prev => [...prev, {
-      id: String(Date.now()), nombre: `TEST · Nuevo ${n}`, email: `nuevo${n}@test.local`,
-      nif: '—', cargo: 'Repartidor', fecha_alta: new Date().toISOString().slice(0, 10), estado: 'activo',
-    }])
-  }
+  const activas = personas.filter(p => p.estado !== 'exempleado')
+  const lista = verArchivo ? personas.filter(p => p.estado === 'exempleado') : activas
+  const conCodigo = activas.filter(p => codigosDe(emisores, p.alias ?? p.nombre, fecha).length > 0)
 
-  const activos = empleados.filter(e => !esArchivado(e.estado)).length
-
-  const accionBtn: React.CSSProperties = {
-    width: 32, height: 32, border: `2px solid ${INK}`, background: BLANCO,
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+  async function cambiarEstado(id: string, estado: string) {
+    const { error: e } = await supabase.from('equipo').update({ estado }).eq('id', id)
+    if (e) setErrGuardar(e.message); else setTick(t => t + 1)
   }
 
   return (
     <PageNeo>
       <CabeceraNeo eyebrowTxt="Equipo" titulo="Personas">
-        <BotonNeo onClick={nuevo}>
-          <UserPlus size={14} style={{ marginRight: 6 }} /> Nuevo empleado
-        </BotonNeo>
+        <label style={{ fontFamily: OSW, fontWeight: 700, color: ARENA, textTransform: 'uppercase', fontSize: 12, display: 'flex', gap: 8, alignItems: 'center' }}>
+          A fecha
+          <input type="date" value={fecha} onChange={e => setFecha(e.target.value || hoyISO())}
+            style={{ fontFamily: OSW, fontWeight: 700, padding: '6px 8px', border: `3px solid ${INK}`, background: ARENA, color: INK }} />
+        </label>
       </CabeceraNeo>
-
-      {/* Aviso datos TEST */}
-      <Banda bg={AMBAR} style={{ padding: '14px 40px' }}>
-        <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 13, letterSpacing: 1, textTransform: 'uppercase', color: INK }}>
-          Datos TEST · misma ficha y funcionamiento que Binagre. Se conectará a los empleados reales de David.
-        </div>
-      </Banda>
+      {(error || errGuardar) && <AvisoNeo>ERROR: {error ?? errGuardar}</AvisoNeo>}
 
       <Banda bg={BLANCO}>
-        <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 13, letterSpacing: 2, textTransform: 'uppercase', color: MARINO, marginBottom: 14 }}>
-          {activos} activo{activos !== 1 ? 's' : ''} · {empleados.length} en total
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 20 }}>
+          <KpiNeo label="Personas activas" valor={String(activas.length)} color={MARINO} />
+          <KpiNeo label="Repartidores con código Cade" valor={String(conCodigo.length)} color={OLIVA} />
+          <KpiNeo label="Archivadas" valor={String(personas.length - activas.length)} color={GRIS} />
+        </div>
+        <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+          <BotonNeo bg={verArchivo ? BLANCO : AMBAR} onClick={() => setVerArchivo(false)}>Activas</BotonNeo>
+          <BotonNeo bg={verArchivo ? AMBAR : BLANCO} onClick={() => setVerArchivo(true)}>Archivo</BotonNeo>
         </div>
 
-        <TablaWrap>
-          <thead>
-            <tr>
-              <th style={thNeo}>Empleado</th>
-              <th style={thNeo}>NIF</th>
-              <th style={thNeo}>Cargo</th>
-              <th style={thNeo}>Antigüedad</th>
-              <th style={thNeo}>Estado</th>
-              <th style={{ ...thNeo, textAlign: 'right' }}>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {empleados.map((emp, i) => {
-              const archivado = esArchivado(emp.estado)
-              return (
-                <tr key={emp.id} style={{ opacity: archivado ? 0.6 : 1 }}>
-                  <td style={tdNeo(i % 2 === 1)}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <Avatar nombre={emp.nombre} archivado={archivado} />
-                      <div>
-                        <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 14, color: INK }}>{emp.nombre}</div>
-                        <div style={{ fontFamily: LEX, fontSize: 11, color: GRIS }}>{emp.email}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td style={{ ...tdNeo(i % 2 === 1), color: GRIS, fontSize: 12 }}>{emp.nif}</td>
-                  <td style={{ ...tdNeo(i % 2 === 1), color: GRIS }}>{emp.cargo}</td>
-                  <td style={{ ...tdNeo(i % 2 === 1), color: GRIS, fontSize: 12 }}>{calcAntiguedad(emp.fecha_alta)}</td>
-                  <td style={tdNeo(i % 2 === 1)}>
-                    <span style={{
-                      fontFamily: OSW, fontWeight: 700, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase',
-                      background: estadoColor(emp.estado), color: emp.estado === 'baja' ? INK : ARENA,
-                      border: `2px solid ${INK}`, padding: '2px 8px', whiteSpace: 'nowrap',
-                    }}>
-                      {emp.estado}
-                    </span>
-                  </td>
-                  <td style={{ ...tdNeo(i % 2 === 1), textAlign: 'right' }}>
-                    <div style={{ display: 'inline-flex', gap: 6 }}>
-                      <button onClick={() => toggleArchivo(emp)} style={accionBtn} title={archivado ? 'Reactivar' : 'Pasar a antiguos'}>
-                        {archivado ? <ArchiveRestore size={15} color={OLIVA} /> : <Archive size={15} color={INK} />}
-                      </button>
-                      <button onClick={() => borrar(emp)} style={accionBtn} title="Borrar">
-                        <Trash2 size={15} color={TERRA} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </TablaWrap>
-        <div style={{ fontFamily: LEX, fontSize: 12, fontWeight: 600, color: GRIS, marginTop: 12 }}>
-          Clic en los iconos para archivar/reactivar o borrar (sobre datos TEST).
-        </div>
+        {cargando ? (
+          <div style={{ fontFamily: OSW, fontWeight: 700, textTransform: 'uppercase', color: GRIS }}>Cargando…</div>
+        ) : lista.length === 0 ? (
+          <div style={{ fontFamily: OSW, fontWeight: 700, textTransform: 'uppercase', color: GRIS, padding: 18, background: ARENA }}>Sin personas en esta vista.</div>
+        ) : (
+          <TablaWrap>
+            <thead><tr>{['Nombre', 'Código Cade', 'Le factura', 'Furgoneta', 'Ciudad', 'Notas', ''].map(h => <th key={h} style={thNeo}>{h}</th>)}</tr></thead>
+            <tbody>
+              {lista.map((p, i) => {
+                const alias = p.alias ?? p.nombre
+                const cods = codigosDe(emisores, alias, fecha)
+                const f = furgoDe(alias)
+                const alt = i % 2 === 1
+                return (
+                  <tr key={p.id}>
+                    <td style={{ ...tdEstado(alt, p.estado === 'exempleado' ? GRIS : OLIVA), fontFamily: OSW, fontWeight: 700 }}>{p.nombre}</td>
+                    <td style={{ ...tdNeo(alt), fontFamily: OSW, fontWeight: 700 }}>{cods.map(c => c.transportista).join(', ') || '—'}</td>
+                    <td style={tdNeo(alt)}>
+                      {cods.length ? cods.map(c => <BadgeNeo key={c.transportista} color={c.emisor === 'JUAN' ? AMBAR : MARINO}>{c.emisor}</BadgeNeo>) : '—'}
+                    </td>
+                    <td style={tdNeo(alt)}>{f ? `${f.codigo} · ${f.matricula ?? f.nombre_corto}` : '—'}</td>
+                    <td style={tdNeo(alt)}>{p.ciudad ?? '—'}</td>
+                    <td style={{ ...tdNeo(alt), whiteSpace: 'normal', fontWeight: 500 }}>{p.notas ?? ''}</td>
+                    <td style={tdNeo(alt)}>
+                      {p.estado === 'exempleado'
+                        ? <BotonNeo bg={OLIVA} onClick={() => cambiarEstado(p.id, 'activo')}><ArchiveRestore size={13} style={{ marginRight: 4 }} />Reactivar</BotonNeo>
+                        : <BotonNeo bg={BLANCO} onClick={() => cambiarEstado(p.id, 'exempleado')}><Archive size={13} style={{ marginRight: 4 }} />Archivar</BotonNeo>}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </TablaWrap>
+        )}
       </Banda>
     </PageNeo>
   )
