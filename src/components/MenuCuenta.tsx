@@ -1,14 +1,14 @@
 /**
  * Menú de la cuenta (círculo con las iniciales, arriba a la derecha).
- * Mismo esquema que Binagre: quién está dentro, rol, último acceso, PIN y huella
- * de este aparato, cambiar de ERP y cerrar sesión (aquí o en todos).
+ * Igual que Binagre: quién está dentro, rol, último acceso, PIN y huella de este
+ * aparato, cambiar de ERP, cambiar de cuenta y cerrar sesión (aquí o en todos).
  */
 import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { otrosErpsPara } from '@/lib/otrosErps'
 import { supabase } from '@/lib/supabase'
-import { crearPin, metodosDisponibles } from '@/lib/accesoRapido'
+import { crearPin, leerAccesos, metodosDisponibles, priorizarAcceso } from '@/lib/accesoRapido'
 import { huellaDisponible, registrarHuella } from '@/lib/passkey'
 import { toast } from '@/lib/toastStore'
 import { OSW, INK, MARINO, ARENA, BLANCO, AMBAR } from '@/styles/neobrutal'
@@ -72,6 +72,14 @@ export default function MenuCuenta() {
 
   if (!usuario) return null
   const otrosErps = otrosErpsPara(email)
+  const otras = leerAccesos().filter(a => a.email.toLowerCase() !== email.toLowerCase())
+
+  /** Cambio rápido: cierra esta sesión y deja el login con esa cuenta elegida, listo para el PIN. */
+  function cambiarA(correo: string) {
+    priorizarAcceso(correo)
+    setAbierto(false)
+    logout()
+  }
 
   async function cambiarPin() {
     const nuevo = window.prompt(`${aparato.pin ? 'Cambiar PIN' : 'Crear PIN'}: cuatro cifras. Vale en cualquier aparato.`)
@@ -167,6 +175,20 @@ export default function MenuCuenta() {
               <span style={etiqueta}>Cambiar de ERP</span>
               {otrosErps.map(e => (
                 <a key={e.id} href={e.url} style={boton}>{e.nombre}</a>
+              ))}
+            </div>
+          )}
+
+          {otras.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span style={etiqueta}>Cambiar de cuenta</span>
+              {otras.map(a => (
+                <button key={a.email} type="button" title={a.email} onClick={() => cambiarA(a.email)} style={{ ...boton, background: ARENA, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ width: 24, height: 24, borderRadius: '50%', background: MARINO, color: ARENA, fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    {iniciales(a.nombre || a.email)}
+                  </span>
+                  <span>{(a.nombre || a.email).split(' ')[0]}</span>
+                </button>
               ))}
             </div>
           )}
