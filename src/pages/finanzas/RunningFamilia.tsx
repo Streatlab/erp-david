@@ -246,7 +246,7 @@ export default function RunningFamilia() {
               const okAhorro = g.ahorro_real >= 0
               return (
                 <tr key={g.periodo}>
-                  <td style={{ ...tdEstado(alt, okAhorro ? OLIVA : TERRA), fontFamily: OSW, fontWeight: 700 }}>{g.etiqueta}</td>
+                  <td style={{ ...tdEstado(alt, okAhorro ? OLIVA : TERRA), fontFamily: OSW, fontWeight: 700 }}>{g.etiqueta}{vista === 'mes' && g.periodo?.startsWith(new Date().toISOString().slice(0, 7)) ? ' · en curso' : ''}</td>
                   <td style={{ ...tdNeo(alt), textAlign: 'right' }}>{fmtEur(g.resultado_actividad)}</td>
                   <td style={{ ...tdNeo(alt), textAlign: 'right' }}>{fmtEur(g.gasto_hogar)}</td>
                   <td style={{ ...tdNeo(alt), textAlign: 'right', fontFamily: OSW, fontWeight: 700, color: okAhorro ? OLIVA : TERRA }}>{fmtEur(g.ahorro_real)}</td>

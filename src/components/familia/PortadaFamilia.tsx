@@ -11,6 +11,7 @@ import {
   OSW, LEX, BORDER_CARD, card, EUR, E, E2, P0,
 } from '@/styles/neobrutal'
 import { Banda, KpiNeo, PillsNeo, TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo } from '@/components/neo/NeoUI'
+import ComercioIcon, { IconoRubro } from './ComercioIcon'
 
 interface Mov {
   fecha: string
@@ -49,6 +50,20 @@ const etiquetaSub: Record<string, string> = {
   recarga: 'Recarga eléctrica', parking: 'Parking', efectivo: 'Efectivo', documentacion: 'Documentación', fotografo: 'Fotógrafo', bizum: 'Bizum',
 }
 const labelSub = (s: string) => etiquetaSub[s] ?? (s.charAt(0).toUpperCase() + s.slice(1).replace(/-/g, ' '))
+
+/* Cómo reconocer en el banco cada gasto fijo del plan: nombre del plan → cómo aparece el comercio */
+const REGLAS_FIJO: [RegExp, RegExp][] = [
+  [/caixabank/i, /caixabank/i], [/hyundai|kona/i, /hyundai|kona/i], [/cetelem/i, /cetelem/i], [/oney/i, /oney/i],
+  [/hacienda/i, /hacienda/i], [/suma/i, /suma/i], [/axa vida david/i, /aurora/i], [/axa vida rebeca/i, /^axa$/i],
+  [/occident/i, /occident/i], [/starlink/i, /starlink/i], [/xfera/i, /xfera/i], [/redhuevo/i, /redhuevo/i],
+  [/google one/i, /google/i], [/sin fronteras/i, /fronteras/i], [/unicef/i, /unicef/i],
+]
+const MES_ABR = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+const mesesDe = (txt: string) => MES_ABR.map((a, i) => (txt.toLowerCase().includes(a) ? i : -1)).filter(i => i >= 0)
+const fechaCorta = (d: Date) => `${d.getDate()} ${MES_ABR[d.getMonth()]}`
+const fechaIso = (iso: string) => { const [, m, d] = iso.split('-'); return `${Number(d)} ${MES_ABR[Number(m) - 1]}` }
+
+interface Cobro { f: FijoPlan; fecha: Date; importe: number; estado: 'sin-cobro' | 'hoy' | 'proximo'; cuando: string }
 
 const mesKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 const sumBy = <T,>(arr: T[], f: (x: T) => number) => arr.reduce((a, x) => a + f(x), 0)
@@ -157,7 +172,8 @@ export default function PortadaFamilia() {
       const delCat = movsVar.filter(m => m.categoria === cat)
       const subs = agrupar(delCat, m => m.subcategoria, -1)
       const comercios = agrupar(delCat, m => m.comercio, -1)
-      return { cat, nombre: delCat[0]?.categoria_nombre ?? cat, total, subs, comercios }
+      const subDe = new Map(delCat.map(m => [m.comercio, m.subcategoria] as const))
+      return { cat, nombre: delCat[0]?.categoria_nombre ?? cat, total, subs, comercios, subDe }
     })
   }, [enPeriodo])
 
@@ -176,6 +192,53 @@ export default function PortadaFamilia() {
   const aportarVariables = Math.max(0, varMedia3 - rebecaMedia3)
   const aportarTotal = totalPlanFijos + aportarVariables
   const diferencia = aportarTotal - davidReal3
+
+  /* ── Último cobro REAL de cada fijo del plan (movimientos del banco) ── */
+  const movsFijo = useMemo(() => {
+    const mapa = new Map<number, Mov[]>()
+    for (const f of plan) {
+      const regla = REGLAS_FIJO.find(([r]) => r.test(f.concepto))
+      mapa.set(f.id, regla ? movs.filter(m => m.bloque === 'fijo' && m.importe < 0 && regla[1].test(m.comercio.trim())) : [])
+    }
+    return mapa
+  }, [plan, movs])
+
+  /* ── Qué toca pagar: próximos 14 días + recibos que debían haber salido y no constan ── */
+  const cobros = useMemo(() => {
+    const y = hoy.getFullYear(), mo = hoy.getMonth(), d = hoy.getDate()
+    const inicio = new Date(y, mo, d)
+    const salida: Cobro[] = []
+    for (const f of plan.filter(p => p.cuenta === 'pagos')) {
+      const hist = movsFijo.get(f.id) ?? []
+      const ult = hist[0]
+      const pagado = hist.some(m => m.mes === mesActual)
+      const importe = f.importe_real ?? (ult ? -ult.importe : f.importe_mensual)
+      let fecha: Date | null = null
+      let estado: Cobro['estado'] = 'proximo'
+      let cuando = ''
+      if (f.periodicidad === 'mensual') {
+        const nums = (f.dia_cobro ?? '1').match(/\d+/g)?.map(Number) ?? [1]
+        const ini = nums[0], fin = nums[nums.length - 1]
+        if (pagado) { fecha = new Date(y, mo + 1, ini); cuando = `día ${f.dia_cobro}` }
+        else if (d > fin) { fecha = inicio; estado = 'sin-cobro'; cuando = `debía salir el ${f.dia_cobro}` }
+        else { fecha = new Date(y, mo, Math.max(ini, d)); estado = ini <= d ? 'hoy' : 'proximo'; cuando = `día ${f.dia_cobro}` }
+      } else {
+        const ms = mesesDe(f.dia_cobro ?? '')
+        if (ms.includes(mo) && !pagado) { fecha = inicio; estado = 'hoy'; cuando = 'este mes (día por confirmar)' }
+        else if (ms.includes((mo + 1) % 12)) { fecha = new Date(y, mo + 1, 1); cuando = 'el mes que viene' }
+      }
+      if (!fecha) continue
+      const dias = Math.round((fecha.getTime() - inicio.getTime()) / 86400000)
+      if (estado !== 'sin-cobro' && dias > 14) continue
+      salida.push({ f, fecha, importe, estado, cuando })
+    }
+    return salida.sort((a, b) => a.fecha.getTime() - b.fecha.getTime())
+  }, [plan, movsFijo, hoy, mesActual])
+  const totalCobros = sumBy(cobros, c => c.importe)
+  const proxIngreso = (() => {
+    const d28 = new Date(hoy.getFullYear(), hoy.getMonth(), 28)
+    return hoy.getDate() > 28 ? new Date(hoy.getFullYear(), hoy.getMonth() + 1, 28) : d28
+  })()
 
   /* ── Previsión del mes y de la semana (solo "Este mes") ── */
   const prev = useMemo(() => {
@@ -199,8 +262,62 @@ export default function PortadaFamilia() {
 
   const wrap = { fontFamily: OSW, fontWeight: 700 as const, fontSize: 16, letterSpacing: 1, textTransform: 'uppercase' as const, marginBottom: 12, color: INK }
 
+  const pendientes = cobros.filter(c => c.estado !== 'sin-cobro')
+  const sinCobro = cobros.filter(c => c.estado === 'sin-cobro')
+  const colorEstado = { 'sin-cobro': TERRA, hoy: NARANJA, proximo: MARINO } as const
+  const textoEstado = { 'sin-cobro': 'NO CONSTA', hoy: 'AHORA', proximo: 'PRÓXIMO' } as const
+
   return (
     <>
+      {!cargando && (
+        <Banda bg={BLANCO}>
+          <div style={wrap}>Hoy · {hoy.getDate()} de {MESES[hoy.getMonth()]} · qué toca</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 18 }}>
+            <div style={{ ...card(MARINO), padding: '18px 20px', color: ARENA }}>
+              <div style={{ fontFamily: OSW, fontWeight: 600, fontSize: 12, letterSpacing: 2, textTransform: 'uppercase' }}>Cuenta Pagos …5513</div>
+              {pendientes.length > 0 ? (
+                <>
+                  <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 'clamp(24px,3vw,36px)', color: AMBAR, margin: '6px 0 4px' }}>
+                    Ten {EUR(sumBy(pendientes, c => c.importe))} antes del {fechaCorta(pendientes[0].fecha)}
+                  </div>
+                  <div style={{ fontSize: 12, fontWeight: 600, opacity: 0.9 }}>
+                    Para cubrir {pendientes.length} recibo{pendientes.length > 1 ? 's' : ''} de los próximos 14 días. No leo el saldo del banco: comprueba que ya esté.
+                  </div>
+                </>
+              ) : (
+                <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 'clamp(22px,2.6vw,32px)', color: AMBAR, margin: '6px 0 4px' }}>Sin recibos en 14 días</div>
+              )}
+              <div style={{ fontSize: 13, fontWeight: 700, borderTop: `2px solid ${ARENA}`, marginTop: 10, paddingTop: 8 }}>
+                Siguiente ingreso fijo: el {fechaCorta(proxIngreso)} → {EUR(totalPlanFijos)}
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 700, borderTop: `2px solid ${ARENA}`, marginTop: 8, paddingTop: 8 }}>
+                Cuenta Caixa …5042: {diferencia > 0 ? `a David le faltan ${EUR(diferencia)} al mes por aportar` : 'aportación al día'}
+              </div>
+            </div>
+            <div style={{ ...card(BLANCO), padding: '18px 20px' }}>
+              <div style={{ fontFamily: OSW, fontWeight: 600, fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>Recibos de los próximos 14 días</div>
+              {cobros.length === 0 && <div style={{ fontSize: 13, color: GRIS, fontWeight: 600 }}>Nada pendiente.</div>}
+              {cobros.map(c => (
+                <div key={c.f.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, borderTop: `2px solid ${ARENA_CL}`, padding: '6px 0' }}>
+                  <ComercioIcon nombre={c.f.concepto} rubro={c.f.categoria} />
+                  <span style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.f.concepto}</span>
+                    <span style={{ display: 'block', fontSize: 11, color: GRIS }}>{c.cuando}</span>
+                  </span>
+                  <span style={{ fontFamily: OSW, fontWeight: 700 }}>{E2(c.importe)}</span>
+                  <BadgeNeo color={colorEstado[c.estado]}>{textoEstado[c.estado]}</BadgeNeo>
+                </div>
+              ))}
+              {sinCobro.length > 0 && (
+                <div style={{ marginTop: 10, background: TERRA, color: ARENA, padding: '8px 10px', fontSize: 12, fontWeight: 700 }}>
+                  No consta el cobro de este mes: {sinCobro.map(c => c.f.concepto).join(', ')}. Mira el banco: si no ha salido, hay que ingresar o llamar.
+                </div>
+              )}
+            </div>
+          </div>
+        </Banda>
+      )}
+
       <Banda bg={ARENA_CL}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
           <div style={wrap}>Portada · {etiquetaPeriodo}</div>
@@ -303,11 +420,16 @@ export default function PortadaFamilia() {
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
                   {c.subs.map(s => (
-                    <BadgeNeo key={s.k} color={MARINO}>{labelSub(s.k)} {P0(c.total > 0 ? (s.v / c.total) * 100 : 0)}</BadgeNeo>
+                    <BadgeNeo key={s.k} color={MARINO}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <IconoRubro clave={s.k} size={12} color={ARENA} />{labelSub(s.k)} {P0(c.total > 0 ? (s.v / c.total) * 100 : 0)}
+                      </span>
+                    </BadgeNeo>
                   ))}
                 </div>
                 {c.comercios.slice(0, 8).map(x => (
                   <div key={x.k} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, padding: '3px 0' }}>
+                    <ComercioIcon nombre={x.k} rubro={c.subDe.get(x.k) ?? c.cat} />
                     <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{x.k}</span>
                     <span style={{ width: 60, height: 8, background: ARENA_CL, border: `1px solid ${INK}` }}>
                       <span style={{ display: 'block', height: '100%', width: `${Math.min(100, c.total > 0 ? (x.v / c.total) * 100 : 0)}%`, background: PALETA[idx % PALETA.length] }} />
@@ -332,23 +454,31 @@ export default function PortadaFamilia() {
           <div style={wrap}>Plan de gastos fijos · prorrateado a mes</div>
           <TablaWrap>
             <thead>
-              <tr>{['Gasto', 'Categoría', 'Cuándo', 'Importe real', 'Al mes'].map(h => <th key={h} style={thNeo}>{h}</th>)}</tr>
+              <tr>{['Gasto', 'Categoría', 'Cuándo', 'Importe real', 'Último cobro en el banco', 'Al mes'].map(h => <th key={h} style={thNeo}>{h}</th>)}</tr>
             </thead>
             <tbody>
               {plan.map((f, i) => {
                 const alt = i % 2 === 1
                 return (
                   <tr key={f.id}>
-                    <td style={tdEstado(alt, NARANJA)}>{f.concepto}</td>
+                    <td style={tdEstado(alt, NARANJA)}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}><ComercioIcon nombre={f.concepto} rubro={f.categoria} size={22} />{f.concepto}</span>
+                    </td>
                     <td style={tdNeo(alt)}>{f.categoria.replace(/-familia|hogar-/g, '').replace(/-/g, ' ')}</td>
                     <td style={tdNeo(alt)}>{f.dia_cobro ? `${f.periodicidad} · ${f.dia_cobro}` : f.periodicidad}</td>
                     <td style={{ ...tdNeo(alt), textAlign: 'right' }}>{f.importe_real != null ? E2(f.importe_real) : 'varía'}</td>
+                    <td style={{ ...tdNeo(alt), textAlign: 'right' }}>
+                      {(() => {
+                        const u = movsFijo.get(f.id)?.[0]
+                        return u ? `${E2(-u.importe)} · ${fechaIso(u.fecha)}` : <span style={{ color: GRIS }}>sin cobro registrado</span>
+                      })()}
+                    </td>
                     <td style={{ ...tdNeo(alt), textAlign: 'right', fontFamily: OSW, fontWeight: 700 }}>{E2(f.importe_mensual)}</td>
                   </tr>
                 )
               })}
               <tr>
-                <td style={{ ...tdNeo(false), fontFamily: OSW, fontWeight: 700 }} colSpan={4}>TOTAL AL MES</td>
+                <td style={{ ...tdNeo(false), fontFamily: OSW, fontWeight: 700 }} colSpan={5}>TOTAL AL MES</td>
                 <td style={{ ...tdNeo(false), textAlign: 'right', fontFamily: OSW, fontWeight: 700 }}>{E2(totalPlanFijos)}</td>
               </tr>
             </tbody>
