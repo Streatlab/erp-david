@@ -3,20 +3,22 @@ import { supabase } from '@/lib/supabase'
 import { INK, ARENA, BLANCO, GRIS, OLIVA, TERRA, NARANJA, MARINO, OSW, BORDER_CARD, SHADOW } from '@/styles/neobrutal'
 
 /* Facturación ▸ Envío de facturas por emisor.
-   Con las plantillas Excel de Rubén (subidas una vez), genera "FACTURA N.xlsx" + PDF y la "01 RELACIÓN FACTURAS"
-   actualizada. Dos salidas: descargar todo en ZIP, o dejar el correo a Cade preparado como BORRADOR en el Gmail
-   del emisor (David → davidsanzn@gmail.com · Juan → admin@streatlab.com) para revisarlo y enviarlo a mano. */
+   Con las plantillas Excel de Rubén (subidas una vez), genera "FACTURA_N.xlsx" + PDF y la "01_RELACIÓN_FACTURAS"
+   actualizada. Dos salidas: descargar todo en ZIP, o dejar el correo a Cade preparado para revisarlo y enviarlo a mano:
+   · David → borrador dentro de su Gmail (davidsanzn@gmail.com)
+   · Juan  → admin@streatlab.com no es Gmail: se descarga un correo (.eml) que con doble clic se abre en Outlook
+             como mensaje sin enviar, con los PDF adjuntos. */
 
 const EMISORES = [
-  { k: 'DAVID', l: 'David', buzon: 'davidsanzn@gmail.com', cuenta: 'david' },
-  { k: 'JUAN', l: 'Juan', buzon: 'admin@streatlab.com', cuenta: 'juan' },
+  { k: 'DAVID', l: 'David', buzon: 'davidsanzn@gmail.com', gmail: true },
+  { k: 'JUAN', l: 'Juan', buzon: 'admin@streatlab.com', gmail: false },
 ]
 const PLANTILLAS = [
   { f: 'factura_cade.xlsx', l: 'Factura Cade (una tuya ya hecha)' },
   { f: 'factura_prior.xlsx', l: 'Factura Prior (una tuya ya hecha)' },
   { f: 'relacion.xlsx', l: '01 Relación de facturas actual' },
 ]
-const AUTH = 'https://rribmludsuirmyprfkop.supabase.co/functions/v1/correo-auth?llave=david-correo-2026&accion=conectar&cuenta='
+const AUTH_DAVID = 'https://rribmludsuirmyprfkop.supabase.co/functions/v1/correo-auth?llave=david-correo-2026&accion=conectar&cuenta=david'
 
 export default function EnvioFacturas({ mes }: { mes: string }) {
   const [tiene, setTiene] = useState<Record<string, boolean>>({})
@@ -48,7 +50,12 @@ export default function EnvioFacturas({ mes }: { mes: string }) {
     const err = error ? (data?.error ?? error.message) : data?.error
     if (err) { setMsg(m => ({ ...m, [em]: err })); return }
     if (accion === 'zip' && data?.url) { window.open(data.url, '_blank'); setMsg(m => ({ ...m, [em]: `Descargado: ${data.ficheros.join(', ')}` })) }
-    if (accion === 'borrador') setMsg(m => ({ ...m, [em]: `Borrador preparado en ${data.buzon}: revísalo en Gmail y envíalo. Adjuntos: ${data.adjuntos.join(', ')}` }))
+    if (accion === 'borrador' && data?.eml && data?.url) {
+      window.open(data.url, '_blank')
+      setMsg(m => ({ ...m, [em]: `Correo descargado. Ábrelo con doble clic: se abre en Outlook sin enviar, con ${data.adjuntos.join(', ')} adjuntos. Revísalo y envíalo.` }))
+    } else if (accion === 'borrador') {
+      setMsg(m => ({ ...m, [em]: `Borrador preparado en ${data.buzon}: revísalo en Gmail y envíalo. Adjuntos: ${data.adjuntos.join(', ')}` }))
+    }
   }
 
   const boton = (txt: string, onClick: () => void, color: string, dis = false) => (
@@ -72,10 +79,10 @@ export default function EnvioFacturas({ mes }: { mes: string }) {
               {!ok && <div style={{ fontSize: 12, fontWeight: 700, color: TERRA, marginBottom: 8 }}>Faltan plantillas: pulsa "Plantillas" y súbelas una vez.</div>}
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {boton(busy === `${e.k}-zip` ? 'Preparando…' : 'Descargar facturas + relación', () => ejecutar(e.k, 'zip'), MARINO, !!busy || !ok)}
-                {boton(busy === `${e.k}-borrador` ? 'Preparando…' : 'Correo en borrador', () => ejecutar(e.k, 'borrador'), NARANJA, !!busy || !ok)}
+                {boton(busy === `${e.k}-borrador` ? 'Preparando…' : e.gmail ? 'Correo en borrador (Gmail)' : 'Correo para Outlook', () => ejecutar(e.k, 'borrador'), NARANJA, !!busy || !ok)}
               </div>
-              {msg[e.k] && <div style={{ fontSize: 12, fontWeight: 600, marginTop: 8, color: /no |falta|Gmail|error/i.test(msg[e.k]) ? TERRA : OLIVA }}>
-                {msg[e.k]}{/no está conectado|volver a conectar/.test(msg[e.k]) && <> · <a href={AUTH + e.cuenta} target="_blank" rel="noreferrer" style={{ color: INK }}>Conectar buzón</a></>}
+              {msg[e.k] && <div style={{ fontSize: 12, fontWeight: 600, marginTop: 8, color: /^No |falta|Gmail:|error|no está/i.test(msg[e.k]) ? TERRA : OLIVA }}>
+                {msg[e.k]}{e.gmail && /no está conectado|volver a conectar/.test(msg[e.k]) && <> · <a href={AUTH_DAVID} target="_blank" rel="noreferrer" style={{ color: INK }}>Conectar buzón</a></>}
               </div>}
             </div>
           )
