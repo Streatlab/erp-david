@@ -2,9 +2,6 @@
 import { supabase } from '@/lib/supabase'
 import { dispositivoId } from '@/lib/dispositivo'
 
-/** El PIN del ERP es de 4 cifras. */
-export const LONGITUD_PIN = 4
-
 export interface UltimoAcceso { email: string; nombre: string }
 export interface Metodos { pin: boolean; huella: boolean; bloqueado_hasta: string | null }
 
@@ -14,7 +11,7 @@ const MAX_ACCESOS = 8
 const DESBLOQUEO = 'david_desbloqueo'
 const PENDIENTE = 'david_acceso_pendiente'
 
-/* Cuentas que han entrado en este aparato, la más reciente primero (entrar con un toque). */
+/** Cuentas que han entrado en este aparato, la más reciente primero (para entrar con un toque). */
 export function leerAccesos(): UltimoAcceso[] {
   try {
     const lista = JSON.parse(localStorage.getItem(ACCESOS) || 'null') as UltimoAcceso[] | null
@@ -24,9 +21,11 @@ export function leerAccesos(): UltimoAcceso[] {
     return antiguo?.email ? [antiguo] : []
   } catch { return [] }
 }
+
 function escribirAccesos(lista: UltimoAcceso[]) {
   try { localStorage.setItem(ACCESOS, JSON.stringify(lista.slice(0, MAX_ACCESOS))) } catch { /* sin almacenamiento */ }
 }
+
 export function leerUltimoAcceso(): UltimoAcceso | null {
   return leerAccesos()[0] ?? null
 }
@@ -35,8 +34,15 @@ export function guardarUltimoAcceso(u: UltimoAcceso) {
   escribirAccesos([{ email, nombre: u.nombre }, ...leerAccesos().filter(x => x.email.toLowerCase() !== email)])
   try { localStorage.setItem(ULTIMO, JSON.stringify({ email, nombre: u.nombre })) } catch { /* sin almacenamiento */ }
 }
-export function olvidarAcceso(email: string) {
-  escribirAccesos(leerAccesos().filter(x => x.email.toLowerCase() !== email.toLowerCase()))
+
+/** Pone esa cuenta la primera: es la que el login deja elegida al volver. */
+export function priorizarAcceso(email: string) {
+  const e = email.toLowerCase()
+  const lista = leerAccesos()
+  const dentro = lista.find(x => x.email.toLowerCase() === e)
+  if (!dentro) return
+  escribirAccesos([dentro, ...lista.filter(x => x !== dentro)])
+  try { localStorage.setItem(ULTIMO, JSON.stringify(dentro)) } catch { /* sin almacenamiento */ }
 }
 
 /* Desbloqueo persistente por dispositivo + usuario: F5 y pestaña nueva no piden PIN. */
@@ -110,4 +116,12 @@ export async function entrarConPin(email: string, pin: string): Promise<string |
 export async function crearPin(pin: string): Promise<string | null> {
   const r = await llamarAcceso('pin-crear', { pin })
   return r.ok ? null : textoError(r)
+}
+
+/** El PIN del ERP es de 4 cifras. */
+export const LONGITUD_PIN = 4
+
+/** Quita una cuenta de las recordadas en este aparato. */
+export function olvidarAcceso(email: string) {
+  escribirAccesos(leerAccesos().filter(x => x.email.toLowerCase() !== email.toLowerCase()))
 }
