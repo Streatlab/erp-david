@@ -72,7 +72,7 @@ const labelSub = (s: string) => etiquetaSub[s] ?? (s.charAt(0).toUpperCase() + s
 
 /* Cómo reconocer en el banco cada gasto fijo del plan: nombre del plan → cómo aparece el comercio */
 const REGLAS_FIJO: [RegExp, RegExp][] = [
-  [/caixabank/i, /caixabank/i], [/hyundai|kona/i, /hyundai|kona/i], [/cetelem/i, /cetelem/i], [/oney/i, /oney/i],
+  [/caixabank/i, /caixabank/i], [/cetelem|hyundai|kona/i, /cetelem|hyundai|kona/i], [/oney/i, /oney/i],
   [/hacienda/i, /hacienda/i], [/suma/i, /suma/i], [/axa vida david/i, /aurora/i], [/axa vida rebeca/i, /^axa$/i],
   [/occident/i, /occident/i], [/starlink/i, /starlink/i], [/xfera/i, /xfera/i], [/redhuevo/i, /redhuevo/i],
   [/google one/i, /google/i], [/sin fronteras/i, /fronteras/i], [/unicef/i, /unicef/i],

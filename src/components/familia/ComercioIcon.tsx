@@ -1,6 +1,6 @@
 /**
  * ComercioIcon.tsx — Logo del comercio (si lo conocemos) o icono genérico del rubro.
- * El logo se pide al servicio público de favicons; si falla o no hay dominio, se pinta el icono del rubro.
+ * Los logos se sirven desde /public/logos (copia local, no dependen de internet); si falta uno, se pinta el icono del rubro.
  */
 import { useState, type ComponentType } from 'react'
 import {
@@ -55,7 +55,7 @@ export default function ComercioIcon({ nombre, rubro, size = 24 }: { nombre: str
   return (
     <span style={caja} aria-hidden>
       {dom && !fallo
-        ? <img src={`https://www.google.com/s2/favicons?domain=${dom}&sz=64`} alt="" width={size - 6} height={size - 6}
+        ? <img src={`/logos/${dom}.png`} alt="" width={size - 6} height={size - 6}
             style={{ display: 'block' }} loading="lazy" onError={() => setFallo(true)} />
         : <IconoRubro clave={rubro} size={Math.round(size * 0.6)} />}
     </span>
