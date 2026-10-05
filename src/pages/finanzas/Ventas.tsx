@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { fmtEur, fmtDate } from '@/lib/format'
 import { INK, ARENA, ARENA_CL, BLANCO, GRIS, OLIVA, NARANJA, MARINO, AMBAR, OSW } from '@/styles/neobrutal'
-import { PageNeo, CabeceraNeo, Banda, TablaWrap, thNeo, tdNeo, tdEstado, KpiNeo, PillsNeo, AvisoNeo, BadgeNeo } from '@/components/neo/NeoUI'
+import { PageNeo, CabeceraNeo, Banda, TablaWrap, thNeo, tdNeo, tdEstado, KpiNeo, HeroNeo, AvisoNeo, BadgeNeo } from '@/components/neo/NeoUI'
+import { usePeriodo } from '@/lib/periodoGlobal'
 import { agruparVentas } from '@/lib/ventas'
 import type { FilaConsolidada } from '@/lib/ventas'
 
@@ -11,16 +12,10 @@ import type { FilaConsolidada } from '@/lib/ventas'
 
 interface FilaLiq { mes: string; transportista: string; repartidor: string; entregas: number | null; total: number | null }
 
-const nombreMes = (iso: string) => {
-  const s = new Date(iso + 'T00:00:00').toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })
-  return s.charAt(0).toUpperCase() + s.slice(1)
-}
-
 export default function Ventas() {
-  const [vista, setVista] = useState<'Semana' | 'Mes'>('Mes')
+  const periodo = usePeriodo()
   const [filas, setFilas] = useState<FilaConsolidada[]>([])
   const [liq, setLiq] = useState<FilaLiq[]>([])
-  const [mes, setMes] = useState<string>('')
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -33,46 +28,43 @@ export default function Ventas() {
       const fs = ((f.data ?? []) as any[]).map(r => ({ ...r, base: Number(r.base), iva: Number(r.iva), total: Number(r.total), facturas: Number(r.facturas) })) as FilaConsolidada[]
       setFilas(fs)
       setLiq((l.data ?? []) as FilaLiq[])
-      const meses = [...new Set(fs.map(r => r.mes))].sort().reverse()
-      setMes(meses[0] ?? '')
       setCargando(false)
     })
   }, [])
 
   const meses = useMemo(() => [...new Set(filas.map(r => r.mes))].sort().reverse(), [filas])
-  const resumen = useMemo(() => agruparVentas(filas.filter(r => r.mes === mes)), [filas, mes])
+  const enPeriodo = useMemo(() => filas.filter(r => periodo.meses.includes(String(r.mes).slice(0, 7))), [filas, periodo.meses])
+  const resumen = useMemo(() => agruparVentas(enPeriodo), [enPeriodo])
   const evolucion = useMemo(() => meses.map(m => ({ mes: m, ...agruparVentas(filas.filter(r => r.mes === m)) })), [filas, meses])
   const entregasMes = useMemo(() => {
-    const ls = liq.filter(l => l.mes === mes)
+    const ls = liq.filter(l => periodo.meses.includes(String(l.mes).slice(0, 7)))
     return ls.length ? ls.reduce((s, l) => s + Number(l.entregas ?? 0), 0) : null
-  }, [liq, mes])
+  }, [liq, periodo.meses])
   const maxRep = Math.max(1, ...resumen.porRepartidor.map(r => r.total))
 
   return (
     <PageNeo>
-      <CabeceraNeo eyebrowTxt="Finanzas" titulo="Ventas">
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-          <PillsNeo value={vista} onChange={v => setVista(v as 'Semana' | 'Mes')} options={['Semana', 'Mes']} />
-          {vista === 'Mes' && meses.length > 0 && (
-            <select value={mes} onChange={e => setMes(e.target.value)}
-              style={{ fontFamily: OSW, fontWeight: 700, fontSize: 13, textTransform: 'uppercase', padding: '8px 10px', border: `3px solid ${INK}`, background: ARENA, color: INK }}>
-              {meses.map(m => <option key={m} value={m}>{nombreMes(m)}</option>)}
-            </select>
-          )}
-        </div>
-      </CabeceraNeo>
+      <CabeceraNeo eyebrowTxt="Finanzas" titulo="Ventas" />
+
+      <HeroNeo
+        eyebrowTxt={`Total negocio · ${periodo.etiqueta}`}
+        cifra={cargando || periodo.esSemana || enPeriodo.length === 0 ? '—' : fmtEur(resumen.total)}
+        frase={cargando || periodo.esSemana || enPeriodo.length === 0 ? 'Sin datos todavía'
+          : `Lo facturado por los 4 códigos de Cade (con IVA): David ${fmtEur(resumen.david)}, Juan ${fmtEur(resumen.juan)}.`}
+        color={enPeriodo.length > 0 && !periodo.esSemana ? OLIVA : undefined}
+      />
 
       {error && <AvisoNeo>ERROR: {error}</AvisoNeo>}
 
-      {vista === 'Semana' ? (
+      {periodo.esSemana ? (
         <AvisoNeo>En construcción · sin datos semanales. Cade factura por mes; el detalle por semana llegará con el lector de liquidaciones.</AvisoNeo>
-      ) : !cargando && filas.length === 0 ? (
-        <AvisoNeo>En construcción · sin datos de facturación.</AvisoNeo>
+      ) : !cargando && enPeriodo.length === 0 ? (
+        <AvisoNeo>Sin facturación en este periodo.</AvisoNeo>
       ) : (
         <>
           <Banda bg={BLANCO}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
-              <KpiNeo label={`Total negocio · ${mes ? nombreMes(mes) : '—'}`} valor={fmtEur(resumen.total)} color={OLIVA} sub="los 4 códigos con IVA" />
+              <KpiNeo label={`Total negocio · ${periodo.etiqueta}`} valor={fmtEur(resumen.total)} color={OLIVA} sub="los 4 códigos con IVA" />
               <KpiNeo label="Emitido por David" valor={fmtEur(resumen.david)} color={MARINO} />
               <KpiNeo label="Emitido por Juan" valor={fmtEur(resumen.juan)} color={AMBAR} sub="ingreso del negocio de David" />
               <KpiNeo label="Entregas" valor={entregasMes === null ? '—' : String(entregasMes)} color={NARANJA}
@@ -105,7 +97,7 @@ export default function Ventas() {
                 </tr>
               </thead>
               <tbody>
-                {filas.filter(r => r.mes === mes).sort((a, b) => b.total - a.total).map((r, i) => {
+                {enPeriodo.slice().sort((a, b) => b.total - a.total).map((r, i) => {
                   const alt = i % 2 === 1
                   const juan = (r.emisor ?? '').toUpperCase() === 'JUAN'
                   return (

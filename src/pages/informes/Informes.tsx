@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
+import { usePeriodo } from '@/lib/periodoGlobal'
 import { supabase } from '@/lib/supabase'
 import { fmtEur, fmtDate } from '@/lib/format'
 import { INK, GRIS, OLIVA, TERRA, NARANJA, CELESTE, MARINO, AMBAR, BLANCO, ARENA, OSW } from '@/styles/neobrutal'
-import { PageNeo, CabeceraNeo, Banda, TablaWrap, thNeo, tdNeo, tdEstado, KpiNeo, PillsNeo, AvisoNeo } from '@/components/neo/NeoUI'
+import { PageNeo, CabeceraNeo, Banda, TablaWrap, thNeo, tdNeo, tdEstado, KpiNeo, AvisoNeo, HeroNeo } from '@/components/neo/NeoUI'
 
 /* Panel de informes sobre las vistas reales: v_pyg_resumen (mes), v_pyg_global_semana (semana),
    v_facturacion_total_david y v_efectivo. Las cifras se leen tal cual de las vistas. */
@@ -13,7 +14,8 @@ const n = (x: unknown) => Number(x ?? 0)
 const mesLargo = (iso: string) => new Date(iso + 'T00:00:00').toLocaleDateString('es-ES', { month: 'short', year: 'numeric' })
 
 export default function Informes() {
-  const [vista, setVista] = useState<'Semana' | 'Mes'>('Mes')
+  const per = usePeriodo()
+  const vista: 'Semana' | 'Mes' = per.esSemana ? 'Semana' : 'Mes'
   const [mensual, setMensual] = useState<Fila[]>([])
   const [semanal, setSemanal] = useState<Fila[]>([])
   const [factura, setFactura] = useState<Record<string, { total: number; david: number; juan: number }>>({})
@@ -38,19 +40,27 @@ export default function Informes() {
     })
   }, [])
 
-  const filas = vista === 'Mes' ? mensual : semanal
+  const filas = useMemo(() => {
+    const ini = per.desdeIso, fin = per.hastaIso
+    // Mes: la fila (día 1) cuyo mes toca el rango; Semana: la fila cuya semana empieza dentro del rango
+    return vista === 'Mes'
+      ? mensual.filter(f => per.meses.includes(String(f.clave).slice(0, 7)))
+      : semanal.filter(f => String(f.clave).slice(0, 10) >= ini && String(f.clave).slice(0, 10) <= fin)
+  }, [vista, mensual, semanal, per.desdeIso, per.hastaIso, per.meses])
   const ultima = filas[0]
   const totales = useMemo(() => filas.reduce((a, f) => ({ ingresos: a.ingresos + f.ingresos, gastos: a.gastos + f.gastos, resultado: a.resultado + f.resultado }), { ingresos: 0, gastos: 0, resultado: 0 }), [filas])
 
   return (
     <PageNeo>
-      <CabeceraNeo eyebrowTxt="Informes" titulo="Panel de informes">
-        <PillsNeo value={vista} onChange={v => setVista(v as 'Semana' | 'Mes')} options={['Semana', 'Mes']} />
-      </CabeceraNeo>
+      <CabeceraNeo eyebrowTxt="Informes" titulo="Panel de informes" />
       {error && <AvisoNeo>ERROR: {error}</AvisoNeo>}
+      <HeroNeo eyebrowTxt={`Ingresos · ${per.etiqueta}`} cifra={filas.length === 0 ? '—' : fmtEur(totales.ingresos)}
+        frase={filas.length === 0 ? 'Sin datos todavía' : `de actividad, con ${fmtEur(Math.abs(totales.gastos))} de gastos y resultado de ${fmtEur(totales.resultado)}`}
+        color={filas.length === 0 ? AMBAR : totales.resultado >= 0 ? OLIVA : NARANJA}
+        apoyo={filas.length === 0 ? undefined : [{ label: 'Gastos', valor: fmtEur(Math.abs(totales.gastos)) }, { label: 'Resultado', valor: fmtEur(totales.resultado) }]} />
 
       {filas.length === 0 ? (
-        <AvisoNeo>En construcción · sin datos</AvisoNeo>
+        <AvisoNeo>Sin datos en {per.etiqueta}</AvisoNeo>
       ) : (
         <>
           <Banda bg={BLANCO}>

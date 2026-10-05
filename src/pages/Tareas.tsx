@@ -3,7 +3,7 @@ import { Plus } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { fmtDate } from '@/lib/format'
 import { INK, ARENA, BLANCO, GRIS, OLIVA, TERRA, NARANJA, CELESTE, AMBAR, OSW, BORDER_CARD } from '@/styles/neobrutal'
-import { PageNeo, CabeceraNeo, Banda, KpiNeo, BotonNeo, AvisoNeo } from '@/components/neo/NeoUI'
+import { PageNeo, CabeceraNeo, Banda, KpiNeo, BotonNeo, AvisoNeo, HeroNeo } from '@/components/neo/NeoUI'
 import { campo, Etiqueta } from '@/components/flota/FormFlota'
 
 /* Tareas reales (tabla tareas). Clic en una tarea avanza su estado: pendiente → en curso → hecha. */
@@ -39,6 +39,9 @@ export default function Tareas() {
     if (e) setError(e.message); else { setNueva(null); setTick(x => x + 1) }
   }
 
+  const hoyIso = new Date().toISOString().slice(0, 10)
+  const abiertas = tareas.filter(t => t.estado !== 'HECHA')
+  const vencidas = abiertas.filter(t => t.fecha_limite && t.fecha_limite < hoyIso).length
   const cuenta = (e: string) => tareas.filter(t => t.estado === e).length
 
   return (
@@ -46,6 +49,13 @@ export default function Tareas() {
       <CabeceraNeo eyebrowTxt="Tareas" titulo="Tareas">
         <BotonNeo onClick={() => setNueva({ titulo: '', prioridad: 'NORMAL', fecha_limite: '', asignado: '' })}><Plus size={14} style={{ marginRight: 6 }} /> Nueva tarea</BotonNeo>
       </CabeceraNeo>
+      <HeroNeo
+        eyebrowTxt="Tareas abiertas"
+        cifra={tareas.length === 0 ? '—' : String(abiertas.length)}
+        color={tareas.length === 0 ? AMBAR : vencidas > 0 ? NARANJA : OLIVA}
+        frase={tareas.length === 0 ? 'Sin datos todavía' : vencidas > 0 ? `${vencidas} con la fecha límite pasada: empieza por esas.` : abiertas.length === 0 ? 'Todo al día, no queda nada pendiente.' : 'Ninguna vencida, vas al día.'}
+        apoyo={tareas.length === 0 ? undefined : [{ label: 'Vencidas', valor: String(vencidas) }, { label: 'En curso', valor: String(cuenta('EN_CURSO')) }, { label: 'Hechas', valor: String(cuenta('HECHA')) }]}
+      />
       {error && <AvisoNeo>ERROR: {error}</AvisoNeo>}
 
       {nueva && (

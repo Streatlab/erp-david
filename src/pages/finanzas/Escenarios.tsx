@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { fmtEur } from '@/lib/format'
-import { INK, ARENA, BLANCO, GRIS, OLIVA, TERRA, CELESTE, MARINO, OSW, LEX, BORDER_CARD } from '@/styles/neobrutal'
-import { PageNeo, CabeceraNeo, Banda, AvisoNeo, KpiNeo } from '@/components/neo/NeoUI'
+import { INK, ARENA, BLANCO, GRIS, OLIVA, TERRA, NARANJA, CELESTE, MARINO, OSW, LEX, BORDER_CARD } from '@/styles/neobrutal'
+import { PageNeo, CabeceraNeo, Banda, AvisoNeo, KpiNeo, HeroNeo } from '@/components/neo/NeoUI'
 import { useCostesReales } from '@/hooks/useCostesReales'
 import { escenario } from '@/lib/equilibrio'
 import type { Supuestos } from '@/lib/equilibrio'
@@ -28,7 +28,7 @@ export default function Escenarios() {
   const res = useMemo(() => {
     if (!datos) return null
     const base = {
-      ingresos: datos.ingresos, fijos: datos.costes.fijos, variables: datos.costes.variables,
+      ingresos: datos.ingresos, fijos: datos.costes.fijos + datos.sueldoDavid, variables: datos.costes.variables,
       personal: datos.costes.personal, codigos: datos.codigos, eurEntrega: datos.eurEntrega,
     }
     return { hoy: escenario(base, { repartidores: 0, entregasDia: 0, subidaPct: 0 }), nuevo: escenario(base, s) }
@@ -40,6 +40,13 @@ export default function Escenarios() {
   return (
     <PageNeo>
       <CabeceraNeo eyebrowTxt="Finanzas" titulo="Escenarios" />
+      <HeroNeo
+        eyebrowTxt="Resultado mensual del escenario"
+        cifra={res && !sinDatos ? fmtEur(res.nuevo.resultado) : '—'}
+        frase={res && !sinDatos ? `${signo(res.nuevo.resultado - res.hoy.resultado, x => fmtEur(x))} al mes frente a la situación de hoy` : 'Sin datos todavía'}
+        color={res && !sinDatos ? (res.nuevo.resultado >= 0 ? OLIVA : NARANJA) : undefined}
+        apoyo={res && !sinDatos ? [{ label: 'Hoy', valor: fmtEur(res.hoy.resultado) }] : undefined}
+      />
       {error && <AvisoNeo>ERROR: {error}</AvisoNeo>}
       {cargando && <Banda bg={ARENA}><div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 22, textTransform: 'uppercase', color: GRIS }}>Calculando…</div></Banda>}
       {sinDatos && <AvisoNeo>En construcción · sin datos de facturación para calcular escenarios.</AvisoNeo>}
@@ -66,7 +73,7 @@ export default function Escenarios() {
           <Banda bg={ARENA}>
             <div style={{ fontFamily: LEX, fontSize: 13, fontWeight: 600, color: INK, lineHeight: 1.6 }}>
               Base real: ingresos = base facturada media ({datos.mesesIngreso.map(m => m.slice(0, 7)).join(', ')}, {datos.codigos} códigos);
-              gastos = media del banco ({datos.costes.meses.join(', ')}): fijos {fmtEur(datos.costes.fijos)} + variables {fmtEur(datos.costes.variables)}.
+              gastos = media del banco ({datos.costes.meses.join(', ')}): fijos {fmtEur(datos.costes.fijos)} + sueldo de David {fmtEur(datos.sueldoDavid)} + variables {fmtEur(datos.costes.variables)}.
               Un repartidor más suma lo que factura de media un código y cuesta lo que cuesta de media el personal ({fmtEur(datos.costes.personal)}/mes entre {Math.max(datos.codigos - 1, 0)} repartidores).
               Cada entrega vale {fmtEur(datos.eurEntrega, { decimals: 2 })} (liquidaciones Cade) y se cuentan 26 días al mes.
             </div>

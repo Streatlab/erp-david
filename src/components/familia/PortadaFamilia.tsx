@@ -526,13 +526,13 @@ export default function PortadaFamilia() {
             <>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 18, marginBottom: 14 }}>
                 <KpiNeo label="La casa necesita" valor={EUR(necesidadCasa)} color={NARANJA} sub={`Rebeca cubre ${E(rebecaMedia3)} → David saca ${E(davidSaca)}`} />
-                <KpiNeo label="Facturar al mes" valor={EUR(equil.totalEuros)} color={MARINO} sub={`Empresa ${E(equil.peEuros)} + casa ${E(equil.extraEuros)}`} />
+                <KpiNeo label="Facturar al mes" valor={EUR(equil.totalEuros)} color={MARINO} sub={`Empresa ${E(equil.peEuros)} + sueldo de David para la casa ${E(equil.extraEuros)}`} />
                 <KpiNeo label="Entregas al mes" valor={String(Math.ceil(equil.totalEntregas))} color={CELESTE} sub={`≈ ${equil.porDia.toFixed(1).replace('.', ',')} al día (26 días) · ${E2(equil.eurEntrega)} por entrega`} />
                 <KpiNeo label="Cobertura actual" valor={P0(equil.cobertura * 100)} color={equil.cobertura >= 1 ? OLIVA : NARANJA}
                   sub={equil.cobertura >= 1 ? `Cubres empresa y casa (facturas ${E(equil.ingresos)}/mes)` : `Faltan ~${Math.max(0, Math.ceil(equil.totalEntregas - equil.actuales))} entregas al mes`} />
               </div>
               <div style={{ fontSize: 12, fontWeight: 600 }}>
-                Mismo método que Punto de equilibrio: cada euro facturado deja {P0(equil.mc * 100)} tras los costes variables. Primero se cubre la empresa; lo que David necesita para la casa se suma encima.
+                Mismo método que Punto de equilibrio: cada euro facturado deja {P0(equil.mc * 100)} tras los costes variables. Primero se cubre la empresa; el sueldo que David necesita para la casa (lo que envía a la familia) se suma encima. Hoy se lleva de media {E(datosEmp?.sueldoDavid ?? 0)} al mes.
               </div>
             </>
           )}

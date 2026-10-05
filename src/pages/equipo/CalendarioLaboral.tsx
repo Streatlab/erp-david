@@ -4,9 +4,10 @@
  * Nacionales y de la Comunitat vienen cargados; los locales se añaden aquí cada año.
  */
 import { useEffect, useMemo, useState } from 'react'
+import { usePeriodo } from '@/lib/periodoGlobal'
 import { supabase } from '@/lib/supabase'
 import { INK, ARENA, ARENA_CL, BLANCO, GRIS, OLIVA, TERRA, NARANJA, CELESTE, AMBAR, OSW, LEX, BORDER_CARD } from '@/styles/neobrutal'
-import { PageNeo, CabeceraNeo, Banda, KpiNeo, TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo, BotonNeo, PillsNeo } from '@/components/neo/NeoUI'
+import { PageNeo, CabeceraNeo, Banda, KpiNeo, TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo, BotonNeo, HeroNeo } from '@/components/neo/NeoUI'
 
 interface Festivo { fecha: string; nombre: string; ambito: string }
 
@@ -28,7 +29,8 @@ const inputStyle = {
 
 export default function CalendarioLaboral() {
   const hoy = new Date()
-  const [anio, setAnio] = useState<string>(String(hoy.getFullYear()))
+  const per = usePeriodo()
+  const anio = String(per.rango.inicio.getFullYear())
   const [lista, setLista] = useState<Festivo[]>([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -45,14 +47,8 @@ export default function CalendarioLaboral() {
   }
   useEffect(() => { cargar() }, [])
 
-  const anios = useMemo(() => {
-    const y = hoy.getFullYear()
-    const set = new Set<string>([String(y - 1), String(y), String(y + 1)])
-    for (const f of lista) set.add(f.fecha.slice(0, 4))
-    return Array.from(set).sort()
-  }, [lista]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const delAnio = useMemo(() => lista.filter(f => f.fecha.startsWith(anio)), [lista, anio])
+  const desde = per.desdeIso, hasta = per.hastaIso
+  const delAnio = useMemo(() => lista.filter(f => f.fecha >= desde && f.fecha <= hasta), [lista, desde, hasta])
   const locales = delAnio.filter(f => f.ambito === 'Alcoi' || f.ambito === 'Ontinyent').length
   const siguiente = useMemo(() => {
     const iso = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`
@@ -83,9 +79,10 @@ export default function CalendarioLaboral() {
 
   return (
     <PageNeo>
-      <CabeceraNeo eyebrowTxt="Equipo · Calendario" titulo="Calendario laboral">
-        <PillsNeo value={anio} onChange={setAnio} options={anios} />
-      </CabeceraNeo>
+      <CabeceraNeo eyebrowTxt="Equipo · Calendario" titulo="Calendario laboral" />
+      <HeroNeo eyebrowTxt={`Festivos · ${per.etiqueta}`} cifra={cargando ? '—' : String(delAnio.length)}
+        frase={cargando ? 'Sin datos todavía' : delAnio.length === 0 ? 'Sin festivos en este periodo' : `festivos en el periodo, ${locales} locales de Alcoi y Ontinyent`}
+        color={delAnio.length > 0 ? OLIVA : AMBAR} />
 
       {error && (
         <Banda bg={TERRA} style={{ padding: '14px 40px' }}>
@@ -109,7 +106,7 @@ export default function CalendarioLaboral() {
 
       <Banda bg={ARENA_CL}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 18 }}>
-          <KpiNeo label={`Festivos en ${anio}`} valor={String(delAnio.length)} color={CELESTE} />
+          <KpiNeo label="Festivos en el periodo" valor={String(delAnio.length)} color={CELESTE} />
           <KpiNeo label="Locales cargados" valor={String(locales)} color={locales > 0 ? OLIVA : NARANJA}
             sub={locales === 0 ? 'Añade los de Alcoi y Ontinyent' : 'Alcoi y Ontinyent'} />
           <KpiNeo label="Próximo festivo" valor={siguiente ? fechaLarga(siguiente.fecha).replace(/^\S+ /, '') : '—'} color={AMBAR} sub={siguiente?.nombre} />
@@ -141,7 +138,7 @@ export default function CalendarioLaboral() {
           <tbody>
             {cargando && <tr><td colSpan={4} style={{ ...tdNeo(false), textAlign: 'center', color: GRIS, padding: 28 }}>Cargando…</td></tr>}
             {!cargando && delAnio.length === 0 && (
-              <tr><td colSpan={4} style={{ ...tdNeo(false), textAlign: 'center', color: GRIS, padding: 28 }}>No hay festivos cargados en {anio}.</td></tr>
+              <tr><td colSpan={4} style={{ ...tdNeo(false), textAlign: 'center', color: GRIS, padding: 28 }}>No hay festivos cargados en {per.etiqueta}.</td></tr>
             )}
             {delAnio.map((f, i) => {
               const alt = i % 2 === 1

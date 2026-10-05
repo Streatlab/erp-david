@@ -4,7 +4,7 @@ import { fmtEur, fmtDate } from '@/lib/format'
 import { CELESTE, OLIVA, TERRA, NARANJA, MARINO, AMBAR, GRIS, ARENA_CL, BLANCO, INK, OSW, ARENA } from '@/styles/neobrutal'
 import { card } from '@/styles/neobrutal'
 import {
-  PageNeo, Banda, CabeceraNeo, KpiNeo, AvisoNeo,
+  PageNeo, Banda, CabeceraNeo, HeroNeo, KpiNeo, AvisoNeo,
   TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo,
 } from '@/components/neo/NeoUI'
 import { diasDesde } from '@/lib/cobros'
@@ -111,6 +111,19 @@ export default function PagosCobros() {
   return (
     <PageNeo>
       <CabeceraNeo eyebrowTxt="Finanzas" titulo="Pagos y Cobros" />
+
+      <HeroNeo
+        eyebrowTxt="Pendiente de cobro"
+        cifra={loading || facturas.length === 0 ? '—' : fmtEur(cobros.total)}
+        frase={loading || facturas.length === 0 ? 'Sin datos todavía'
+          : cobros.mas60 > 0 ? `${fmtEur(cobros.mas60)} con más de 60 días sin cobrar. Revisa con Cade.`
+          : cobros.total > 0 ? 'Nada atrasado más de 60 días. Sigue el calendario de pago.' : 'Todo cobrado. Sin pendientes.'}
+        color={loading || facturas.length === 0 ? undefined : cobros.mas60 > 0 ? NARANJA : cobros.total > 0 ? undefined : OLIVA}
+        apoyo={facturas.length === 0 ? undefined : [
+          { label: 'Facturas', valor: String(cobros.pend.length) },
+          { label: '+60 días', valor: fmtEur(cobros.mas60) },
+        ]}
+      />
 
       {errMsg && <AvisoNeo>ERROR: {errMsg}</AvisoNeo>}
       {cobros.mas60 > 0 && <AvisoNeo>{fmtEur(cobros.mas60)} EN FACTURAS CON MÁS DE 60 DÍAS SIN COBRAR. Revisar con Cade.</AvisoNeo>}

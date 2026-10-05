@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { INK, MARINO, ARENA, BLANCO, GRIS, AMBAR, NARANJA, OSW, LEX, BORDER_CARD, SHADOW } from '@/styles/neobrutal'
-import { PageNeo, CabeceraNeo, Banda, AvisoNeo } from '@/components/neo/NeoUI'
+import { INK, MARINO, OLIVA, ARENA, BLANCO, GRIS, AMBAR, NARANJA, OSW, LEX, BORDER_CARD, SHADOW } from '@/styles/neobrutal'
+import { PageNeo, CabeceraNeo, Banda, AvisoNeo, HeroNeo } from '@/components/neo/NeoUI'
 import { useEquipo, hoyISO } from '@/hooks/useEquipo'
 import { facturacionPorEmisor } from '@/lib/equipo'
 import { fmtDate } from '@/lib/format'
@@ -33,6 +33,9 @@ export default function Organigrama() {
         </label>
       </CabeceraNeo>
       {error && <AvisoNeo>ERROR: {error}</AvisoNeo>}
+      <HeroNeo eyebrowTxt="Quién factura a Cade" cifra={cargando || emisoresOrden.length === 0 ? '—' : String(emisoresOrden.reduce((a, e) => a + porEmisor[e].length, 0))}
+        frase={emisoresOrden.length === 0 ? 'Sin datos todavía' : `códigos de Cade activos a ${fmtDate(fecha)}, repartidos entre ${emisoresOrden.length === 1 ? 'un emisor' : `${emisoresOrden.length} emisores`}`}
+        color={emisoresOrden.length > 0 ? OLIVA : AMBAR} />
 
       <Banda bg={ARENA}>
         {cargando ? (
