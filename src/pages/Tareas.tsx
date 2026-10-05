@@ -1,89 +1,94 @@
-import { useState } from 'react'
-import { Plus, Check } from 'lucide-react'
-import { INK, ARENA, BLANCO, GRIS, OLIVA, TERRA, NARANJA, CELESTE, AMBAR, OSW, LEX } from '@/styles/neobrutal'
-import { PageNeo, CabeceraNeo, Banda, KpiNeo, PillsNeo, BotonNeo } from '@/components/neo/NeoUI'
+import { useEffect, useState } from 'react'
+import { Plus } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
+import { fmtDate } from '@/lib/format'
+import { INK, ARENA, BLANCO, GRIS, OLIVA, TERRA, NARANJA, CELESTE, AMBAR, OSW, BORDER_CARD } from '@/styles/neobrutal'
+import { PageNeo, CabeceraNeo, Banda, KpiNeo, BotonNeo, AvisoNeo } from '@/components/neo/NeoUI'
+import { campo, Etiqueta } from '@/components/flota/FormFlota'
 
-/* Tareas — mismo concepto que Binagre (lista de tareas con estado/prioridad),
-   datos TEST, neobrutal. */
+/* Tareas reales (tabla tareas). Clic en una tarea avanza su estado: pendiente → en curso → hecha. */
 
-type Prioridad = 'alta' | 'media' | 'baja'
-type Estado = 'pendiente' | 'en_curso' | 'hecha'
+interface Tarea { id: string; titulo: string; prioridad: string | null; estado: string; fecha_limite: string | null; asignado: string | null }
 
-interface Tarea { id: string; texto: string; prioridad: Prioridad; estado: Estado }
-
-const INIT: Tarea[] = [
-  { id: '1', texto: 'TEST · Reclamar recorte de Cade de junio', prioridad: 'alta',  estado: 'pendiente' },
-  { id: '2', texto: 'TEST · Revisar furgoneta 02 (ruido freno)', prioridad: 'alta',  estado: 'en_curso' },
-  { id: '3', texto: 'TEST · Subir facturas de combustible',      prioridad: 'media', estado: 'pendiente' },
-  { id: '4', texto: 'TEST · Confirmar turnos semana que viene',  prioridad: 'media', estado: 'en_curso' },
-  { id: '5', texto: 'TEST · Renovar seguro flota',               prioridad: 'baja',  estado: 'hecha' },
-]
-
-const COLOR_PRIO: Record<Prioridad, string> = { alta: TERRA, media: NARANJA, baja: CELESTE }
-const LABEL_ESTADO: Record<Estado, string> = { pendiente: 'Pendiente', en_curso: 'En curso', hecha: 'Hecha' }
+const SIGUIENTE: Record<string, string> = { PENDIENTE: 'EN_CURSO', EN_CURSO: 'HECHA', HECHA: 'PENDIENTE' }
+const COLOR_EST: Record<string, string> = { PENDIENTE: AMBAR, EN_CURSO: CELESTE, HECHA: OLIVA }
+const COLOR_PRIO: Record<string, string> = { ALTA: TERRA, NORMAL: NARANJA, BAJA: GRIS }
 
 export default function Tareas() {
-  const [tareas, setTareas] = useState<Tarea[]>(INIT)
-  const [filtro, setFiltro] = useState('Todas')
+  const [tareas, setTareas] = useState<Tarea[]>([])
+  const [nueva, setNueva] = useState<{ titulo: string; prioridad: string; fecha_limite: string; asignado: string } | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [tick, setTick] = useState(0)
 
-  const avanzar = (id: string) => setTareas(prev => prev.map(t => {
-    if (t.id !== id) return t
-    const next: Estado = t.estado === 'pendiente' ? 'en_curso' : t.estado === 'en_curso' ? 'hecha' : 'pendiente'
-    return { ...t, estado: next }
-  }))
-  const nueva = () => {
-    const n = tareas.length + 1
-    setTareas(prev => [{ id: String(Date.now()), texto: `TEST · Nueva tarea ${n}`, prioridad: 'media', estado: 'pendiente' }, ...prev])
+  useEffect(() => {
+    supabase.from('tareas').select('id, titulo, prioridad, estado, fecha_limite, asignado').order('created_at', { ascending: false })
+      .then(({ data, error: e }) => { if (e) setError(e.message); else setTareas((data ?? []) as Tarea[]) })
+  }, [tick])
+
+  async function avanzar(t: Tarea) {
+    const { error: e } = await supabase.from('tareas').update({ estado: SIGUIENTE[t.estado] ?? 'PENDIENTE' }).eq('id', t.id)
+    if (e) setError(e.message); else setTick(x => x + 1)
   }
 
-  const pend = tareas.filter(t => t.estado === 'pendiente').length
-  const curso = tareas.filter(t => t.estado === 'en_curso').length
-  const hechas = tareas.filter(t => t.estado === 'hecha').length
+  async function crear() {
+    if (!nueva?.titulo.trim()) return
+    const { error: e } = await supabase.from('tareas').insert({
+      titulo: nueva.titulo.trim(), prioridad: nueva.prioridad, estado: 'PENDIENTE',
+      fecha_limite: nueva.fecha_limite || null, asignado: nueva.asignado || null,
+    })
+    if (e) setError(e.message); else { setNueva(null); setTick(x => x + 1) }
+  }
 
-  const visibles = filtro === 'Todas' ? tareas
-    : filtro === 'Pendientes' ? tareas.filter(t => t.estado === 'pendiente')
-    : filtro === 'En curso' ? tareas.filter(t => t.estado === 'en_curso')
-    : tareas.filter(t => t.estado === 'hecha')
+  const cuenta = (e: string) => tareas.filter(t => t.estado === e).length
 
   return (
     <PageNeo>
       <CabeceraNeo eyebrowTxt="Tareas" titulo="Tareas">
-        <BotonNeo onClick={nueva}><Plus size={14} style={{ marginRight: 6 }} /> Nueva tarea</BotonNeo>
+        <BotonNeo onClick={() => setNueva({ titulo: '', prioridad: 'NORMAL', fecha_limite: '', asignado: '' })}><Plus size={14} style={{ marginRight: 6 }} /> Nueva tarea</BotonNeo>
       </CabeceraNeo>
+      {error && <AvisoNeo>ERROR: {error}</AvisoNeo>}
 
-      <Banda bg={AMBAR} style={{ padding: '14px 40px' }}>
-        <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 13, letterSpacing: 1, textTransform: 'uppercase', color: INK }}>
-          Datos TEST · lista de tareas con estado y prioridad, como en Binagre. Clic en una tarea para avanzar su estado.
-        </div>
-      </Banda>
+      {nueva && (
+        <Banda bg={BLANCO}>
+          <div style={{ background: ARENA, border: BORDER_CARD, padding: 18, display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
+            <div style={{ gridColumn: '1 / -1' }}><Etiqueta txt="Tarea"><input style={campo} autoFocus value={nueva.titulo} onChange={e => setNueva({ ...nueva, titulo: e.target.value })} /></Etiqueta></div>
+            <Etiqueta txt="Prioridad">
+              <select style={campo} value={nueva.prioridad} onChange={e => setNueva({ ...nueva, prioridad: e.target.value })}>
+                <option value="ALTA">Alta</option><option value="NORMAL">Normal</option><option value="BAJA">Baja</option>
+              </select>
+            </Etiqueta>
+            <Etiqueta txt="Fecha límite"><input type="date" style={campo} value={nueva.fecha_limite} onChange={e => setNueva({ ...nueva, fecha_limite: e.target.value })} /></Etiqueta>
+            <Etiqueta txt="Asignada a"><input style={campo} value={nueva.asignado} onChange={e => setNueva({ ...nueva, asignado: e.target.value })} /></Etiqueta>
+            <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 10 }}>
+              <BotonNeo onClick={crear}>Guardar</BotonNeo>
+              <BotonNeo bg={BLANCO} onClick={() => setNueva(null)}>Cancelar</BotonNeo>
+            </div>
+          </div>
+        </Banda>
+      )}
 
       <Banda bg={BLANCO}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 18 }}>
-          <KpiNeo label="Pendientes" valor={String(pend)} color={pend > 0 ? NARANJA : OLIVA} />
-          <KpiNeo label="En curso" valor={String(curso)} color={CELESTE} />
-          <KpiNeo label="Hechas" valor={String(hechas)} color={OLIVA} />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 20 }}>
+          <KpiNeo label="Pendientes" valor={String(cuenta('PENDIENTE'))} color={AMBAR} />
+          <KpiNeo label="En curso" valor={String(cuenta('EN_CURSO'))} color={CELESTE} />
+          <KpiNeo label="Hechas" valor={String(cuenta('HECHA'))} color={OLIVA} />
         </div>
-
-        <div style={{ marginBottom: 18 }}>
-          <PillsNeo value={filtro} onChange={setFiltro} options={['Todas', 'Pendientes', 'En curso', 'Hechas']} />
-        </div>
-
-        <div style={{ display: 'grid', gap: 10 }}>
-          {visibles.map(t => (
-            <button key={t.id} onClick={() => avanzar(t.id)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left', cursor: 'pointer',
-                background: t.estado === 'hecha' ? OLIVA : BLANCO, border: `3px solid ${INK}`, boxShadow: `4px 4px 0 ${INK}`, padding: '12px 14px',
-              }}>
-              <span style={{ width: 26, height: 26, flexShrink: 0, border: `3px solid ${INK}`, background: t.estado === 'hecha' ? INK : BLANCO, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {t.estado === 'hecha' && <Check size={16} color={OLIVA} strokeWidth={3} />}
-              </span>
-              <span style={{ flex: 1, fontFamily: OSW, fontWeight: 700, fontSize: 15, textTransform: 'uppercase', color: t.estado === 'hecha' ? ARENA : INK, textDecoration: t.estado === 'hecha' ? 'line-through' : 'none' }}>{t.texto}</span>
-              <span style={{ fontFamily: OSW, fontWeight: 700, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', background: COLOR_PRIO[t.prioridad], color: ARENA, border: `2px solid ${INK}`, padding: '2px 8px' }}>{t.prioridad}</span>
-              <span style={{ fontFamily: LEX, fontWeight: 600, fontSize: 12, color: t.estado === 'hecha' ? ARENA : GRIS, minWidth: 78, textAlign: 'right' }}>{LABEL_ESTADO[t.estado]}</span>
-            </button>
-          ))}
-        </div>
+        {tareas.length === 0 ? (
+          <div style={{ fontFamily: OSW, fontWeight: 700, textTransform: 'uppercase', color: GRIS, padding: 18, background: ARENA }}>Sin tareas. Crea la primera con «Nueva tarea».</div>
+        ) : (
+          <div style={{ display: 'grid', gap: 10 }}>
+            {tareas.map(t => (
+              <button key={t.id} onClick={() => avanzar(t)} title="Clic para avanzar el estado"
+                style={{ display: 'flex', gap: 12, alignItems: 'center', textAlign: 'left', background: BLANCO, border: BORDER_CARD, borderLeft: `8px solid ${COLOR_EST[t.estado] ?? GRIS}`, padding: '10px 14px', cursor: 'pointer', color: INK }}>
+                <span style={{ fontFamily: OSW, fontWeight: 700, fontSize: 11, background: COLOR_PRIO[t.prioridad ?? 'NORMAL'] ?? GRIS, color: ARENA, padding: '2px 8px', textTransform: 'uppercase' }}>{t.prioridad ?? 'NORMAL'}</span>
+                <span style={{ flex: 1, fontWeight: 600, textDecoration: t.estado === 'HECHA' ? 'line-through' : 'none' }}>{t.titulo}</span>
+                {t.asignado && <span style={{ fontSize: 12, fontWeight: 600, color: GRIS }}>{t.asignado}</span>}
+                {t.fecha_limite && <span style={{ fontFamily: OSW, fontSize: 12, fontWeight: 700 }}>{fmtDate(t.fecha_limite)}</span>}
+                <span style={{ fontFamily: OSW, fontWeight: 700, fontSize: 11, textTransform: 'uppercase' }}>{t.estado.replace('_', ' ')}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </Banda>
     </PageNeo>
   )

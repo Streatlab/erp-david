@@ -19,6 +19,8 @@ export interface Movimiento {
   furgoneta_id?: string | null
   prorrateo?: boolean
   proveedor_id?: string | null
+  origen_efectivo?: boolean | null
+  cuenta_origen?: string | null
 }
 
 export interface Furgoneta {
@@ -43,6 +45,7 @@ export interface CategoriaRef {
   codigo: string
   nombre: string
   grupo?: string | null
+  ambito?: string | null
   tipo_parent: 'ingreso' | 'gasto'
 }
 
@@ -64,8 +67,8 @@ export function useConciliacion() {
         const [mov, reg, cIng, cGas, fur] = await Promise.all([
           supabase.from('conciliacion').select('*').order('fecha', { ascending: false }),
           supabase.from('reglas_conciliacion').select('id, patron, tipo_categoria, categoria_id, categoria_codigo, activa, prioridad').order('prioridad', { ascending: false }),
-          supabase.from('categorias_contables_ingresos').select('id, codigo, nombre'),
-          supabase.from('categorias_contables_gastos').select('id, codigo, nombre, grupo'),
+          supabase.from('categorias_contables_ingresos').select('id, codigo, nombre, ambito'),
+          supabase.from('categorias_contables_gastos').select('id, codigo, nombre, grupo, ambito'),
           supabase.from('furgonetas').select('id, codigo, nombre_corto, conductor').eq('activa', true).order('codigo'),
         ])
         if (cancel) return
@@ -78,8 +81,8 @@ export function useConciliacion() {
         setReglas((reg.data ?? []) as Regla[])
         setFurgonetas((fur.data ?? []) as Furgoneta[])
         const cats: CategoriaRef[] = [
-          ...(cIng.data ?? []).map((c: any) => ({ id: c.id, codigo: c.codigo, nombre: c.nombre, tipo_parent: 'ingreso' as const })),
-          ...(cGas.data ?? []).map((c: any) => ({ id: c.id, codigo: c.codigo, nombre: c.nombre, grupo: c.grupo, tipo_parent: 'gasto' as const })),
+          ...(cIng.data ?? []).map((c: any) => ({ id: c.id, codigo: c.codigo, nombre: c.nombre, ambito: c.ambito, tipo_parent: 'ingreso' as const })),
+          ...(cGas.data ?? []).map((c: any) => ({ id: c.id, codigo: c.codigo, nombre: c.nombre, grupo: c.grupo, ambito: c.ambito, tipo_parent: 'gasto' as const })),
         ]
         setCategorias(cats)
       } catch (e: any) {

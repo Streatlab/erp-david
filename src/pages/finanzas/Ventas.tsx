@@ -1,81 +1,148 @@
-import { INK, ARENA, ARENA_CL, BLANCO, GRIS, OLIVA, TERRA, NARANJA, CELESTE, AMBAR, OSW, EUR, E, P0 } from '@/styles/neobrutal'
-import { PageNeo, CabeceraNeo, Banda, TablaWrap, thNeo, tdNeo, KpiNeo } from '@/components/neo/NeoUI'
+import { useEffect, useMemo, useState } from 'react'
+import { supabase } from '@/lib/supabase'
+import { fmtEur, fmtDate } from '@/lib/format'
+import { INK, ARENA, ARENA_CL, BLANCO, GRIS, OLIVA, NARANJA, MARINO, AMBAR, OSW } from '@/styles/neobrutal'
+import { PageNeo, CabeceraNeo, Banda, TablaWrap, thNeo, tdNeo, tdEstado, KpiNeo, PillsNeo, AvisoNeo, BadgeNeo } from '@/components/neo/NeoUI'
+import { agruparVentas } from '@/lib/ventas'
+import type { FilaConsolidada } from '@/lib/ventas'
 
-/* Ventas — para David = ingresos por reparto por supermercado (misma idea que
-   "Ventas" de Binagre pero con su realidad), datos TEST, neobrutal. */
+/* Ventas — facturación del negocio de David por código Cade y repartidor.
+   Total del negocio = los 4 códigos, emita quien emita (David o Juan). */
 
-interface FilaVenta { operador: string; color: string; entregas: number; importe: number; delta: number }
+interface FilaLiq { mes: string; transportista: string; repartidor: string; entregas: number | null; total: number | null }
 
-const VENTAS: FilaVenta[] = [
-  { operador: 'Mercadona', color: NARANJA, entregas: 520, importe: 7850, delta: 6 },
-  { operador: 'Carrefour', color: OLIVA,   entregas: 310, importe: 4680, delta: -3 },
-  { operador: 'Lidl',      color: AMBAR,   entregas: 240, importe: 3520, delta: 12 },
-  { operador: 'Día',       color: TERRA,   entregas: 170, importe: 2370, delta: 1 },
-]
+const nombreMes = (iso: string) => {
+  const s = new Date(iso + 'T00:00:00').toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
 
 export default function Ventas() {
-  const totalImp = VENTAS.reduce((s, v) => s + v.importe, 0)
-  const totalEnt = VENTAS.reduce((s, v) => s + v.entregas, 0)
-  const maxImp = Math.max(...VENTAS.map(v => v.importe))
+  const [vista, setVista] = useState<'Semana' | 'Mes'>('Mes')
+  const [filas, setFilas] = useState<FilaConsolidada[]>([])
+  const [liq, setLiq] = useState<FilaLiq[]>([])
+  const [mes, setMes] = useState<string>('')
+  const [cargando, setCargando] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    Promise.all([
+      supabase.from('v_facturacion_consolidada').select('mes, transportista, repartidor, emisor, facturas, base, iva, total'),
+      supabase.from('v_liquidacion_repartidor').select('mes, transportista, repartidor, entregas, total'),
+    ]).then(([f, l]) => {
+      if (f.error) setError(f.error.message)
+      const fs = ((f.data ?? []) as any[]).map(r => ({ ...r, base: Number(r.base), iva: Number(r.iva), total: Number(r.total), facturas: Number(r.facturas) })) as FilaConsolidada[]
+      setFilas(fs)
+      setLiq((l.data ?? []) as FilaLiq[])
+      const meses = [...new Set(fs.map(r => r.mes))].sort().reverse()
+      setMes(meses[0] ?? '')
+      setCargando(false)
+    })
+  }, [])
+
+  const meses = useMemo(() => [...new Set(filas.map(r => r.mes))].sort().reverse(), [filas])
+  const resumen = useMemo(() => agruparVentas(filas.filter(r => r.mes === mes)), [filas, mes])
+  const evolucion = useMemo(() => meses.map(m => ({ mes: m, ...agruparVentas(filas.filter(r => r.mes === m)) })), [filas, meses])
+  const entregasMes = useMemo(() => {
+    const ls = liq.filter(l => l.mes === mes)
+    return ls.length ? ls.reduce((s, l) => s + Number(l.entregas ?? 0), 0) : null
+  }, [liq, mes])
+  const maxRep = Math.max(1, ...resumen.porRepartidor.map(r => r.total))
 
   return (
     <PageNeo>
-      <CabeceraNeo eyebrowTxt="Finanzas" titulo="Ventas" />
-
-      <Banda bg={AMBAR} style={{ padding: '14px 40px' }}>
-        <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 13, letterSpacing: 1, textTransform: 'uppercase', color: INK }}>
-          Datos TEST · ingresos por supermercado. Misma vista que Binagre, adaptada al reparto de David.
+      <CabeceraNeo eyebrowTxt="Finanzas" titulo="Ventas">
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+          <PillsNeo value={vista} onChange={v => setVista(v as 'Semana' | 'Mes')} options={['Semana', 'Mes']} />
+          {vista === 'Mes' && meses.length > 0 && (
+            <select value={mes} onChange={e => setMes(e.target.value)}
+              style={{ fontFamily: OSW, fontWeight: 700, fontSize: 13, textTransform: 'uppercase', padding: '8px 10px', border: `3px solid ${INK}`, background: ARENA, color: INK }}>
+              {meses.map(m => <option key={m} value={m}>{nombreMes(m)}</option>)}
+            </select>
+          )}
         </div>
-      </Banda>
+      </CabeceraNeo>
 
-      <Banda bg={BLANCO}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
-          <KpiNeo label="Ingresos (mes)" valor={EUR(totalImp)} color={OLIVA} />
-          <KpiNeo label="Entregas" valor={E(totalEnt)} color={NARANJA} />
-          <KpiNeo label="€ por entrega" valor={(totalImp / totalEnt).toFixed(2).replace('.', ',') + ' €'} color={CELESTE} />
-        </div>
-      </Banda>
+      {error && <AvisoNeo>ERROR: {error}</AvisoNeo>}
 
-      <Banda bg={ARENA_CL}>
-        <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 13, letterSpacing: 2, textTransform: 'uppercase', color: INK, marginBottom: 18 }}>Ingresos por supermercado</div>
-        <div style={{ display: 'grid', gap: 14 }}>
-          {VENTAS.map(v => (
-            <div key={v.operador} style={{ display: 'grid', gridTemplateColumns: 'minmax(120px,180px) 1fr minmax(160px,220px)', gap: 14, alignItems: 'center' }}>
-              <span style={{ fontFamily: OSW, fontWeight: 700, fontSize: 15, textTransform: 'uppercase' }}>{v.operador}</span>
-              <div style={{ background: ARENA, border: `3px solid ${INK}`, height: 24, position: 'relative' }}>
-                <div style={{ position: 'absolute', inset: 0, width: `${(v.importe / maxImp) * 100}%`, background: v.color }} />
-              </div>
-              <span style={{ fontFamily: OSW, fontWeight: 700, fontSize: 18, textAlign: 'right' }}>
-                {EUR(v.importe)}
-                <span style={{ fontSize: 13, marginLeft: 8, background: v.delta >= 0 ? OLIVA : TERRA, color: ARENA, padding: '1px 6px' }}>{v.delta >= 0 ? '+' : '−'}{Math.abs(v.delta)}%</span>
-              </span>
+      {vista === 'Semana' ? (
+        <AvisoNeo>En construcción · sin datos semanales. Cade factura por mes; el detalle por semana llegará con el lector de liquidaciones.</AvisoNeo>
+      ) : !cargando && filas.length === 0 ? (
+        <AvisoNeo>En construcción · sin datos de facturación.</AvisoNeo>
+      ) : (
+        <>
+          <Banda bg={BLANCO}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+              <KpiNeo label={`Total negocio · ${mes ? nombreMes(mes) : '—'}`} valor={fmtEur(resumen.total)} color={OLIVA} sub="los 4 códigos con IVA" />
+              <KpiNeo label="Emitido por David" valor={fmtEur(resumen.david)} color={MARINO} />
+              <KpiNeo label="Emitido por Juan" valor={fmtEur(resumen.juan)} color={AMBAR} sub="ingreso del negocio de David" />
+              <KpiNeo label="Entregas" valor={entregasMes === null ? '—' : String(entregasMes)} color={NARANJA}
+                sub={entregasMes ? `${fmtEur(resumen.base / entregasMes, { decimals: 2 })} por entrega (base)` : 'llegan con las liquidaciones'} />
             </div>
-          ))}
-        </div>
-      </Banda>
+          </Banda>
 
-      <Banda bg={BLANCO}>
-        <TablaWrap>
-          <thead>
-            <tr>
-              <th style={thNeo}>Supermercado</th>
-              <th style={{ ...thNeo, textAlign: 'right' }}>Entregas</th>
-              <th style={{ ...thNeo, textAlign: 'right' }}>Ingresos</th>
-              <th style={{ ...thNeo, textAlign: 'right' }}>% del total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {VENTAS.map((v, i) => (
-              <tr key={v.operador}>
-                <td style={{ ...tdNeo(i % 2 === 1), fontFamily: OSW, fontWeight: 700 }}>{v.operador}</td>
-                <td style={{ ...tdNeo(i % 2 === 1), textAlign: 'right' }}>{E(v.entregas)}</td>
-                <td style={{ ...tdNeo(i % 2 === 1), textAlign: 'right', fontFamily: OSW, fontWeight: 700 }}>{EUR(v.importe)}</td>
-                <td style={{ ...tdNeo(i % 2 === 1), textAlign: 'right', color: GRIS }}>{P0((v.importe / totalImp) * 100)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </TablaWrap>
-      </Banda>
+          <Banda bg={ARENA_CL}>
+            <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 13, letterSpacing: 2, textTransform: 'uppercase', color: INK, marginBottom: 18 }}>Por repartidor</div>
+            <div style={{ display: 'grid', gap: 14 }}>
+              {resumen.porRepartidor.map(r => (
+                <div key={r.repartidor} style={{ display: 'grid', gridTemplateColumns: 'minmax(110px,160px) 1fr minmax(120px,170px)', gap: 14, alignItems: 'center' }}>
+                  <span style={{ fontFamily: OSW, fontWeight: 700, fontSize: 15, textTransform: 'uppercase' }}>{r.repartidor}</span>
+                  <div style={{ background: ARENA, border: `3px solid ${INK}`, height: 24, position: 'relative' }}>
+                    <div style={{ position: 'absolute', inset: 0, width: `${(r.total / maxRep) * 100}%`, background: r.repartidor === 'Otros clientes' ? GRIS : MARINO }} />
+                  </div>
+                  <span style={{ fontFamily: OSW, fontWeight: 700, fontSize: 18, textAlign: 'right' }}>{fmtEur(r.total)}</span>
+                </div>
+              ))}
+            </div>
+          </Banda>
+
+          <Banda bg={BLANCO}>
+            <TablaWrap>
+              <thead>
+                <tr>
+                  {['Código', 'Repartidor', 'Emisor', 'Facturas', 'Base', 'IVA', 'Total'].map(h => (
+                    <th key={h} style={['Facturas', 'Base', 'IVA', 'Total'].includes(h) ? { ...thNeo, textAlign: 'right' } : thNeo}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filas.filter(r => r.mes === mes).sort((a, b) => b.total - a.total).map((r, i) => {
+                  const alt = i % 2 === 1
+                  const juan = (r.emisor ?? '').toUpperCase() === 'JUAN'
+                  return (
+                    <tr key={`${r.transportista}-${r.emisor}-${i}`}>
+                      <td style={{ ...tdEstado(alt, juan ? AMBAR : MARINO), fontFamily: OSW, fontWeight: 700 }}>{r.transportista ?? 'Otros'}</td>
+                      <td style={tdNeo(alt)}>{r.repartidor ?? 'Otros clientes'}</td>
+                      <td style={tdNeo(alt)}><BadgeNeo color={juan ? AMBAR : MARINO}>{r.emisor ?? '—'}</BadgeNeo></td>
+                      <td style={{ ...tdNeo(alt), textAlign: 'right' }}>{r.facturas}</td>
+                      <td style={{ ...tdNeo(alt), textAlign: 'right' }}>{fmtEur(r.base, { decimals: 2 })}</td>
+                      <td style={{ ...tdNeo(alt), textAlign: 'right' }}>{fmtEur(r.iva, { decimals: 2 })}</td>
+                      <td style={{ ...tdNeo(alt), textAlign: 'right', fontFamily: OSW, fontWeight: 700 }}>{fmtEur(r.total, { decimals: 2 })}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </TablaWrap>
+          </Banda>
+
+          <Banda bg={ARENA}>
+            <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 13, letterSpacing: 2, textTransform: 'uppercase', color: INK, marginBottom: 18 }}>Evolución mensual</div>
+            <TablaWrap>
+              <thead><tr>{['Mes', 'Total negocio', 'David', 'Juan', 'Cade (4 códigos)'].map(h => <th key={h} style={thNeo}>{h}</th>)}</tr></thead>
+              <tbody>
+                {evolucion.map((e, i) => (
+                  <tr key={e.mes}>
+                    <td style={{ ...tdNeo(i % 2 === 1), fontFamily: OSW, fontWeight: 700 }}>{fmtDate(e.mes).slice(3)}</td>
+                    <td style={{ ...tdNeo(i % 2 === 1), fontFamily: OSW, fontWeight: 700 }}>{fmtEur(e.total)}</td>
+                    <td style={tdNeo(i % 2 === 1)}>{fmtEur(e.david)}</td>
+                    <td style={tdNeo(i % 2 === 1)}>{fmtEur(e.juan)}</td>
+                    <td style={tdNeo(i % 2 === 1)}>{fmtEur(e.cade)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </TablaWrap>
+          </Banda>
+        </>
+      )}
     </PageNeo>
   )
 }

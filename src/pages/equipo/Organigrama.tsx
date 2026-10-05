@@ -1,57 +1,69 @@
-import {
-  INK, MARINO, ARENA, BLANCO, GRIS, OLIVA, NARANJA, AMBAR, OSW, LEX,
-} from '@/styles/neobrutal'
-import { PageNeo, CabeceraNeo, Banda } from '@/components/neo/NeoUI'
+import { useState } from 'react'
+import { INK, MARINO, ARENA, BLANCO, GRIS, AMBAR, NARANJA, OSW, LEX, BORDER_CARD, SHADOW } from '@/styles/neobrutal'
+import { PageNeo, CabeceraNeo, Banda, AvisoNeo } from '@/components/neo/NeoUI'
+import { useEquipo, hoyISO } from '@/hooks/useEquipo'
+import { facturacionPorEmisor } from '@/lib/equipo'
+import { fmtDate } from '@/lib/format'
 
-/* Organigrama — mismo concepto que Binagre (jerarquía de equipo), datos TEST, neobrutal. */
+/* Organigrama real: Cade → quién factura (David / Juan) → códigos y repartidores, a la fecha elegida. */
 
-interface Nodo { nombre: string; cargo: string; color: string }
-
-const JEFE: Nodo = { nombre: 'TEST · David Reparte', cargo: 'Administrador', color: MARINO }
-const EQUIPO: Nodo[] = [
-  { nombre: 'TEST · Repartidor Uno',  cargo: 'Repartidor · Alcoi',    color: NARANJA },
-  { nombre: 'TEST · Repartidor Dos',  cargo: 'Repartidor · Ontinyent', color: OLIVA },
-  { nombre: 'TEST · Repartidor Tres', cargo: 'Repartidor · Refuerzo',  color: AMBAR },
-]
-
-function Caja({ n, ancho }: { n: Nodo; ancho?: number }) {
-  const claro = n.color === AMBAR
+function Caja({ titulo, sub, color }: { titulo: string; sub?: string; color: string }) {
+  const claro = color === AMBAR || color === ARENA || color === BLANCO
   return (
-    <div style={{ background: n.color, border: `3px solid ${INK}`, boxShadow: `4px 4px 0 ${INK}`, padding: '14px 18px', width: ancho, minWidth: 180 }}>
-      <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 16, textTransform: 'uppercase', color: claro ? INK : ARENA, lineHeight: 1.05 }}>{n.nombre}</div>
-      <div style={{ fontFamily: LEX, fontWeight: 600, fontSize: 12, color: claro ? INK : ARENA, opacity: 0.85, marginTop: 4 }}>{n.cargo}</div>
+    <div style={{ background: color, color: claro ? INK : ARENA, border: BORDER_CARD, boxShadow: SHADOW, padding: '12px 16px', minWidth: 170, textAlign: 'center' }}>
+      <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 17, textTransform: 'uppercase' }}>{titulo}</div>
+      {sub && <div style={{ fontFamily: LEX, fontSize: 12, fontWeight: 600, marginTop: 4 }}>{sub}</div>}
     </div>
   )
 }
 
 export default function Organigrama() {
+  const [fecha, setFecha] = useState(hoyISO())
+  const { emisores, furgoDe, error, cargando } = useEquipo()
+  const porEmisor = facturacionPorEmisor(emisores, fecha)
+  const emisoresOrden = Object.keys(porEmisor).sort()
+
   return (
     <PageNeo>
-      <CabeceraNeo eyebrowTxt="Equipo" titulo="Organigrama" />
+      <CabeceraNeo eyebrowTxt="Equipo" titulo="Organigrama">
+        <label style={{ fontFamily: OSW, fontWeight: 700, color: ARENA, textTransform: 'uppercase', fontSize: 12, display: 'flex', gap: 8, alignItems: 'center' }}>
+          A fecha
+          <input type="date" value={fecha} onChange={e => setFecha(e.target.value || hoyISO())}
+            style={{ fontFamily: OSW, fontWeight: 700, padding: '6px 8px', border: `3px solid ${INK}`, background: ARENA, color: INK }} />
+        </label>
+      </CabeceraNeo>
+      {error && <AvisoNeo>ERROR: {error}</AvisoNeo>}
 
-      <Banda bg={AMBAR} style={{ padding: '14px 40px' }}>
-        <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 13, letterSpacing: 1, textTransform: 'uppercase', color: INK }}>
-          Datos TEST · estructura del equipo de David. Se conectará a las personas reales.
-        </div>
-      </Banda>
-
-      <Banda bg={BLANCO}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0 }}>
-          <Caja n={JEFE} ancho={260} />
-          <div style={{ width: 4, height: 28, background: INK }} />
-          <div style={{ height: 4, background: INK, width: 'min(720px, 90%)' }} />
-          <div style={{ display: 'flex', gap: 24, marginTop: 28, flexWrap: 'wrap', justifyContent: 'center' }}>
-            {EQUIPO.map(n => (
-              <div key={n.nombre} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <div style={{ width: 4, height: 28, background: INK, marginTop: -28 }} />
-                <Caja n={n} />
-              </div>
-            ))}
+      <Banda bg={ARENA}>
+        {cargando ? (
+          <div style={{ fontFamily: OSW, fontWeight: 700, textTransform: 'uppercase', color: GRIS }}>Cargando…</div>
+        ) : emisoresOrden.length === 0 ? (
+          <div style={{ fontFamily: OSW, fontWeight: 700, textTransform: 'uppercase', color: GRIS }}>Sin datos de emisores a esta fecha.</div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 22 }}>
+            <Caja titulo="Cade" sub="cliente único · paga la facturación" color={INK} />
+            <div style={{ width: 4, height: 22, background: INK }} />
+            <div style={{ display: 'flex', gap: 28, flexWrap: 'wrap', justifyContent: 'center' }}>
+              {emisoresOrden.map(em => (
+                <div key={em} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+                  <Caja titulo={`Factura ${em === 'DAVID' ? 'David' : em === 'JUAN' ? 'Juan' : em}`} sub={`${porEmisor[em].length} código(s)`} color={em === 'JUAN' ? AMBAR : MARINO} />
+                  <div style={{ width: 4, height: 14, background: INK }} />
+                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
+                    {porEmisor[em].sort((a, b) => a.transportista.localeCompare(b.transportista)).map(c => {
+                      const f = furgoDe(c.repartidor)
+                      return <Caja key={c.transportista} titulo={`${c.repartidor ?? '—'} · ${c.transportista}`} sub={f ? `furgoneta ${f.codigo}` : 'sin furgoneta asignada'} color={BLANCO} />
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ fontFamily: LEX, fontSize: 13, fontWeight: 600, color: INK, maxWidth: 640, textAlign: 'center' }}>
+              Situación a {fmtDate(fecha)}. Desde el 1 de septiembre de 2026 Juan factura 972, 939 y 9391; David solo 9392.
+              Todo lo facturado es ingreso del negocio de David, entre por la cuenta que entre.
+            </div>
+            <div style={{ fontFamily: OSW, fontSize: 12, fontWeight: 700, color: NARANJA, textTransform: 'uppercase' }}>Cambia la fecha para ver el reparto anterior a septiembre.</div>
           </div>
-        </div>
-        <div style={{ fontFamily: LEX, fontSize: 12, fontWeight: 600, color: GRIS, marginTop: 24 }}>
-          Estructura plana: David coordina y los repartidores cubren Alcoi y Ontinyent.
-        </div>
+        )}
       </Banda>
     </PageNeo>
   )

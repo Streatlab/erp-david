@@ -1,59 +1,83 @@
-import { INK, ARENA, BLANCO, GRIS, OLIVA, TERRA, NARANJA, CELESTE, AMBAR, MARINO, OSW, LEX, EUR } from '@/styles/neobrutal'
-import { PageNeo, CabeceraNeo, Banda } from '@/components/neo/NeoUI'
+import { useMemo, useState } from 'react'
+import { fmtEur } from '@/lib/format'
+import { INK, ARENA, BLANCO, GRIS, OLIVA, TERRA, CELESTE, MARINO, OSW, LEX, BORDER_CARD } from '@/styles/neobrutal'
+import { PageNeo, CabeceraNeo, Banda, AvisoNeo, KpiNeo } from '@/components/neo/NeoUI'
+import { useCostesReales } from '@/hooks/useCostesReales'
+import { escenario } from '@/lib/equilibrio'
+import type { Supuestos } from '@/lib/equilibrio'
 
-/* Escenarios de tesorería — versión simple para David (optimista/realista/pesimista),
-   datos TEST, neobrutal. (En Binagre es multicanal; aquí adaptado al reparto Cade.) */
+/* Escenarios con costes reales (banco) e ingresos reales (facturas Cade).
+   Palancas: ± un repartidor, ± entregas al día, subida de garantía/tarifa. */
 
-interface Escenario { key: string; label: string; color: string; caja30: number; supuesto: string }
-
-const CAJA_HOY = 4820
-
-const ESCENARIOS: Escenario[] = [
-  { key: 'opt', label: 'Optimista',  color: OLIVA,   caja30: 7200, supuesto: 'Cade paga a tiempo, sin recortes, 3ª furgoneta a pleno.' },
-  { key: 'real', label: 'Realista',  color: CELESTE, caja30: 5400, supuesto: 'Cobro habitual, recortes normales, gastos estables.' },
-  { key: 'pes', label: 'Pesimista',  color: TERRA,   caja30: 2100, supuesto: 'Retraso de Cade + recortes + avería de furgoneta.' },
-]
+function Palanca({ label, valor, set, min, max, paso, fmt }: {
+  label: string; valor: number; set: (n: number) => void; min: number; max: number; paso: number; fmt: (n: number) => string
+}) {
+  return (
+    <div style={{ background: BLANCO, border: BORDER_CARD, padding: 16 }}>
+      <div style={{ fontFamily: OSW, fontWeight: 600, fontSize: 12, letterSpacing: 2, textTransform: 'uppercase' }}>{label}</div>
+      <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 30, color: valor === 0 ? GRIS : valor > 0 ? OLIVA : TERRA }}>{fmt(valor)}</div>
+      <input type="range" min={min} max={max} step={paso} value={valor} onChange={e => set(Number(e.target.value))} style={{ width: '100%', accentColor: MARINO }} />
+    </div>
+  )
+}
 
 export default function Escenarios() {
+  const { datos, error, cargando } = useCostesReales()
+  const [s, setS] = useState<Supuestos>({ repartidores: 0, entregasDia: 0, subidaPct: 0 })
+
+  const res = useMemo(() => {
+    if (!datos) return null
+    const base = {
+      ingresos: datos.ingresos, fijos: datos.costes.fijos, variables: datos.costes.variables,
+      personal: datos.costes.personal, codigos: datos.codigos, eurEntrega: datos.eurEntrega,
+    }
+    return { hoy: escenario(base, { repartidores: 0, entregasDia: 0, subidaPct: 0 }), nuevo: escenario(base, s) }
+  }, [datos, s])
+
+  const sinDatos = !cargando && (!datos || datos.ingresos === 0)
+  const signo = (n: number, f: (x: number) => string) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${f(Math.abs(n))}`
+
   return (
     <PageNeo>
-      <CabeceraNeo eyebrowTxt="Finanzas" titulo="Escenarios de tesorería" />
+      <CabeceraNeo eyebrowTxt="Finanzas" titulo="Escenarios" />
+      {error && <AvisoNeo>ERROR: {error}</AvisoNeo>}
+      {cargando && <Banda bg={ARENA}><div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 22, textTransform: 'uppercase', color: GRIS }}>Calculando…</div></Banda>}
+      {sinDatos && <AvisoNeo>En construcción · sin datos de facturación para calcular escenarios.</AvisoNeo>}
 
-      <Banda bg={AMBAR} style={{ padding: '14px 40px' }}>
-        <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 13, letterSpacing: 1, textTransform: 'uppercase', color: INK }}>
-          Datos TEST · proyección de caja a 30 días. Versión simple del módulo de Binagre, a medida de David.
-        </div>
-      </Banda>
+      {res && datos && !sinDatos && (
+        <>
+          <Banda bg={ARENA}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+              <Palanca label="Repartidores" valor={s.repartidores} set={n => setS({ ...s, repartidores: n })} min={-1} max={1} paso={1} fmt={n => signo(n, String)} />
+              <Palanca label="Entregas al día (todo el equipo)" valor={s.entregasDia} set={n => setS({ ...s, entregasDia: n })} min={-40} max={40} paso={5} fmt={n => signo(n, String)} />
+              <Palanca label="Subida garantía / tarifa" valor={s.subidaPct} set={n => setS({ ...s, subidaPct: n })} min={0} max={15} paso={1} fmt={n => `${n} %`} />
+            </div>
+          </Banda>
 
-      <Banda bg={MARINO}>
-        <span style={{ display: 'inline-block', background: AMBAR, color: INK, border: `2px solid ${INK}`, fontFamily: OSW, fontWeight: 600, fontSize: 13, letterSpacing: 2, textTransform: 'uppercase', padding: '4px 12px' }}>Caja hoy</span>
-        <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 'clamp(40px,6vw,80px)', color: AMBAR, lineHeight: 0.95, marginTop: 14 }}>{EUR(CAJA_HOY)}</div>
-        <div style={{ fontFamily: LEX, fontSize: 13, fontWeight: 600, color: ARENA, opacity: 0.85, marginTop: 8 }}>Punto de partida para las tres proyecciones a 30 días.</div>
-      </Banda>
+          <Banda bg={BLANCO}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+              <KpiNeo label="Ingresos / mes" valor={fmtEur(res.nuevo.ingresos)} color={OLIVA} sub={`hoy ${fmtEur(res.hoy.ingresos)}`} />
+              <KpiNeo label="Gastos / mes" valor={fmtEur(res.nuevo.gastos)} color={TERRA} sub={`hoy ${fmtEur(res.hoy.gastos)}`} />
+              <KpiNeo label="Resultado / mes" valor={fmtEur(res.nuevo.resultado)} color={res.nuevo.resultado >= 0 ? OLIVA : TERRA}
+                sub={`${signo(res.nuevo.resultado - res.hoy.resultado, x => fmtEur(x))} vs hoy`} />
+            </div>
+          </Banda>
 
-      <Banda bg={BLANCO}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20 }}>
-          {ESCENARIOS.map(e => {
-            const diff = e.caja30 - CAJA_HOY
-            return (
-              <div key={e.key} style={{ background: BLANCO, border: `3px solid ${INK}`, boxShadow: `4px 4px 0 ${INK}` }}>
-                <div style={{ background: e.color, borderBottom: `3px solid ${INK}`, padding: '10px 16px', fontFamily: OSW, fontWeight: 700, fontSize: 16, letterSpacing: 1, textTransform: 'uppercase', color: ARENA }}>{e.label}</div>
-                <div style={{ padding: 18 }}>
-                  <div style={{ fontFamily: OSW, fontWeight: 600, fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: GRIS }}>Caja a 30 días</div>
-                  <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 'clamp(30px,4vw,48px)', color: e.color, lineHeight: 1 }}>{EUR(e.caja30)}</div>
-                  <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 14, marginTop: 6, color: diff >= 0 ? OLIVA : TERRA }}>
-                    {diff >= 0 ? '+' : '−'}{EUR(Math.abs(diff)).replace(' €', '')} € vs hoy
-                  </div>
-                  <div style={{ fontFamily: LEX, fontSize: 13, fontWeight: 600, color: INK, marginTop: 12, borderTop: `2px dashed ${INK}`, paddingTop: 10 }}>{e.supuesto}</div>
-                </div>
+          <Banda bg={ARENA}>
+            <div style={{ fontFamily: LEX, fontSize: 13, fontWeight: 600, color: INK, lineHeight: 1.6 }}>
+              Base real: ingresos = base facturada media ({datos.mesesIngreso.map(m => m.slice(0, 7)).join(', ')}, {datos.codigos} códigos);
+              gastos = media del banco ({datos.costes.meses.join(', ')}): fijos {fmtEur(datos.costes.fijos)} + variables {fmtEur(datos.costes.variables)}.
+              Un repartidor más suma lo que factura de media un código y cuesta lo que cuesta de media el personal ({fmtEur(datos.costes.personal)}/mes entre {Math.max(datos.codigos - 1, 0)} repartidores).
+              Cada entrega vale {fmtEur(datos.eurEntrega, { decimals: 2 })} (liquidaciones Cade) y se cuentan 26 días al mes.
+            </div>
+            {datos.costes.sinCategorizar > 0 && (
+              <div style={{ marginTop: 12, color: CELESTE, fontFamily: OSW, fontWeight: 700, fontSize: 13, textTransform: 'uppercase' }}>
+                {fmtEur(datos.costes.sinCategorizar)} al mes de gastos sin categorizar no entran aún.
               </div>
-            )
-          })}
-        </div>
-        <div style={{ fontFamily: LEX, fontSize: 12, fontWeight: 600, color: GRIS, marginTop: 18 }}>
-          Cuando conectemos los movimientos reales de BBVA y el calendario de cobros de Cade, estas cifras se calcularán solas.
-        </div>
-      </Banda>
+            )}
+          </Banda>
+        </>
+      )}
     </PageNeo>
   )
 }

@@ -17,11 +17,11 @@ Carpeta de trabajo del sistema de misión autoloop.
 | Tipo de trabajo | Herramienta |
 |---|---|
 | Módulo de criterio, lógica de negocio, pantalla suelta, SQL | Claude chat |
-| Port masivo desde Binagre (>50KB o >8 archivos) | Claude Code |
+| Cambios masivos (>50KB o >8 archivos) | Claude Code |
 | Auditoría o reforma de módulo entero | Claude Code |
 | Migración masiva de archivos | Claude Code |
 
-Regla: si la misión requiere que el contenido de Binagre pase por la ventana de contexto del chat y supera ~50KB, va a Claude Code. Nunca empezar en el chat un port que se va a quedar a medias.
+Regla: si la misión mueve más de ~50KB de código, va a Claude Code. Nunca empezar en el chat un cambio que se va a quedar a medias.
 
 ## Estado de capacidades verificado (22 ago 2026)
 
@@ -31,5 +31,4 @@ Claude en el chat puede, sobre este repo:
 - Escribir y commitear archivos por el conector GitHub
 
 No puede:
-- Clonar `binagre` (es privado; solo lectura archivo a archivo por el conector)
 - Acceder a Supabase David por MCP (organización distinta a Streat Lab; pendiente de resolver)

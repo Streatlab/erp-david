@@ -10,6 +10,7 @@ import {
   OSW, LEX, SHADOW, BORDER, BORDER_CARD, PAD,
   d, eyebrow, card, EUR, E, ES, P0, DELTA,
 } from '@/styles/neobrutal'
+import BloqueDocumentacionCade from '@/components/panel/BloqueDocumentacionCade'
 
 const PERIODOS: { key: PeriodoKey; label: string }[] = [
   { key: 'mes-actual',   label: 'Este mes' },
@@ -259,6 +260,9 @@ export default function PanelGlobal() {
           })}
         </div>
       </Banda>
+
+      {/* Documentación mensual Cade (mes anterior) */}
+      <BloqueDocumentacionCade />
 
       {errMsg && (
         <Banda bg={TERRA}>

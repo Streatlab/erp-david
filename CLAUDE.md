@@ -2,7 +2,7 @@
 
 ## Contexto mínimo
 - ERP React/TypeScript/Vite. Vercel: proyecto "davidparte" (davidparte.vercel.app). Ignorar proyecto duplicado "erp-david" en Vercel.
-- Supabase propio de David: idclhnxttdbwayxeowrm (conector MCP "Supabase David"). NUNCA usar el Supabase de Binagre.
+- Supabase propio de David: rribmludsuirmyprfkop (conector MCP "Supabase David Nuevo"). Mapa completo en docs/MAPA-CONTEXTO.md. NUNCA usar el Supabase de Binagre.
 - David: autónomo subcontratista de Cade, reparte para Mercadona/Carrefour/Lidl/Día en Alcoi y Ontinyent.
 - El usuario NO es programador. Todo se ejecuta vía herramientas, nunca se le pide código, SQL ni prompts.
 
