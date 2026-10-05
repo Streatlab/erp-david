@@ -5,12 +5,14 @@ import EnvioFacturas from '@/components/facturacion/EnvioFacturas'
 import { INK, ARENA, ARENA_CL, BLANCO, GRIS, OLIVA, TERRA, NARANJA, MARINO, OSW, BORDER, BORDER_CARD, SHADOW, PAD, eyebrow, d } from '@/styles/neobrutal'
 
 /* Facturación ▸ Liquidaciones del mes: qué ha liquidado Cade por código, cuánto pagaría sin el tope diario,
-   ajustes (cargos, extras, pendientes), generar facturas y descargar su PDF, y totales con IVA por emisor. */
+   ajustes (cargos, extras, pendientes), generar facturas y descargar su PDF, y totales con IVA por emisor.
+   Aquí también viven los días laborables que Cade no ha pagado (para reclamar). */
 
 interface Liq { id: string; transportista: string; emisor: string; entregas: number; dias: number; total: number; factura_id: string | null; recortes_detalle: string | null }
 interface Exc { transportista: string; repartidor: string; exceso_no_pagado: number; pagaria_sin_tope: number; dias_con_exceso: number }
 interface Fac { id: string; emisor: string; numero_factura: number; transportista: string; base_imponible: number; pdf_ruta: string | null }
 interface Env { factura_id: string; estado: string; detalle: string | null }
+interface Alerta { transportista: string; fecha: string; descripcion: string }
 
 const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
 const NOMBRE: Record<string, string> = { DAVID: 'David', JUAN: 'Juan' }
@@ -25,19 +27,23 @@ export default function LiquidacionesMes() {
   const [facs, setFacs] = useState<Fac[]>([])
   const [envs, setEnvs] = useState<Env[]>([])
   const [docsFaltan, setDocsFaltan] = useState(0)
+  const [alertas, setAlertas] = useState<Alerta[]>([])
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
 
   async function cargar() {
     const m = iso(mes)
-    const [l, e, f, dc] = await Promise.all([
+    const finMes = new Date(mes.getFullYear(), mes.getMonth() + 1, 1)
+    const [l, e, f, dc, al] = await Promise.all([
       supabase.from('liquidaciones_cade').select('id, transportista, emisor, entregas, dias, total, factura_id, recortes_detalle').eq('mes', m).order('transportista'),
       supabase.from('v_excesos_cade').select('transportista, repartidor, exceso_no_pagado, pagaria_sin_tope, dias_con_exceso').eq('mes', m),
       supabase.from('facturas_emitidas').select('id, emisor, numero_factura, transportista, base_imponible, pdf_ruta').eq('periodo', m).eq('cliente', 'CADE'),
       supabase.from('v_documentacion_pendiente').select('estado').eq('estado', 'pedir'),
+      supabase.from('liquidaciones_cade_incidencias').select('transportista, fecha, descripcion').eq('codigo', 'DIA NO PAGADO').eq('estado', 'propuesta').gte('fecha', m).lt('fecha', iso(finMes)),
     ])
     setLiqs((l.data ?? []) as Liq[]); setExc((e.data ?? []) as Exc[]); setFacs((f.data ?? []) as Fac[])
     setDocsFaltan(dc.data?.length ?? 0)
+    setAlertas((al.data ?? []) as Alerta[])
     const ids = (f.data ?? []).map((x: any) => x.id)
     if (ids.length) {
       const { data: en } = await supabase.from('envios_cade').select('factura_id, estado, detalle').in('factura_id', ids)
@@ -91,6 +97,13 @@ export default function LiquidacionesMes() {
 
       {msg && <div style={{ marginTop: 12, background: BLANCO, border: BORDER_CARD, padding: '8px 12px', fontWeight: 700 }}>{msg}</div>}
       {docsFaltan > 0 && <div style={{ marginTop: 12, background: TERRA, color: ARENA, border: BORDER_CARD, padding: '8px 12px', fontWeight: 700 }}>Faltan {docsFaltan} documento(s): las facturas no salen a Cade hasta completarlo.</div>}
+
+      {alertas.length > 0 && (
+        <div style={{ marginTop: 12, background: TERRA, color: ARENA, border: BORDER_CARD, boxShadow: SHADOW, padding: '10px 14px' }}>
+          <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 14, letterSpacing: 1, textTransform: 'uppercase' }}>Reclamar a Cade: días laborables sin pagar</div>
+          {alertas.map((a, i) => <div key={i} style={{ fontSize: 13, fontWeight: 600, marginTop: 4 }}>{a.transportista} · {a.descripcion}</div>)}
+        </div>
+      )}
 
       <div style={{ overflowX: 'auto', marginTop: 16, background: BLANCO, border: BORDER_CARD }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
