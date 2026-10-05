@@ -4,7 +4,7 @@
  * categorizados) y la tabla familia_fijos (plan de gastos fijos). Estilo Neobrutal Mediterráneo.
  */
 import { useEffect, useMemo, useState } from 'react'
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
 import { supabase } from '@/lib/supabase'
 import {
   INK, MARINO, ARENA, ARENA_CL, BLANCO, GRIS, OLIVA, TERRA, NARANJA, CELESTE, AMBAR, BERENJENA, VERDEMAR,
@@ -38,7 +38,26 @@ interface FijoPlan {
   notas: string | null
 }
 
-const PALETA = [CELESTE, NARANJA, OLIVA, AMBAR, TERRA, BERENJENA, VERDEMAR, MARINO]
+const PALETA = [CELESTE, NARANJA, OLIVA, AMBAR, BERENJENA, VERDEMAR, MARINO]
+/* Cada rosco juega con su propia gama de colores canónicos (sin rojos) */
+const PALETA_INGRESOS = [OLIVA, VERDEMAR, AMBAR, CELESTE]
+const PALETA_FIJOS = [NARANJA, AMBAR, BERENJENA, MARINO, VERDEMAR, CELESTE]
+const PALETA_VARIABLES = [CELESTE, MARINO, VERDEMAR, BERENJENA, OLIVA, AMBAR, NARANJA, GRIS]
+
+/* Previsión que aprende: media ponderada que da más peso a lo reciente. Para cada categoría prueba varios
+   "pesos" y se queda con el que mejor habría acertado los meses pasados. Devuelve la previsión del mes que viene
+   y lo que habría previsto en cada mes ya cerrado (para medir el acierto). */
+function aprender(valores: number[]) {
+  if (valores.length === 0) return { prev: 0, preds: [] as number[] }
+  let mejor = { err: Infinity, prev: valores[0], preds: [valores[0]] }
+  for (const a of [0.2, 0.4, 0.6, 0.8, 1]) {
+    let nivel = valores[0], err = 0
+    const preds = [nivel]
+    for (let i = 1; i < valores.length; i++) { preds.push(nivel); err += Math.abs(valores[i] - nivel); nivel = a * valores[i] + (1 - a) * nivel }
+    if (err < mejor.err) mejor = { err, prev: nivel, preds }
+  }
+  return { prev: mejor.prev, preds: mejor.preds }
+}
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
 
 const etiquetaSub: Record<string, string> = {
@@ -74,34 +93,63 @@ function agrupar(movs: Mov[], clave: (m: Mov) => string, signo: 1 | -1) {
   return Array.from(mapa.entries()).map(([k, v]) => ({ k, v })).filter(x => Math.abs(x.v) >= 0.005).sort((a, b) => b.v - a.v)
 }
 
-function DonutCard({ titulo, total, sub, filas, color }: {
+function DonutCard({ titulo, total, sub, filas, color, paleta, detalle }: {
   titulo: string; total: number; sub?: string; filas: { nombre: string; valor: number }[]; color: string
+  paleta: string[]; detalle: Record<string, { k: string; v: number }[]>
 }) {
+  const [sel, setSel] = useState<string | null>(null)
   const tot = sumBy(filas, f => Math.max(f.valor, 0))
   const datos = filas.filter(f => f.valor > 0)
+  const iSel = datos.findIndex(f => f.nombre === sel)
+  const fSel = iSel >= 0 ? datos[iSel] : null
+  const alternar = (n: string) => setSel(prev => (prev === n ? null : n))
   return (
     <div style={{ ...card(BLANCO), padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div style={{ fontFamily: OSW, fontWeight: 600, fontSize: 12, letterSpacing: 2, textTransform: 'uppercase' }}>{titulo}</div>
       <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 'clamp(24px,3vw,38px)', lineHeight: 0.95, color }}>{EUR(total)}</div>
       {sub && <div style={{ fontSize: 12, fontWeight: 600, color: GRIS }}>{sub}</div>}
-      <div style={{ height: 190 }}>
+      <div style={{ height: 190, position: 'relative' }}>
         {datos.length === 0 ? (
           <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: GRIS, fontSize: 13 }}>Sin datos en este periodo</div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
-              <Pie data={datos} dataKey="valor" nameKey="nombre" innerRadius={52} outerRadius={84} stroke={INK} strokeWidth={2} isAnimationActive={false}>
-                {datos.map((_, i) => <Cell key={i} fill={PALETA[i % PALETA.length]} />)}
+              <Pie data={datos} dataKey="valor" nameKey="nombre" innerRadius={52} outerRadius={84} stroke={INK} strokeWidth={2} isAnimationActive={false}
+                onClick={(_: unknown, i: number) => alternar(datos[i].nombre)} style={{ cursor: 'pointer' }}>
+                {datos.map((d, i) => <Cell key={i} fill={paleta[i % paleta.length]} fillOpacity={sel && sel !== d.nombre ? 0.35 : 1} />)}
               </Pie>
-              <Tooltip formatter={(v: any) => [`${E(Number(v))} €`, '']} contentStyle={{ border: `2px solid ${INK}`, borderRadius: 0, fontFamily: LEX, fontSize: 12 }} />
             </PieChart>
           </ResponsiveContainer>
         )}
+        {fSel && (
+          <div role="dialog" style={{
+            position: 'absolute', top: 6, left: '50%', transform: 'translateX(-50%)', zIndex: 5, width: 'min(260px, 92%)',
+            background: ARENA, border: `3px solid ${INK}`, boxShadow: `4px 4px 0 ${INK}`, padding: '10px 12px', fontSize: 12, fontWeight: 600,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ width: 12, height: 12, background: paleta[iSel % paleta.length], border: `2px solid ${INK}`, flexShrink: 0 }} />
+              <span style={{ flex: 1, fontFamily: OSW, fontWeight: 700, fontSize: 14, textTransform: 'uppercase' }}>{fSel.nombre}</span>
+              <button onClick={() => setSel(null)} aria-label="Cerrar" style={{ border: 0, background: 'transparent', fontWeight: 700, cursor: 'pointer', color: INK }}>✕</button>
+            </div>
+            <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 20, margin: '2px 0' }}>
+              {EUR(fSel.valor)} <span style={{ fontSize: 13, color: GRIS }}>· {P0(tot > 0 ? (fSel.valor / tot) * 100 : 0)} del total</span>
+            </div>
+            {(detalle[fSel.nombre] ?? []).slice(0, 5).map(x => (
+              <div key={x.k} style={{ display: 'flex', gap: 6, borderTop: `1px solid ${ARENA_CL}`, padding: '2px 0' }}>
+                <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{x.k}</span>
+                <span style={{ fontFamily: OSW, fontWeight: 700 }}>{E(x.v)}</span>
+                <span style={{ width: 36, textAlign: 'right', color: GRIS }}>{P0(fSel.valor > 0 ? (x.v / fSel.valor) * 100 : 0)}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
+      <div style={{ fontSize: 11, color: GRIS, fontWeight: 600 }}>Pulsa un trozo para ver el detalle.</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         {datos.map((f, i) => (
-          <div key={f.nombre} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600 }}>
-            <span style={{ width: 12, height: 12, background: PALETA[i % PALETA.length], border: `2px solid ${INK}`, flexShrink: 0 }} />
+          <div key={f.nombre} onClick={() => alternar(f.nombre)}
+            style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: sel && sel !== f.nombre ? 0.5 : 1 }}>
+            <span style={{ width: 12, height: 12, background: paleta[i % paleta.length], border: `2px solid ${INK}`, flexShrink: 0 }} />
             <span style={{ flex: 1 }}>{f.nombre}</span>
             <span style={{ fontFamily: OSW, fontWeight: 700 }}>{E(f.valor)}</span>
             <span style={{ width: 44, textAlign: 'right', color: GRIS }}>{tot > 0 ? P0((f.valor / tot) * 100) : '—'}</span>
@@ -157,6 +205,15 @@ export default function PortadaFamilia() {
   const ingresos = useMemo(() => agrupar(enPeriodo.filter(m => m.bloque === 'ingreso'), m => m.categoria_nombre, 1), [enPeriodo])
   const fijos = useMemo(() => agrupar(enPeriodo.filter(m => m.bloque === 'fijo'), m => m.categoria_nombre, -1), [enPeriodo])
   const variables = useMemo(() => agrupar(enPeriodo.filter(m => m.bloque === 'variable'), m => m.categoria_nombre, -1), [enPeriodo])
+  const detalleTrozos = (bloque: Mov['bloque'], signo: 1 | -1) => {
+    const doBloque = enPeriodo.filter(m => m.bloque === bloque)
+    const out: Record<string, { k: string; v: number }[]> = {}
+    for (const n of new Set(doBloque.map(m => m.categoria_nombre))) out[n] = agrupar(doBloque.filter(m => m.categoria_nombre === n), m => m.comercio, signo)
+    return out
+  }
+  const detIng = useMemo(() => detalleTrozos('ingreso', 1), [enPeriodo]) // eslint-disable-line react-hooks/exhaustive-deps
+  const detFij = useMemo(() => detalleTrozos('fijo', -1), [enPeriodo]) // eslint-disable-line react-hooks/exhaustive-deps
+  const detVar = useMemo(() => detalleTrozos('variable', -1), [enPeriodo]) // eslint-disable-line react-hooks/exhaustive-deps
   const totIng = sumBy(ingresos, x => x.v)
   const totFij = sumBy(fijos, x => x.v)
   const totVar = sumBy(variables, x => x.v)
@@ -187,9 +244,33 @@ export default function PortadaFamilia() {
 
   const mesesConDatos3 = Math.max(1, new Set(en3.map(m => m.mes)).size)
   const varMedia3 = -sumBy(en3.filter(m => m.bloque === 'variable'), m => m.importe) / mesesConDatos3
+
+  /* Previsión de variables por categoría: aprende de cada mes cerrado y completo (el mes en curso y los
+     meses con pocos movimientos no cuentan). */
+  const pronVar = useMemo(() => {
+    const vars = movs.filter(m => m.bloque === 'variable')
+    const nPorMes = new Map<string, number>()
+    for (const m of vars) nPorMes.set(m.mes, (nPorMes.get(m.mes) ?? 0) + 1)
+    const cerrados = Array.from(nPorMes.entries()).filter(([mes, n]) => mes < mesActual && n >= 30).map(([mes]) => mes).sort()
+    const cats = Array.from(new Set(vars.map(m => m.categoria)))
+    const filas = cats.map(cat => {
+      const serie = cerrados.map(mes => -sumBy(vars.filter(m => m.mes === mes && m.categoria === cat), m => m.importe))
+      const r = aprender(serie)
+      return { cat, nombre: vars.find(m => m.categoria === cat)?.categoria_nombre ?? cat, serie, prev: Math.max(0, r.prev), preds: r.preds }
+    })
+    const totalPrev = sumBy(filas, f => f.prev)
+    const realTot = cerrados.map((_, i) => sumBy(filas, f => f.serie[i] ?? 0))
+    const predTot = cerrados.map((_, i) => sumBy(filas, f => f.preds[i] ?? 0))
+    let err = 0, base = 0
+    for (let i = 1; i < cerrados.length; i++) { err += Math.abs(realTot[i] - predTot[i]); base += realTot[i] }
+    const acierto = cerrados.length > 1 && base > 0 ? Math.max(0, 1 - err / base) : null
+    return { filas: filas.sort((a, b) => b.prev - a.prev), totalPrev, acierto, nMeses: cerrados.length,
+      ultimoReal: realTot[realTot.length - 1] ?? 0, ultimoPrev: predTot[predTot.length - 1] ?? 0 }
+  }, [movs, mesActual])
+  const varPrev = pronVar.nMeses > 0 ? pronVar.totalPrev : varMedia3
   const rebecaMedia3 = sumBy(en3.filter(m => m.categoria === 'ingresos-rebeca'), m => m.importe) / mesesConDatos3
   const davidReal3 = sumBy(en3.filter(m => m.categoria === 'aportacion-david'), m => m.importe) / mesesConDatos3
-  const aportarVariables = Math.max(0, varMedia3 - rebecaMedia3)
+  const aportarVariables = Math.max(0, varPrev - rebecaMedia3)
   const aportarTotal = totalPlanFijos + aportarVariables
   const diferencia = aportarTotal - davidReal3
 
@@ -249,7 +330,7 @@ export default function PortadaFamilia() {
     const fijHastaHoy = -sumBy(delMes.filter(m => m.bloque === 'fijo'), m => m.importe)
     const ritmo = dia > 0 ? varHastaHoy / dia : 0
     const varProyectado = Math.max(varHastaHoy, ritmo * diasMes)
-    const varHabitual = varMedia3
+    const varHabitual = varPrev
     const ini = new Date(hoy); ini.setDate(hoy.getDate() - ((hoy.getDay() + 6) % 7)); ini.setHours(0, 0, 0, 0)
     const iniIso = `${ini.getFullYear()}-${String(ini.getMonth() + 1).padStart(2, '0')}-${String(ini.getDate()).padStart(2, '0')}`
     const varSemana = -sumBy(movs.filter(m => m.bloque === 'variable' && m.fecha >= iniIso), m => m.importe)
@@ -258,7 +339,7 @@ export default function PortadaFamilia() {
     const ingresosPrev = sumBy(en3.filter(m => m.bloque === 'ingreso'), m => m.importe) / mesesConDatos3
     return { diasMes, dia, varHastaHoy, varProyectado, varHabitual, varSemana, semanaHabitual, fijPendiente, fijHastaHoy, ingresosPrev,
       resultadoPrev: ingresosPrev - Math.max(totalPlanFijos, fijHastaHoy) - varProyectado }
-  }, [movs, hoy, mesActual, varMedia3, totalPlanFijos, en3, mesesConDatos3])
+  }, [movs, hoy, mesActual, varPrev, totalPlanFijos, en3, mesesConDatos3])
 
   const wrap = { fontFamily: OSW, fontWeight: 700 as const, fontSize: 16, letterSpacing: 1, textTransform: 'uppercase' as const, marginBottom: 12, color: INK }
 
@@ -335,9 +416,9 @@ export default function PortadaFamilia() {
               <KpiNeo label="Resultado" valor={`${resultado < 0 ? '−' : '+'}${EUR(Math.abs(resultado))}`} color={resultado >= 0 ? OLIVA : TERRA} sub={media(resultado)} />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 18 }}>
-              <DonutCard titulo="Quién ingresa" total={totIng} color={OLIVA} sub={media(totIng)} filas={ingresos.map(x => ({ nombre: x.k, valor: x.v }))} />
-              <DonutCard titulo="Gastos fijos" total={totFij} color={NARANJA} sub={media(totFij)} filas={fijos.map(x => ({ nombre: x.k, valor: x.v }))} />
-              <DonutCard titulo="Gastos variables" total={totVar} color={CELESTE} sub={media(totVar)} filas={variables.map(x => ({ nombre: x.k, valor: x.v }))} />
+              <DonutCard titulo="Quién ingresa" total={totIng} color={OLIVA} sub={media(totIng)} paleta={PALETA_INGRESOS} detalle={detIng} filas={ingresos.map(x => ({ nombre: x.k, valor: x.v }))} />
+              <DonutCard titulo="Gastos fijos" total={totFij} color={NARANJA} sub={media(totFij)} paleta={PALETA_FIJOS} detalle={detFij} filas={fijos.map(x => ({ nombre: x.k, valor: x.v }))} />
+              <DonutCard titulo="Gastos variables" total={totVar} color={CELESTE} sub={media(totVar)} paleta={PALETA_VARIABLES} detalle={detVar} filas={variables.map(x => ({ nombre: x.k, valor: x.v }))} />
             </div>
           </>
         )}
@@ -383,7 +464,7 @@ export default function PortadaFamilia() {
                 Lo que tiene que poner David. Rebeca ya entra con su nómina.
               </div>
               {[
-                ['Variables (media de 3 meses)', varMedia3],
+                [`Variables previstos (aprende de ${pronVar.nMeses} meses)`, varPrev],
                 ['− Nómina de Rebeca', -rebecaMedia3],
                 ['= A aportar por David', aportarVariables],
               ].map(([t, v]) => (
@@ -404,6 +485,38 @@ export default function PortadaFamilia() {
                 <span style={{ fontFamily: OSW, color: diferencia > 0 ? '#FFB199' : '#C8D98B' }}>{E(Math.abs(diferencia))} al mes</span>
               </div>
             </div>
+          </div>
+        </Banda>
+      )}
+
+      {!cargando && pronVar.nMeses > 0 && (
+        <Banda bg={ARENA_CL}>
+          <div style={wrap}>Previsión de variables · se afina cada mes</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 18, marginBottom: 16 }}>
+            <KpiNeo label="Previsto próximo mes" valor={EUR(pronVar.totalPrev)} color={CELESTE} sub={`Media simple de 3 meses: ${E(varMedia3)}`} />
+            <KpiNeo label="Acierto en meses pasados" valor={pronVar.acierto != null ? P0(pronVar.acierto * 100) : '—'} color={OLIVA}
+              sub={pronVar.acierto != null ? `Aprende de ${pronVar.nMeses} meses cerrados` : 'Hacen falta al menos 2 meses cerrados'} />
+            <KpiNeo label="Último mes cerrado" valor={EUR(pronVar.ultimoReal)} color={MARINO} sub={`Se había previsto ${E(pronVar.ultimoPrev)}`} />
+          </div>
+          <TablaWrap>
+            <thead><tr>{['Categoría', 'Previsto', 'Último mes real', 'Se había previsto'].map(h => <th key={h} style={thNeo}>{h}</th>)}</tr></thead>
+            <tbody>
+              {pronVar.filas.map((f, i) => {
+                const alt = i % 2 === 1
+                const n = f.serie.length
+                return (
+                  <tr key={f.cat}>
+                    <td style={tdEstado(alt, CELESTE)}>{f.nombre}</td>
+                    <td style={{ ...tdNeo(alt), textAlign: 'right', fontFamily: OSW, fontWeight: 700 }}>{E(f.prev)}</td>
+                    <td style={{ ...tdNeo(alt), textAlign: 'right' }}>{n > 0 ? E(f.serie[n - 1]) : '—'}</td>
+                    <td style={{ ...tdNeo(alt), textAlign: 'right', color: GRIS }}>{n > 1 ? E(f.preds[n - 1]) : '—'}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </TablaWrap>
+          <div style={{ marginTop: 8, fontSize: 12, color: GRIS, fontWeight: 600 }}>
+            Cada mes cerrado se compara con lo previsto y la previsión da más peso a lo reciente en las categorías que cambian. Abril y el mes en curso no cuentan: están incompletos.
           </div>
         </Banda>
       )}
