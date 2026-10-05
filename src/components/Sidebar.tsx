@@ -34,7 +34,6 @@ import {
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
-import { otrosErpsPara } from '@/lib/otrosErps'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import {
   OSW, INK, MARINO, ARENA, BLANCO, AMBAR, NARANJA,
@@ -163,8 +162,6 @@ function loadOpenSections(): string[] {
 export default function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { usuario, logout } = useAuth()
   const perfil = usuario?.perfil ?? ''
-  /** Selector de ERPs: solo los otros ERPs a los que esta persona tiene acceso. */
-  const otrosErps = otrosErpsPara(usuario?.email)
 
   // Detección de móvil (equivalente a useEsMovil de Binagre)
   const [esMovil, setEsMovil] = useState(false)
@@ -363,21 +360,6 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
           })}
         </nav>
 
-        {/* CAMBIAR DE ERP (solo quien tiene acceso a más de uno) */}
-        {!collapsed && otrosErps.length > 0 && (
-          <div style={{ background: MARINO, borderTop: `4px solid ${INK}`, padding: '10px 16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <span style={{ fontFamily: OSW, textTransform: 'uppercase', fontSize: 12, letterSpacing: '0.04em', color: TEXTO_SUAVE }}>Cambiar de ERP</span>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {otrosErps.map((e) => (
-                <a key={e.id} href={e.url}
-                  style={{ fontFamily: OSW, fontWeight: 700, textTransform: 'uppercase', fontSize: 13, letterSpacing: '0.04em', textDecoration: 'none', color: INK, background: AMBAR, border: `2px solid ${INK}`, padding: '5px 10px' }}>
-                  {e.nombre}
-                </a>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* FOOTER con toggle modo oscuro */}
         {collapsed ? (
           <div style={{ marginTop: 'auto', background: MARINO, borderTop: `4px solid ${INK}`, padding: '10px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
@@ -387,7 +369,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
             <button onClick={logout} style={{ width: 44, height: 30, color: ARENA, background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Cerrar sesión">⏏</button>
           </div>
         ) : (
-          <div style={{ marginTop: otrosErps.length > 0 ? 0 : 'auto', background: MARINO, borderTop: `4px solid ${INK}`, padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+          <div style={{ marginTop: 'auto', background: MARINO, borderTop: `4px solid ${INK}`, padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
             <div style={{ background: ARENA, border: `2px solid ${INK}`, width: 40, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <ThemeToggle />
             </div>
