@@ -11,6 +11,7 @@ import Reposicion from '@/pages/flota/Reposicion'
 import BancosPage from '@/pages/configuracion/bancos/BancosPage'
 import Running from '@/pages/finanzas/Running'
 import RunningFamilia from '@/pages/finanzas/RunningFamilia'
+import DocumentacionCade from '@/pages/finanzas/DocumentacionCade'
 import FacturacionEmitida from '@/pages/finanzas/FacturacionEmitida'
 import Liquidaciones from '@/pages/finanzas/Liquidaciones'
 import PagosCobros from '@/pages/finanzas/PagosCobros'
@@ -23,6 +24,7 @@ import Tareas from '@/pages/Tareas'
 import Personas from '@/pages/equipo/Personas'
 import Organigrama from '@/pages/equipo/Organigrama'
 import Presencia from '@/pages/equipo/Presencia'
+import CalendarioLaboral from '@/pages/equipo/CalendarioLaboral'
 import Checklists from '@/pages/operaciones/Checklists'
 import Manuales from '@/pages/operaciones/Manuales'
 import LibroEquipos from '@/pages/operaciones/LibroEquipos'
@@ -67,6 +69,7 @@ function AppRoutes() {
         <Route path="punto-equilibrio"       element={<ProtectedRoute solo={['admin']}><PuntoEquilibrio /></ProtectedRoute>} />
         <Route path="running"                element={<ProtectedRoute solo={['admin']}><Running /></ProtectedRoute>} />
         <Route path="finanzas/running-familia" element={<ProtectedRoute solo={['admin']}><RunningFamilia /></ProtectedRoute>} />
+        <Route path="finanzas/documentacion" element={<ProtectedRoute solo={['admin']}><DocumentacionCade /></ProtectedRoute>} />
         <Route path="finanzas/escenarios"    element={<ProtectedRoute solo={['admin']}><Escenarios /></ProtectedRoute>} />
         <Route path="conciliacion"           element={<ProtectedRoute solo={['admin']}><Conciliacion /></ProtectedRoute>} />
 
@@ -86,6 +89,7 @@ function AppRoutes() {
         <Route path="personal"    element={<ProtectedRoute solo={['admin']}><Personas /></ProtectedRoute>} />
         <Route path="organigrama" element={<ProtectedRoute solo={['admin']}><Organigrama /></ProtectedRoute>} />
         <Route path="presencia"   element={<ProtectedRoute solo={['admin']}><Presencia /></ProtectedRoute>} />
+        <Route path="calendario-laboral" element={<ProtectedRoute solo={['admin']}><CalendarioLaboral /></ProtectedRoute>} />
 
         {/* Informes */}
         <Route path="informes"        element={<ProtectedRoute solo={['admin']}><Informes /></ProtectedRoute>} />
