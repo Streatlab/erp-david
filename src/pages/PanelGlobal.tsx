@@ -10,7 +10,7 @@ import {
   OSW, LEX, SHADOW, BORDER, BORDER_CARD, PAD,
   d, eyebrow, card, EUR, E, ES, P0, DELTA,
 } from '@/styles/neobrutal'
-import BloqueDocumentacionCade from '@/components/panel/BloqueDocumentacionCade'
+import HoyTab from '@/components/panel/HoyTab'
 
 const PERIODOS: { key: PeriodoKey; label: string }[] = [
   { key: 'mes-actual',   label: 'Este mes' },
@@ -23,15 +23,16 @@ const PERIODOS: { key: PeriodoKey; label: string }[] = [
 /* ── Pestañas del panel: overview (Operaciones y Finanzas viven ahora como
    secciones propias en el menú lateral) ── */
 
-type MainTab = 'resumen' | 'operaciones' | 'finanzas' | 'cashflow' | 'evolucion'
+type MainTab = 'hoy' | 'resumen' | 'operaciones' | 'finanzas' | 'cashflow' | 'evolucion'
 
 const MAIN_TABS: { id: MainTab; label: string }[] = [
+  { id: 'hoy',       label: 'Hoy' },
   { id: 'resumen',   label: 'Resumen' },
   { id: 'cashflow',  label: 'Cashflow' },
   { id: 'evolucion', label: 'Evolución' },
 ]
 
-const TAB_LS_KEY = 'david_panel_main_tab'
+const TAB_LS_KEY = 'david_panel_main_tab_v2'
 
 /* Origen de los ingresos. Cade llega agrupado en el banco (no se desglosa por
    supermercado), Prior factura cada quince días y Portes son trabajos sueltos. */
@@ -126,7 +127,7 @@ export default function PanelGlobal() {
       const s = localStorage.getItem(TAB_LS_KEY) as MainTab | null
       if (s && MAIN_TABS.some(t => t.id === s)) return s
     }
-    return 'resumen'
+    return 'hoy'
   })
   useEffect(() => {
     if (typeof window !== 'undefined') localStorage.setItem(TAB_LS_KEY, mainTab)
@@ -224,7 +225,7 @@ export default function PanelGlobal() {
               {tituloMes} {hoy.getFullYear()} · {subtitulo || '—'}
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 0, flexWrap: 'wrap', border: BORDER_CARD, boxShadow: SHADOW, background: BLANCO }}>
+          <div style={{ display: mainTab === 'hoy' ? 'none' : 'flex', gap: 0, flexWrap: 'wrap', border: BORDER_CARD, boxShadow: SHADOW, background: BLANCO }}>
             {PERIODOS.map((p, i) => {
               const active = periodo === p.key
               return (
@@ -261,21 +262,21 @@ export default function PanelGlobal() {
         </div>
       </Banda>
 
-      {/* Documentación mensual Cade (mes anterior) */}
-      <BloqueDocumentacionCade />
+      {/* HOY: lo que hay que mirar hoy de Cade */}
+      {mainTab === 'hoy' && <HoyTab />}
 
-      {errMsg && (
+      {errMsg && mainTab !== 'hoy' && (
         <Banda bg={TERRA}>
           <div style={{ ...d('18px', ARENA) }}>ERROR CARGANDO DATOS</div>
           <div style={{ color: ARENA, fontSize: 13, marginTop: 6 }}>{errMsg}</div>
         </Banda>
       )}
 
-      {loading && !bundle && (
+      {loading && !bundle && mainTab !== 'hoy' && (
         <Banda bg={ARENA}><div style={d('22px', GRIS)}>CARGANDO PANEL…</div></Banda>
       )}
 
-      {bundle && (<>
+      {bundle && mainTab !== 'hoy' && (<>
 
         {/* ════════════════ TAB RESUMEN ════════════════ */}
         {mainTab === 'resumen' && (<>
