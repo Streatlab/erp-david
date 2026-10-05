@@ -116,6 +116,8 @@ export default function RunningFamilia() {
   }
 
   const unidad = vista === 'semana' ? 'semana' : 'mes'
+  const delUnidad = vista === 'semana' ? 'de la semana' : 'del mes'
+  const estaUnidad = vista === 'semana' ? 'esta semana' : 'este mes'
   const hayGlobal = global.length > 0
 
   return (
@@ -139,7 +141,7 @@ export default function RunningFamilia() {
 
       {kpis.desviadas > 0 && (
         <AvisoNeo>
-          {kpis.desviadas} PARTIDA{kpis.desviadas > 1 ? 'S' : ''} POR ENCIMA DE PRESUPUESTO en {etiquetaActual || `esta ${unidad}`}.
+          {kpis.desviadas} PARTIDA{kpis.desviadas > 1 ? 'S' : ''} POR ENCIMA DE PRESUPUESTO en {etiquetaActual || estaUnidad}.
         </AvisoNeo>
       )}
 
@@ -148,12 +150,12 @@ export default function RunningFamilia() {
           Presupuesto por partidas · {etiquetaActual || 'sin datos'}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 18 }}>
-          <KpiNeo label={`Gasto familiar de la ${unidad}`} valor={fmtEur(kpis.gastado)} color={CELESTE} sub={etiquetaActual || undefined} />
-          <KpiNeo label={`Presupuesto de la ${unidad}`} valor={kpis.presupuesto > 0 ? fmtEur(kpis.presupuesto) : '— sin definir'} />
+          <KpiNeo label={`Gasto familiar ${delUnidad}`} valor={fmtEur(kpis.gastado)} color={CELESTE} sub={etiquetaActual || undefined} />
+          <KpiNeo label={`Presupuesto ${delUnidad}`} valor={kpis.presupuesto > 0 ? fmtEur(kpis.presupuesto) : '— sin definir'} />
           <KpiNeo label="Partidas desviadas" valor={String(kpis.desviadas)} color={kpis.desviadas > 0 ? TERRA : OLIVA} />
           <KpiNeo label="Ahorro real (empresa − casa)" valor={kpis.ahorro != null ? fmtEur(kpis.ahorro) : '—'}
             color={kpis.ahorro != null && kpis.ahorro >= 0 ? OLIVA : TERRA}
-            sub={`Resultado de la actividad menos el gasto del hogar en la ${unidad}`} />
+            sub={`Resultado de la actividad menos el gasto del hogar en ${vista === 'semana' ? 'la semana' : 'el mes'}`} />
         </div>
       </Banda>
 
