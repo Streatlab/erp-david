@@ -49,8 +49,13 @@ function Aviso({ color, texto, enlace, boton }: { color: string; texto: ReactNod
   )
 }
 
-export default function HoyTab({ periodo }: { periodo: Periodo }) {
+const PERIODOS: { k: Periodo; l: string }[] = [
+  { k: 'mes-actual', l: 'Este mes' }, { k: 'mes-anterior', l: 'Mes anterior' }, { k: 'ultimos-30', l: 'Últimos 30 días' }, { k: 'trimestre', l: 'Trimestre' }, { k: 'anio', l: 'Año' },
+]
+
+export default function HoyTab() {
   const hoy = new Date()
+  const [periodo, setPeriodo] = useState<Periodo>('mes-actual')
   const { desde, hasta, txt } = rango(periodo, hoy)
   const [cuentas, setCuentas] = useState<Cuenta[]>([])
   const [movs, setMovs] = useState<Mov[]>([])
@@ -79,7 +84,7 @@ export default function HoyTab({ periodo }: { periodo: Periodo }) {
       setTareas(((t.data ?? []) as Tarea[]).filter(x => !/hech|resuel|cerrad|complet|done/i.test(x.estado ?? '')))
       const porMes = new Map<string, number>()
       for (const f of (fe.data ?? []) as { periodo: string; base_imponible: number }[]) porMes.set(String(f.periodo).slice(0, 7), (porMes.get(String(f.periodo).slice(0, 7)) ?? 0) + conIva(Number(f.base_imponible)))
-      for (const f of (fh.data ?? []) as { fecha_factura: string; base_imponible: number }[]) { const k = String(f.fecha_factura).slice(0, 7); if (!porMes.has(k) || true) porMes.set(k, (porMes.get(k) ?? 0) + conIva(Number(f.base_imponible))) }
+      for (const f of (fh.data ?? []) as { fecha_factura: string; base_imponible: number }[]) { const k = String(f.fecha_factura).slice(0, 7); porMes.set(k, (porMes.get(k) ?? 0) + conIva(Number(f.base_imponible))) }
       const meses: { mes: string; total: number }[] = []
       for (let i = 6; i >= 1; i--) {
         const dm = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1)
@@ -151,7 +156,14 @@ export default function HoyTab({ periodo }: { periodo: Periodo }) {
 
       {/* 2. MOVIMIENTOS DEL PERIODO */}
       <Banda bg={ARENA_CL}>
-        <span style={eyebrow(OLIVA, ARENA)}>Movimientos · {txt}</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <span style={eyebrow(OLIVA, ARENA)}>Movimientos · {txt}</span>
+          <div style={{ display: 'flex', flexWrap: 'wrap', border: BORDER_CARD, boxShadow: SHADOW, background: BLANCO }}>
+            {PERIODOS.map((p, i) => (
+              <button key={p.k} onClick={() => setPeriodo(p.k)} style={{ padding: '7px 12px', border: 'none', borderRight: i < PERIODOS.length - 1 ? `3px solid ${INK}` : 'none', background: periodo === p.k ? NARANJA : BLANCO, color: periodo === p.k ? ARENA : INK, fontFamily: OSW, fontSize: 12, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', cursor: 'pointer' }}>{p.l}</button>
+            ))}
+          </div>
+        </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginTop: 14 }}>
           {[{ l: 'Ha entrado', v: entradas, c: OLIVA }, { l: 'Ha salido', v: salidas, c: TERRA }, { l: 'Neto', v: entradas + salidas, c: entradas + salidas >= 0 ? OLIVA : TERRA }].map(k => (
             <div key={k.l} style={card}>
