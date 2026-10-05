@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import { Menu } from 'lucide-react'
 import Sidebar from '@/components/Sidebar'
+import MenuCuenta from '@/components/MenuCuenta'
 import { ARENA, INK, MARINO, OSW } from '@/styles/neobrutal'
 
 /* Papel mediterráneo: arena cálida con trama de puntos celeste + terracota.
@@ -25,8 +26,9 @@ export default function Layout() {
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="flex-1 flex flex-col min-w-0">
+        {/* Barra superior: en móvil lleva el botón de menú; en todas las pantallas, el círculo con las iniciales */}
         <header
-          className="h-12 flex items-center px-4 lg:hidden"
+          className="h-14 flex items-center px-4"
           style={{
             background: MARINO,
             borderBottom: `4px solid ${INK}`,
@@ -34,13 +36,14 @@ export default function Layout() {
         >
           <button
             onClick={() => setSidebarOpen(true)}
+            className="lg:hidden"
             style={{ color: ARENA, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             aria-label="Abrir menú"
           >
             <Menu size={20} strokeWidth={2} />
           </button>
           <span
-            className="ml-3"
+            className="ml-3 lg:hidden"
             style={{
               color: ARENA,
               fontFamily: OSW,
@@ -52,6 +55,9 @@ export default function Layout() {
           >
             David Reparte
           </span>
+          <div className="ml-auto">
+            <MenuCuenta />
+          </div>
         </header>
 
         <main className="flex-1 overflow-y-auto p-4 md:p-6" style={PAPEL_MEDITERRANEO}>
