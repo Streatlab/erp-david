@@ -53,6 +53,36 @@ export function CabeceraNeo({ eyebrowTxt, titulo, children }: { eyebrowTxt: stri
   )
 }
 
+
+/* Hero de pantalla: una cifra grande que resume lo importante, con frase de contexto y hasta 3 datos de apoyo.
+   color = tono de la cifra (OLIVA bien, NARANJA aviso, AMBAR neutro). Sin rojos. */
+export function HeroNeo({ eyebrowTxt, cifra, frase, apoyo, color = AMBAR, children }: {
+  eyebrowTxt: string; cifra: string; frase: string; apoyo?: { label: string; valor: string }[]; color?: string; children?: ReactNode
+}) {
+  return (
+    <Banda bg={MARINO}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 24 }}>
+        <div style={{ minWidth: 0, flex: '1 1 320px' }}>
+          <span style={eyebrow(AMBAR)}>{eyebrowTxt}</span>
+          <div style={{ ...d('clamp(44px,8vw,96px)', color), lineHeight: 0.95, margin: '14px 0 10px' }}>{cifra}</div>
+          <div style={{ fontFamily: LEX, fontSize: 15, fontWeight: 600, color: ARENA, maxWidth: 560 }}>{frase}</div>
+          {children}
+        </div>
+        {apoyo && apoyo.length > 0 && (
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+            {apoyo.slice(0, 3).map(a => (
+              <div key={a.label} style={{ border: `3px solid ${ARENA}`, padding: '10px 14px', minWidth: 120 }}>
+                <div style={{ fontFamily: OSW, fontWeight: 600, fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: ARENA, opacity: 0.85 }}>{a.label}</div>
+                <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 24, color: ARENA }}>{a.valor}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </Banda>
+  )
+}
+
 /* Selector segmentado neobrutal */
 export function PillsNeo({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: string[] }) {
   return (

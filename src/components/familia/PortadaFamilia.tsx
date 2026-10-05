@@ -10,7 +10,10 @@ import {
   INK, MARINO, ARENA, ARENA_CL, BLANCO, GRIS, OLIVA, TERRA, NARANJA, CELESTE, AMBAR, BERENJENA, VERDEMAR,
   OSW, LEX, BORDER_CARD, card, EUR, E, E2, P0,
 } from '@/styles/neobrutal'
-import { Banda, KpiNeo, PillsNeo, TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo } from '@/components/neo/NeoUI'
+import { Banda, KpiNeo, HeroNeo, TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo } from '@/components/neo/NeoUI'
+import { usePeriodo } from '@/lib/periodoGlobal'
+import { useCostesReales } from '@/hooks/useCostesReales'
+import { puntoEquilibrio } from '@/lib/equilibrio'
 import ComercioIcon, { IconoRubro } from './ComercioIcon'
 
 interface Mov {
@@ -166,7 +169,8 @@ export default function PortadaFamilia() {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const hoy = useMemo(() => new Date(), [])
-  const [periodo, setPeriodo] = useState<string>(hoy.getDate() < 10 ? 'Mes anterior' : 'Este mes')
+  const per = usePeriodo()
+  const { datos: datosEmp } = useCostesReales()
 
   useEffect(() => {
     let cancel = false
@@ -186,20 +190,14 @@ export default function PortadaFamilia() {
   }, [])
 
   const mesActual = mesKey(hoy)
-  const mesAnterior = mesKey(new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1))
   /* últimos 3 meses COMPLETOS (sin el mes en curso) */
   const ultimos3 = useMemo(() => [1, 2, 3].map(i => mesKey(new Date(hoy.getFullYear(), hoy.getMonth() - i, 1))), [hoy])
 
-  const mesesPeriodo = periodo === 'Este mes' ? [mesActual] : periodo === 'Mes anterior' ? [mesAnterior] : ultimos3
-  const nMeses = mesesPeriodo.length
-  const enPeriodo = useMemo(() => movs.filter(m => mesesPeriodo.includes(m.mes)), [movs, mesesPeriodo.join('|')]) // eslint-disable-line react-hooks/exhaustive-deps
+  const nMeses = Math.max(1, per.meses.length)
+  const enPeriodo = useMemo(() => movs.filter(m => m.fecha >= per.desdeIso && m.fecha <= per.hastaIso), [movs, per.desdeIso, per.hastaIso])
   const en3 = useMemo(() => movs.filter(m => ultimos3.includes(m.mes)), [movs, ultimos3])
 
-  const etiquetaPeriodo = periodo === 'Este mes'
-    ? `${MESES[hoy.getMonth()]} ${hoy.getFullYear()} (en curso)`
-    : periodo === 'Mes anterior'
-      ? `${MESES[(hoy.getMonth() + 11) % 12]} ${hoy.getMonth() === 0 ? hoy.getFullYear() - 1 : hoy.getFullYear()}`
-      : 'Últimos 3 meses'
+  const etiquetaPeriodo = per.etiqueta
   const subMedia = nMeses > 1 ? `Media: ${EUR(0).replace('0', '')}` : undefined // se rellena abajo por bloque
 
   const ingresos = useMemo(() => agrupar(enPeriodo.filter(m => m.bloque === 'ingreso'), m => m.categoria_nombre, 1), [enPeriodo])
@@ -343,6 +341,23 @@ export default function PortadaFamilia() {
 
   const wrap = { fontFamily: OSW, fontWeight: 700 as const, fontSize: 16, letterSpacing: 1, textTransform: 'uppercase' as const, marginBottom: 12, color: INK }
 
+
+  /* ── Punto de equilibrio familiar: qué tiene que facturar la empresa para cubrir la empresa Y la casa ── */
+  const necesidadCasa = totalPlanFijos + varPrev
+  const davidSaca = Math.max(0, necesidadCasa - rebecaMedia3)
+  const equil = useMemo(() => {
+    if (!datosEmp) return null
+    const { costes, ingresos, eurEntrega } = datosEmp
+    const pe = puntoEquilibrio(costes.fijos, costes.variables, ingresos, eurEntrega)
+    if (pe.euros == null || pe.margenContribucion == null || eurEntrega <= 0) return null
+    const extraEuros = davidSaca / pe.margenContribucion
+    const totalEuros = pe.euros + extraEuros
+    const totalEntregas = totalEuros / eurEntrega
+    const actuales = ingresos / eurEntrega
+    return { mc: pe.margenContribucion, peEuros: pe.euros, peEntregas: pe.entregas ?? 0, extraEuros, extraEntregas: extraEuros / eurEntrega,
+      totalEuros, totalEntregas, porDia: totalEntregas / 26, ingresos, actuales, eurEntrega, cobertura: totalEuros > 0 ? ingresos / totalEuros : 0 }
+  }, [datosEmp, davidSaca])
+
   const pendientes = cobros.filter(c => c.estado !== 'sin-cobro')
   const sinCobro = cobros.filter(c => c.estado === 'sin-cobro')
   const colorEstado = { 'sin-cobro': TERRA, hoy: NARANJA, proximo: MARINO } as const
@@ -350,6 +365,20 @@ export default function PortadaFamilia() {
 
   return (
     <>
+      {!cargando && (
+        <HeroNeo
+          eyebrowTxt="Finanzas · Hogar"
+          cifra={`${EUR(necesidadCasa)} /mes`}
+          frase={`Es lo que necesita la casa cada mes (fijos ${E(totalPlanFijos)} + variables previstos ${E(varPrev)}). Rebeca cubre ${E(rebecaMedia3)}; David tiene que aportar ${E(davidSaca)}.`}
+          color={diferencia > 0 ? NARANJA : OLIVA}
+          apoyo={[
+            { label: 'David aporta de media', valor: E(davidReal3) },
+            { label: diferencia > 0 ? 'Le falta al mes' : 'Le sobra al mes', valor: E(Math.abs(diferencia)) },
+            { label: 'Acierto de la previsión', valor: pronVar.acierto != null ? P0(pronVar.acierto * 100) : '—' },
+          ]}
+        />
+      )}
+
       {!cargando && (
         <Banda bg={BLANCO}>
           <div style={wrap}>Hoy · {hoy.getDate()} de {MESES[hoy.getMonth()]} · qué toca</div>
@@ -401,8 +430,7 @@ export default function PortadaFamilia() {
 
       <Banda bg={ARENA_CL}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
-          <div style={wrap}>Portada · {etiquetaPeriodo}</div>
-          <PillsNeo value={periodo} onChange={setPeriodo} options={['Este mes', 'Mes anterior', 'Últimos 3 meses']} />
+          <div style={{ ...wrap, textTransform: 'capitalize' }}>Portada · {etiquetaPeriodo}</div>
         </div>
         {error && <div style={{ background: TERRA, color: ARENA, padding: 10, fontWeight: 700, marginBottom: 12 }}>ERROR: {error}</div>}
         {cargando ? (
@@ -424,7 +452,7 @@ export default function PortadaFamilia() {
         )}
       </Banda>
 
-      {!cargando && periodo === 'Este mes' && (
+      {!cargando && per.key === 'mes' && (
         <Banda bg={BLANCO}>
           <div style={wrap}>Cómo va el mes y la semana</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 18 }}>
@@ -486,6 +514,28 @@ export default function PortadaFamilia() {
               </div>
             </div>
           </div>
+        </Banda>
+      )}
+
+      {!cargando && (
+        <Banda bg={AMBAR}>
+          <div style={wrap}>Punto de equilibrio familiar · cuánto hay que facturar para cubrir la casa</div>
+          {!equil ? (
+            <div style={{ fontSize: 13, fontWeight: 600 }}>Faltan datos de facturación y liquidaciones de Cade para calcularlo.</div>
+          ) : (
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 18, marginBottom: 14 }}>
+                <KpiNeo label="La casa necesita" valor={EUR(necesidadCasa)} color={NARANJA} sub={`Rebeca cubre ${E(rebecaMedia3)} → David saca ${E(davidSaca)}`} />
+                <KpiNeo label="Facturar al mes" valor={EUR(equil.totalEuros)} color={MARINO} sub={`Empresa ${E(equil.peEuros)} + casa ${E(equil.extraEuros)}`} />
+                <KpiNeo label="Entregas al mes" valor={String(Math.ceil(equil.totalEntregas))} color={CELESTE} sub={`≈ ${equil.porDia.toFixed(1).replace('.', ',')} al día (26 días) · ${E2(equil.eurEntrega)} por entrega`} />
+                <KpiNeo label="Cobertura actual" valor={P0(equil.cobertura * 100)} color={equil.cobertura >= 1 ? OLIVA : NARANJA}
+                  sub={equil.cobertura >= 1 ? `Cubres empresa y casa (facturas ${E(equil.ingresos)}/mes)` : `Faltan ~${Math.max(0, Math.ceil(equil.totalEntregas - equil.actuales))} entregas al mes`} />
+              </div>
+              <div style={{ fontSize: 12, fontWeight: 600 }}>
+                Mismo método que Punto de equilibrio: cada euro facturado deja {P0(equil.mc * 100)} tras los costes variables. Primero se cubre la empresa; lo que David necesita para la casa se suma encima.
+              </div>
+            </>
+          )}
         </Banda>
       )}
 

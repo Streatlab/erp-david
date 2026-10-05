@@ -7,6 +7,7 @@ import {
   TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo, BotonNeo,
 } from '@/components/neo/NeoUI'
 import PortadaFamilia from '@/components/familia/PortadaFamilia'
+import { usePeriodo } from '@/lib/periodoGlobal'
 
 type Vista = 'semana' | 'mes'
 
@@ -53,7 +54,8 @@ const labelEstado: Record<FilaHogar['estado'], string> = {
 }
 
 export default function RunningFamilia() {
-  const [vista, setVista] = useState<Vista>('mes')
+  const per = usePeriodo()
+  const vista: Vista = per.esSemana ? 'semana' : 'mes'
   const [hogar, setHogar] = useState<FilaHogar[]>([])
   const [global, setGlobal] = useState<FilaGlobal[]>([])
   const [loading, setLoading] = useState(true)
@@ -89,17 +91,35 @@ export default function RunningFamilia() {
   }
   useEffect(() => { cargar(vista) }, [vista])
 
-  const periodoActual = useMemo(() => (hogar[0]?.periodo ?? global[0]?.periodo ?? null), [hogar, global])
-  const etiquetaActual = useMemo(() => (hogar[0]?.etiqueta ?? global[0]?.etiqueta ?? ''), [hogar, global])
-  const filasActuales = useMemo(() => hogar.filter(f => f.periodo === periodoActual), [hogar, periodoActual])
+  const etiquetaActual = per.etiqueta
+  const filasActuales = useMemo(() => {
+    const delPeriodo = hogar.filter(f => (vista === 'semana' ? f.periodo === per.desdeIso : per.meses.includes(String(f.periodo).slice(0, 7))))
+    if (vista === 'semana' || per.meses.length <= 1) return delPeriodo
+    /* varios meses: se suma por partida y se recalcula el estado */
+    const mapa = new Map<string, FilaHogar>()
+    for (const f of delPeriodo) {
+      const x = mapa.get(f.categoria)
+      if (!x) { mapa.set(f.categoria, { ...f }); continue }
+      x.gastado = Number(x.gastado) + Number(f.gastado)
+      x.presupuesto = x.presupuesto != null || f.presupuesto != null ? Number(x.presupuesto ?? 0) + Number(f.presupuesto ?? 0) : null
+    }
+    return Array.from(mapa.values()).map(f => {
+      const pres = f.presupuesto
+      const desv = pres != null ? Math.round((f.gastado - pres) * 100) / 100 : 0
+      const pct = pres != null && pres > 0 ? Math.round((f.gastado / pres) * 100) : null
+      const estado: FilaHogar['estado'] = pres == null ? 'sin presupuesto' : f.gastado <= pres * 0.9 ? 'holgado' : f.gastado <= pres ? 'ajustado' : 'desviado'
+      return { ...f, desviacion: desv, pct_consumido: pct, estado }
+    }).sort((a, b) => b.gastado - a.gastado)
+  }, [hogar, vista, per.desdeIso, per.meses])
 
   const kpis = useMemo(() => {
     const gastado = filasActuales.reduce((s, f) => s + Number(f.gastado || 0), 0)
     const presupuesto = filasActuales.reduce((s, f) => s + Number(f.presupuesto || 0), 0)
     const desviadas = filasActuales.filter(f => f.estado === 'desviado').length
-    const ahorro = global[0]?.ahorro_real ?? null
+    const filasG = global.filter(g => (vista === 'semana' ? g.periodo === per.desdeIso : per.meses.includes(String(g.periodo).slice(0, 7))))
+    const ahorro = filasG.length ? filasG.reduce((s, g) => s + Number(g.ahorro_real || 0), 0) : null
     return { gastado, presupuesto, desviadas, ahorro }
-  }, [filasActuales, global])
+  }, [filasActuales, global, vista, per.desdeIso, per.meses])
 
   /* El presupuesto se fija siempre en importe MENSUAL (es como piensa la gente los fijos:
      hipoteca, colegio, seguro). La vista semanal lo reparte sola: mensual × 12 / 52. */
@@ -123,16 +143,7 @@ export default function RunningFamilia() {
   return (
     <PageNeo>
       <CabeceraNeo eyebrowTxt="Finanzas · Hogar" titulo="Running Familia">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'flex-end' }}>
-          <div style={{ display: 'flex', gap: 6 }}>
-            <BotonNeo bg={vista === 'semana' ? AMBAR : ARENA} onClick={() => setVista('semana')}>Por semanas</BotonNeo>
-            <BotonNeo bg={vista === 'mes' ? AMBAR : ARENA} onClick={() => setVista('mes')}>Por meses</BotonNeo>
-          </div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: ARENA, opacity: 0.85, maxWidth: 420, textAlign: 'right' }}>
-            Economía doméstica de David y Rebeca: lo que entra, los gastos fijos, los variables
-            y cuánto hay que meter cada mes en cada cuenta.
-          </div>
-        </div>
+        <div style={{ fontFamily: OSW, fontWeight: 600, fontSize: 13, letterSpacing: 2, textTransform: 'uppercase', color: ARENA }}>{per.etiqueta}</div>
       </CabeceraNeo>
 
       {errMsg && <AvisoNeo>ERROR: {errMsg}</AvisoNeo>}
