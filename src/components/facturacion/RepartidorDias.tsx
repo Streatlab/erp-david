@@ -13,6 +13,8 @@ interface Dia {
 interface Alerta { transportista: string; fecha: string; descripcion: string; estado: string }
 
 const eur = (n: number) => Number(n ?? 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'
+/* Módulos: el IVA también se cobra (o se pierde) → todo importe va con su IVA al lado */
+const eurIva = (n: number) => `${eur(n)} · ${eur(Math.round(Number(n ?? 0) * 121) / 100)} con IVA`
 const diaTxt = (f: string) => new Date(f + 'T00:00:00').toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' })
 
 export default function RepartidorDias({ mes }: { mes: string }) {
@@ -61,6 +63,7 @@ export default function RepartidorDias({ mes }: { mes: string }) {
           <div key={k.l} style={{ border: `2px solid ${INK}`, padding: '8px 10px', background: ARENA }}>
             <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: GRIS }}>{k.l}</div>
             <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 18, color: k.c }}>{eur(k.v)}</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: GRIS }}>{eur(Math.round(k.v * 121) / 100)} con IVA</div>
           </div>
         ))}
       </div>
@@ -71,7 +74,7 @@ export default function RepartidorDias({ mes }: { mes: string }) {
           {dd.map(d => {
             const cargo = Number(d.cargo_cade) < 0, tope = Number(d.recorte_tope) < 0
             return (
-              <div key={d.fecha} title={`${diaTxt(d.fecha)} · ${d.entregas} entregas · por pedidos ${eur(d.por_pedidos)} · pagado ${eur(d.pagado)}${tope ? ` · recorte tope ${eur(d.recorte_tope)}` : ''}${Number(d.compensacion_minimo) > 0 ? ` · compensado ${eur(d.compensacion_minimo)}` : ''}${cargo ? ` · ${d.motivo_cargo} ${eur(d.cargo_cade)}` : ''}`}
+              <div key={d.fecha} title={`${diaTxt(d.fecha)} · ${d.entregas} entregas · por pedidos ${eur(d.por_pedidos)} · pagado ${eurIva(d.pagado)}${tope ? ` · recorte tope ${eurIva(d.recorte_tope)}` : ''}${Number(d.compensacion_minimo) > 0 ? ` · compensado ${eur(d.compensacion_minimo)}` : ''}${cargo ? ` · ${d.motivo_cargo} ${eurIva(d.cargo_cade)}` : ''}`}
                 style={{ flex: '0 0 20px', display: 'flex', alignItems: 'flex-end', gap: 2, height: '100%', position: 'relative' }}>
                 <div style={{ width: 9, height: `${(Number(d.por_pedidos) / max) * 100}%`, background: MARINO }} />
                 <div style={{ width: 9, height: `${(Number(d.pagado) / max) * 100}%`, background: cargo ? TERRA : tope ? NARANJA : INK }} />
@@ -100,9 +103,9 @@ export default function RepartidorDias({ mes }: { mes: string }) {
               <td style={{ padding: '5px 8px', fontSize: 13 }}>{d.entregas}</td>
               <td style={{ padding: '5px 8px', fontSize: 13 }}>{eur(d.por_pedidos)}</td>
               <td style={{ padding: '5px 8px', fontSize: 13, color: TERRA, fontWeight: 600 }}>
-                {[Number(d.recorte_tope) < 0 ? `Recorte por tope ${eur(d.recorte_tope)}` : '', Number(d.cargo_cade) < 0 ? `${d.motivo_cargo ?? 'Cargo'} ${eur(d.cargo_cade)}` : '', Number(d.extra) > 0 ? `${d.extra_motivo ?? 'Extra'} +${eur(d.extra)}` : ''].filter(Boolean).join(' · ')}
+                {[Number(d.recorte_tope) < 0 ? `Recorte por tope ${eurIva(d.recorte_tope)}` : '', Number(d.cargo_cade) < 0 ? `${d.motivo_cargo ?? 'Cargo'} ${eurIva(d.cargo_cade)}` : '', Number(d.extra) > 0 ? `${d.extra_motivo ?? 'Extra'} +${eurIva(d.extra)}` : ''].filter(Boolean).join(' · ')}
               </td>
-              <td style={{ padding: '5px 8px', fontSize: 13, fontWeight: 700 }}>{eur(d.pagado)}</td>
+              <td style={{ padding: '5px 8px', fontSize: 13, fontWeight: 700 }}>{eurIva(d.pagado)}</td>
             </tr>
           ))}
         </tbody>
