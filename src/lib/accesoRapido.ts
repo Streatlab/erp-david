@@ -2,21 +2,41 @@
 import { supabase } from '@/lib/supabase'
 import { dispositivoId } from '@/lib/dispositivo'
 
+/** El PIN del ERP es de 4 cifras. */
+export const LONGITUD_PIN = 4
+
 export interface UltimoAcceso { email: string; nombre: string }
 export interface Metodos { pin: boolean; huella: boolean; bloqueado_hasta: string | null }
 
 const ULTIMO = 'david_ultimo_acceso'
+const ACCESOS = 'david_accesos'
+const MAX_ACCESOS = 8
 const DESBLOQUEO = 'david_desbloqueo'
 const PENDIENTE = 'david_acceso_pendiente'
 
-export function leerUltimoAcceso(): UltimoAcceso | null {
+/* Cuentas que han entrado en este aparato, la más reciente primero (entrar con un toque). */
+export function leerAccesos(): UltimoAcceso[] {
   try {
-    const v = localStorage.getItem(ULTIMO)
-    return v ? JSON.parse(v) : null
-  } catch { return null }
+    const lista = JSON.parse(localStorage.getItem(ACCESOS) || 'null') as UltimoAcceso[] | null
+    const v = Array.isArray(lista) ? lista.filter(x => x && typeof x.email === 'string' && x.email) : []
+    if (v.length > 0) return v
+    const antiguo = JSON.parse(localStorage.getItem(ULTIMO) || 'null') as UltimoAcceso | null
+    return antiguo?.email ? [antiguo] : []
+  } catch { return [] }
+}
+function escribirAccesos(lista: UltimoAcceso[]) {
+  try { localStorage.setItem(ACCESOS, JSON.stringify(lista.slice(0, MAX_ACCESOS))) } catch { /* sin almacenamiento */ }
+}
+export function leerUltimoAcceso(): UltimoAcceso | null {
+  return leerAccesos()[0] ?? null
 }
 export function guardarUltimoAcceso(u: UltimoAcceso) {
-  try { localStorage.setItem(ULTIMO, JSON.stringify(u)) } catch { /* sin almacenamiento */ }
+  const email = u.email.toLowerCase()
+  escribirAccesos([{ email, nombre: u.nombre }, ...leerAccesos().filter(x => x.email.toLowerCase() !== email)])
+  try { localStorage.setItem(ULTIMO, JSON.stringify({ email, nombre: u.nombre })) } catch { /* sin almacenamiento */ }
+}
+export function olvidarAcceso(email: string) {
+  escribirAccesos(leerAccesos().filter(x => x.email.toLowerCase() !== email.toLowerCase()))
 }
 
 /* Desbloqueo persistente por dispositivo + usuario: F5 y pestaña nueva no piden PIN. */
