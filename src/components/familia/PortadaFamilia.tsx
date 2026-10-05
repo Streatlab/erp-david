@@ -85,6 +85,7 @@ const mesesDe = (txt: string) => MES_ABR.map((a, i) => (txt.toLowerCase().includ
 const fechaCorta = (d: Date) => `${d.getDate()} ${MES_ABR[d.getMonth()]}`
 const fechaIso = (iso: string) => { const [, m, d] = iso.split('-'); return `${Number(d)} ${MES_ABR[Number(m) - 1]}` }
 
+interface Provision { f: FijoPlan; anterior: Date; proximo: Date; diaExacto: boolean; precio: number; mensual: number; apartado: number; falta: number; mesesQuedan: number }
 interface Cobro { f: FijoPlan; fecha: Date; importe: number; estado: 'sin-cobro' | 'hoy' | 'proximo'; cuando: string }
 
 const mesKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
@@ -372,6 +373,37 @@ export default function PortadaFamilia() {
       totalEuros, totalEntregas, porDia: totalEntregas / 26, ingresos, actuales, eurEntrega, cobertura: totalEuros > 0 ? ingresos / totalEuros : 0 }
   }, [datosEmp, davidSaca])
 
+
+  /* ── Provisiones: pagos semestrales/anuales. Precio exacto cuando se cobra + lo que hay que ir apartando cada mes ── */
+  const provisiones = useMemo(() => {
+    const out: Provision[] = []
+    const DIA_MS = 86_400_000
+    for (const f of plan.filter(p => p.cuenta === 'pagos' && p.periodicidad !== 'mensual')) {
+      const ms = mesesDe(f.dia_cobro ?? '')
+      if (ms.length === 0) continue
+      const precio = f.importe_real ?? f.importe_mensual * (12 / ms.length)
+      const real = (movsFijo.get(f.id) ?? [])[0]
+      const fechas: Date[] = []
+      for (const y of [hoy.getFullYear() - 1, hoy.getFullYear(), hoy.getFullYear() + 1]) for (const m of ms) fechas.push(new Date(y, m, 1))
+      fechas.sort((a, b) => a.getTime() - b.getTime())
+      let anterior = [...fechas].reverse().find(d => d.getTime() <= hoy.getTime()) ?? fechas[0]
+      const proximo = fechas.find(d => d.getTime() > hoy.getTime()) ?? fechas[fechas.length - 1]
+      let diaExacto = false
+      if (real) {
+        const fr = new Date(real.fecha + 'T12:00:00')
+        if (fr.getFullYear() === anterior.getFullYear() && fr.getMonth() === anterior.getMonth()) { anterior = fr; diaExacto = true }
+      }
+      const periodoMeses = 12 / ms.length
+      const transcurridos = Math.max(0, (hoy.getTime() - anterior.getTime()) / DIA_MS / 30.44)
+      const apartado = Math.min(precio, (precio * transcurridos) / periodoMeses)
+      out.push({ f, anterior, proximo, diaExacto, precio, mensual: f.importe_mensual, apartado, falta: Math.max(0, precio - apartado),
+        mesesQuedan: Math.max(0, (proximo.getTime() - hoy.getTime()) / DIA_MS / 30.44) })
+    }
+    return out.sort((a, b) => a.proximo.getTime() - b.proximo.getTime())
+  }, [plan, movsFijo, hoy])
+  const provMensual = sumBy(provisiones, x => x.mensual)
+  const provApartado = sumBy(provisiones, x => x.apartado)
+
   const pendientes = cobros.filter(c => c.estado !== 'sin-cobro')
   const sinCobro = cobros.filter(c => c.estado === 'sin-cobro')
   const colorEstado = { 'sin-cobro': TERRA, hoy: NARANJA, proximo: MARINO } as const
@@ -412,6 +444,9 @@ export default function PortadaFamilia() {
                 <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 'clamp(22px,2.6vw,32px)', color: AMBAR, margin: '6px 0 4px' }}>Sin recibos en 14 días</div>
               )}
               <div style={{ fontSize: 13, fontWeight: 700, borderTop: `2px solid ${ARENA}`, marginTop: 10, paddingTop: 8 }}>
+                Provisión que no se toca: {EUR(provApartado)} (seguros y pagos anuales)
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 700, borderTop: `2px solid ${ARENA}`, marginTop: 8, paddingTop: 8 }}>
                 Siguiente ingreso fijo: el {fechaCorta(proxIngreso)} → {EUR(totalPlanFijos)}
               </div>
               <div style={{ fontSize: 13, fontWeight: 700, borderTop: `2px solid ${ARENA}`, marginTop: 8, paddingTop: 8 }}>
@@ -527,6 +562,49 @@ export default function PortadaFamilia() {
                 <span style={{ fontFamily: OSW, color: diferencia > 0 ? '#FFB199' : '#C8D98B' }}>{E(Math.abs(diferencia))} al mes</span>
               </div>
             </div>
+          </div>
+        </Banda>
+      )}
+
+      {!cargando && provisiones.length > 0 && (
+        <Banda bg={BLANCO}>
+          <div style={wrap}>Provisiones · lo que hay que ir apartando para los pagos anuales y semestrales</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 18, marginBottom: 16 }}>
+            <KpiNeo label="Apartar cada mes" valor={EUR(provMensual)} color={NARANJA} sub="Dentro de lo que se ingresa en Pagos el día 28" />
+            <KpiNeo label="Debería llevar apartado hoy" valor={EUR(provApartado)} color={OLIVA} sub="Lo ya acumulado desde el último cobro de cada uno" />
+            <KpiNeo label="Próximo pago" valor={E2(provisiones[0].precio)} color={MARINO}
+              sub={`${provisiones[0].f.concepto} · ${provisiones[0].diaExacto || provisiones[0].proximo.getDate() !== 1 ? fechaCorta(provisiones[0].proximo) : MESES[provisiones[0].proximo.getMonth()] + ' ' + provisiones[0].proximo.getFullYear()}`} />
+          </div>
+          <TablaWrap>
+            <thead>
+              <tr>{['Pago', 'Cuándo se cobra', 'Precio exacto', 'Media al mes', 'Debería llevar apartado', 'Falta apartar'].map(h => <th key={h} style={thNeo}>{h}</th>)}</tr>
+            </thead>
+            <tbody>
+              {provisiones.map((x, i) => {
+                const alt = i % 2 === 1
+                return (
+                  <tr key={x.f.id}>
+                    <td style={tdEstado(alt, NARANJA)}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}><ComercioIcon nombre={x.f.concepto} rubro={x.f.categoria} size={22} />{x.f.concepto}</span>
+                    </td>
+                    <td style={tdNeo(alt)}>{MESES[x.proximo.getMonth()]} {x.proximo.getFullYear()} · en {Math.max(1, Math.round(x.mesesQuedan))} {Math.round(x.mesesQuedan) === 1 ? 'mes' : 'meses'}</td>
+                    <td style={{ ...tdNeo(alt), textAlign: 'right', fontFamily: OSW, fontWeight: 700 }}>{E2(x.precio)}</td>
+                    <td style={{ ...tdNeo(alt), textAlign: 'right' }}>{E2(x.mensual)}</td>
+                    <td style={{ ...tdNeo(alt), textAlign: 'right' }}>{E2(x.apartado)}</td>
+                    <td style={{ ...tdNeo(alt), textAlign: 'right', color: x.falta > 0 ? NARANJA : OLIVA, fontFamily: OSW, fontWeight: 700 }}>{E2(x.falta)}</td>
+                  </tr>
+                )
+              })}
+              <tr>
+                <td style={{ ...tdNeo(false), fontFamily: OSW, fontWeight: 700 }} colSpan={3}>TOTAL</td>
+                <td style={{ ...tdNeo(false), textAlign: 'right', fontFamily: OSW, fontWeight: 700 }}>{E2(provMensual)}</td>
+                <td style={{ ...tdNeo(false), textAlign: 'right', fontFamily: OSW, fontWeight: 700 }}>{E2(provApartado)}</td>
+                <td style={{ ...tdNeo(false), textAlign: 'right', fontFamily: OSW, fontWeight: 700 }}>{E2(sumBy(provisiones, x => x.falta))}</td>
+              </tr>
+            </tbody>
+          </TablaWrap>
+          <div style={{ marginTop: 8, fontSize: 12, color: GRIS, fontWeight: 600 }}>
+            Los gastos del mes cuentan la media mensual; cuando llega el cobro sale el precio exacto. Lo apartado se calcula como precio × meses desde el último cobro ÷ meses de cada periodo. Si el saldo de Pagos baja de esa provisión más los recibos próximos, el recibo no queda cubierto.
           </div>
         </Banda>
       )}
