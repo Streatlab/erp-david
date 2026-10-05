@@ -6,6 +6,7 @@ import {
   PageNeo, Banda, CabeceraNeo, KpiNeo, AvisoNeo,
   TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo, BotonNeo,
 } from '@/components/neo/NeoUI'
+import PortadaFamilia from '@/components/familia/PortadaFamilia'
 
 type Vista = 'semana' | 'mes'
 
@@ -52,7 +53,7 @@ const labelEstado: Record<FilaHogar['estado'], string> = {
 }
 
 export default function RunningFamilia() {
-  const [vista, setVista] = useState<Vista>('semana')
+  const [vista, setVista] = useState<Vista>('mes')
   const [hogar, setHogar] = useState<FilaHogar[]>([])
   const [global, setGlobal] = useState<FilaGlobal[]>([])
   const [loading, setLoading] = useState(true)
@@ -115,7 +116,6 @@ export default function RunningFamilia() {
   }
 
   const unidad = vista === 'semana' ? 'semana' : 'mes'
-  const hayDatos = hogar.length > 0
   const hayGlobal = global.length > 0
 
   return (
@@ -127,20 +127,15 @@ export default function RunningFamilia() {
             <BotonNeo bg={vista === 'mes' ? AMBAR : ARENA} onClick={() => setVista('mes')}>Por meses</BotonNeo>
           </div>
           <div style={{ fontSize: 13, fontWeight: 600, color: ARENA, opacity: 0.85, maxWidth: 420, textAlign: 'right' }}>
-            Economía doméstica de David: en qué se va el dinero de casa, presupuesto por partida
-            y cuánto queda de ahorro real una vez sumada la actividad.
+            Economía doméstica de David y Rebeca: lo que entra, los gastos fijos, los variables
+            y cuánto hay que meter cada mes en cada cuenta.
           </div>
         </div>
       </CabeceraNeo>
 
       {errMsg && <AvisoNeo>ERROR: {errMsg}</AvisoNeo>}
 
-      {!loading && !hayDatos && (
-        <AvisoNeo>
-          TODAVÍA NO HAY MOVIMIENTOS DOMÉSTICOS. En cuanto se conecten las cuentas de BBVA, CaixaBank
-          y N26, esta pantalla se rellena sola — la estructura y las partidas ya están listas.
-        </AvisoNeo>
-      )}
+      <PortadaFamilia />
 
       {kpis.desviadas > 0 && (
         <AvisoNeo>
@@ -149,6 +144,9 @@ export default function RunningFamilia() {
       )}
 
       <Banda bg={ARENA_CL}>
+        <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 16, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 14, color: INK }}>
+          Presupuesto por partidas · {etiquetaActual || 'sin datos'}
+        </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 18 }}>
           <KpiNeo label={`Gasto familiar de la ${unidad}`} valor={fmtEur(kpis.gastado)} color={CELESTE} sub={etiquetaActual || undefined} />
           <KpiNeo label={`Presupuesto de la ${unidad}`} valor={kpis.presupuesto > 0 ? fmtEur(kpis.presupuesto) : '— sin definir'} />

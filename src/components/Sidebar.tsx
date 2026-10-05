@@ -31,6 +31,7 @@ import {
   Home,
   CheckCheck,
   ChevronRight,
+  CalendarDays,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
@@ -93,6 +94,7 @@ const SECTIONS: NavSection[] = [
       { path: '/personal',    label: 'Personas',    perfiles: ['admin'] },
       { path: '/organigrama', label: 'Organigrama', perfiles: ['admin'] },
       { path: '/presencia',   label: 'Presencia',   perfiles: ['admin'] },
+      { path: '/calendario-laboral', label: 'Calendario laboral', perfiles: ['admin'] },
     ],
   },
   {
@@ -139,6 +141,7 @@ const ICON_ROUTE: Record<string, LucideIcon> = {
   '/personal': User,
   '/organigrama': Network,
   '/presencia': Clock,
+  '/calendario-laboral': CalendarDays,
   '/informes': BarChart3,
   '/informes-equipo': Users,
   '/configuracion/bancos': Banknote,

@@ -117,3 +117,11 @@ export async function crearPin(pin: string): Promise<string | null> {
   const r = await llamarAcceso('pin-crear', { pin })
   return r.ok ? null : textoError(r)
 }
+
+/** El PIN del ERP es de 4 cifras. */
+export const LONGITUD_PIN = 4
+
+/** Quita una cuenta de las recordadas en este aparato. */
+export function olvidarAcceso(email: string) {
+  escribirAccesos(leerAccesos().filter(x => x.email.toLowerCase() !== email.toLowerCase()))
+}

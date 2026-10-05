@@ -164,96 +164,97 @@ export function isoWeek(d: Date): number {
   return Math.ceil(((t.getTime() - yStart.getTime()) / 86400000 + 1) / 7)
 }
 
-const norm = (s: string | null | undefined) =>
-  (s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase()
+/* ─────────────────────── Catálogo de categorías ─────────────
+   Los movimientos reales viven en `conciliacion` (los trae el robot del banco).
+   Cada categoría tiene un ámbito: actividad (cuenta en el negocio), personal, interno
+   (traspasos entre cuentas) o pendiente (sin clasificar). El Panel solo cuenta
+   actividad + pendiente; lo personal y los traspasos internos no inflan ni ingresos ni gastos. */
 
-/* Prior factura aparte cada 15 dias (David esta en modulos, Prior le devuelve el IVA).
-   Cade llega agrupado en el banco: NO se desglosa por Mercadona/Carrefour/Lidl/Dia. */
-function detectarPrior(concepto: string): boolean {
-  return norm(concepto).includes('PRIOR')
-}
+interface CatInfo { grupo: string | null; ambito: string }
+interface Catalogo { gastos: Map<string, CatInfo>; ingresos: Map<string, CatInfo> }
 
-/* ─────────────────────── Catálogo Subcat ─────────────────── */
+let _catCache: Catalogo | null = null
 
-interface SubcatLite { id: number; categoria_id: number; grupo: string | null; nombre: string }
-interface CatLite { id: number; tipo: 'INGRESO' | 'GASTO' }
-
-let _catCache: { cats: CatLite[]; subs: SubcatLite[] } | null = null
-
-async function getCatalogo() {
+async function getCatalogo(): Promise<Catalogo> {
   if (_catCache) return _catCache
-  const [cats, subs] = await Promise.all([
-    supabase.from('categorias').select('id, tipo'),
-    supabase.from('subcategorias').select('id, categoria_id, grupo, nombre'),
+  const [g, i] = await Promise.all([
+    supabase.from('categorias_contables_gastos').select('codigo, grupo, ambito'),
+    supabase.from('categorias_contables_ingresos').select('codigo, canal_abv, ambito'),
   ])
-  if (cats.error) throw cats.error
-  if (subs.error) throw subs.error
+  if (g.error) throw g.error
+  if (i.error) throw i.error
   _catCache = {
-    cats: (cats.data ?? []) as CatLite[],
-    subs: (subs.data ?? []) as SubcatLite[],
+    gastos: new Map((g.data ?? []).map((c: { codigo: string; grupo: string | null; ambito: string | null }) => [c.codigo, { grupo: c.grupo, ambito: c.ambito ?? 'actividad' }])),
+    ingresos: new Map((i.data ?? []).map((c: { codigo: string; canal_abv: string | null; ambito: string | null }) => [c.codigo, { grupo: c.canal_abv, ambito: c.ambito ?? 'actividad' }])),
   }
   return _catCache
 }
 
+/** Cuenta para el negocio: actividad o pendiente de clasificar. Personal e interno quedan fuera. */
+const cuenta = (ambito: string) => ambito === 'actividad' || ambito === 'pendiente'
+
 /* ─────────────────────── Movimientos ─────────────────────── */
 
 interface MovRow {
-  id: number
   fecha: string
   importe: number
-  saldo: number | null
+  categoria: string | null
   concepto: string | null
-  subcategoria_id: number | null
 }
 
+/** Lee `conciliacion` por páginas (el servidor corta en 1.000 filas). */
 async function fetchMovimientosRango(r: Rango): Promise<MovRow[]> {
-  const { data, error } = await supabase
-    .from('movimientos_banco')
-    .select('id, fecha, importe, saldo, concepto, subcategoria_id')
-    .gte('fecha', r.start)
-    .lte('fecha', r.end)
-    .order('fecha', { ascending: true })
-  if (error) throw error
-  return (data ?? []) as MovRow[]
+  const out: MovRow[] = []
+  for (let desde = 0; ; desde += 1000) {
+    const { data, error } = await supabase
+      .from('conciliacion')
+      .select('fecha, importe, categoria, concepto')
+      .gte('fecha', r.start)
+      .lte('fecha', r.end)
+      .order('fecha', { ascending: true })
+      .order('id', { ascending: true })
+      .range(desde, desde + 999)
+    if (error) throw error
+    const filas = (data ?? []) as MovRow[]
+    out.push(...filas.map(f => ({ ...f, importe: Number(f.importe) })))
+    if (filas.length < 1000) break
+  }
+  return out
 }
 
-/* ─────────────────────── Ingresos por operador ───────────── */
+/** Ingreso operativo de un movimiento: devuelve la fila de origen o null si no cuenta. */
+function origenIngreso(m: MovRow, cat: Catalogo): 'cade' | 'prior' | 'portes' | 'otros' | 'sinClasificar' | null {
+  if (m.importe <= 0) return null
+  const c = m.categoria ?? ''
+  if (c === 'pendiente-revisar-ingreso') return 'sinClasificar'
+  const info = cat.ingresos.get(c)
+  if (!info || !cuenta(info.ambito)) return null
+  if (c === 'cade' || c === 'cade-juan') return 'cade'
+  if (c === 'prior-bruto') return 'prior'
+  if (c === 'portes') return 'portes'
+  return 'otros'
+}
+
+/* ─────────────────────── Ingresos por origen ─────────────── */
 
 export async function getIngresosOperadores(r: Rango): Promise<{
   total: number
   totalAnterior: number
   filas: IngresoOperadorRow[]
 }> {
-  const { cats, subs } = await getCatalogo()
-  const idsIngreso = new Set(cats.filter(c => c.tipo === 'INGRESO').map(c => c.id))
-  const subIngreso = new Set(subs.filter(s => idsIngreso.has(s.categoria_id)).map(s => s.id))
-  const subCade = new Set(
-    subs.filter(s => idsIngreso.has(s.categoria_id) && /CADE/.test((s.nombre || '').toUpperCase())).map(s => s.id)
-  )
-  const subPortes = new Set(
-    subs.filter(s => idsIngreso.has(s.categoria_id) && /PORT/.test((s.nombre || '').toUpperCase())).map(s => s.id)
-  )
-
+  const cat = await getCatalogo()
   const [act, prev] = await Promise.all([
     fetchMovimientosRango(r),
     fetchMovimientosRango(rangoAnterior(r)),
   ])
 
   function agregar(rows: MovRow[]) {
-    const out = { cade: 0, prior: 0, portes: 0, sinClasificar: 0, total: 0 }
+    const out = { cade: 0, prior: 0, portes: 0, otros: 0, sinClasificar: 0, total: 0 }
     for (const m of rows) {
-      if (!m.subcategoria_id) continue
-      if (!subIngreso.has(m.subcategoria_id)) continue
-      if (m.importe < 0) continue
+      const o = origenIngreso(m, cat)
+      if (!o) continue
+      out[o] += m.importe
       out.total += m.importe
-      if (subCade.has(m.subcategoria_id)) {
-        out.cade += m.importe
-      } else if (subPortes.has(m.subcategoria_id)) {
-        if (detectarPrior(m.concepto || '')) out.prior += m.importe
-        else                                 out.portes += m.importe
-      } else {
-        out.sinClasificar += m.importe
-      }
     }
     return out
   }
@@ -261,13 +262,14 @@ export async function getIngresosOperadores(r: Rango): Promise<{
   const agPrev = agregar(prev)
 
   const total = ag.total
-  const filasBase: { key: keyof typeof COLOR_OP | 'sinClasificar'; label: string; importe: number; importeAnterior: number; color: string }[] = [
+  const filasBase: { key: string; label: string; importe: number; importeAnterior: number; color: string }[] = [
     { key: 'cade',   label: 'Cade',   color: COLOR_OP.cade,   importe: ag.cade,   importeAnterior: agPrev.cade },
     { key: 'prior',  label: 'Prior',  color: COLOR_OP.prior,  importe: ag.prior,  importeAnterior: agPrev.prior },
     { key: 'portes', label: 'Portes', color: COLOR_OP.portes, importe: ag.portes, importeAnterior: agPrev.portes },
   ]
+  if (ag.otros > 0 || agPrev.otros > 0) filasBase.push({ key: 'otros', label: 'Otros ingresos', color: '#9C8A6E', importe: ag.otros, importeAnterior: agPrev.otros })
   if (ag.sinClasificar > 0 || agPrev.sinClasificar > 0) {
-    filasBase.push({ key: 'sinClasificar' as never, label: 'Sin clasificar', color: '#9C8A6E', importe: ag.sinClasificar, importeAnterior: agPrev.sinClasificar })
+    filasBase.push({ key: 'sinClasificar', label: 'Sin clasificar', color: '#9C8A6E', importe: ag.sinClasificar, importeAnterior: agPrev.sinClasificar })
   }
 
   const filas: IngresoOperadorRow[] = filasBase.map(f => ({
@@ -285,30 +287,18 @@ export async function getIngresosOperadores(r: Rango): Promise<{
 
 /* ─────────────────────── Gastos por grupo ────────────────── */
 
-const GRUPOS_GASTO = ['rrhh','vehiculos','recargas','controlables','sinCategorizar'] as const
+const GRUPOS_GASTO = ['rrhh','vehiculos','recargas','controlables','prior','sinCategorizar'] as const
 type GrupoKey = typeof GRUPOS_GASTO[number]
 
-function mapearGrupoGasto(sub: SubcatLite): GrupoKey {
-  const grupo = (sub.grupo || '').toUpperCase()
-  const nombre = (sub.nombre || '').toUpperCase()
-  // 1) RRHH: sueldos, cuota autonomo, SS, IRPF, gestoria, Legalitas, seleccion
-  if (grupo.includes('RRHH')) return 'rrhh'
-
-  // 2) Recargas electricas: gasto VARIABLE diario. Se comprueba antes que Vehiculos
-  //    porque las recargas viven dentro del grupo VEHICULOS en el catalogo.
-  if (nombre.includes('RECARGA') || nombre.includes('COMBUSTIBLE') || nombre.includes('CARBURANTE')) return 'recargas'
-
-  // 3) Vehiculos: prestamos de cuota FIJA mensual, seguros, ITV, mantenimiento, reparaciones.
-  //    David NO tiene renting: las furgonetas son suyas y se pagan a plazos.
-  if (grupo.includes('VEHICULOS') || grupo.includes('VEHÍCULOS') || grupo.includes('RENTING')) return 'vehiculos'
-
-  // 4) Controlables: todo lo que no sea vehiculos, recargas ni RRHH.
-  //    Comisiones cajero/BBVA, movil, telefono, seguro baja autonomo, fraccionamientos.
-  if (grupo.includes('OTROS') || grupo.includes('INTERNET') || grupo.includes('CONTROLABLE')
-      || grupo.includes('ADMIN') || grupo.includes('SUMINISTRO')) return 'controlables'
-
-  // Sin encaje: NO es un cajon de sastre, es deuda pendiente de categorizar.
-  return 'sinCategorizar'
+function grupoDeGasto(codigo: string, info: CatInfo): GrupoKey | null {
+  if (!cuenta(info.ambito)) return null
+  if (info.ambito === 'pendiente') return 'sinCategorizar'
+  if (codigo === 'recargas-electricas' || codigo === 'combustible') return 'recargas'
+  if (codigo === 'devolucion-bi-prior') return 'prior'
+  const g = (info.grupo ?? '').toUpperCase()
+  if (g === 'PERSONAL') return 'rrhh'
+  if (g.startsWith('VEH')) return 'vehiculos'
+  return 'controlables'
 }
 
 export async function getGastosPorGrupo(r: Rango): Promise<{
@@ -316,27 +306,25 @@ export async function getGastosPorGrupo(r: Rango): Promise<{
   totalAnterior: number
   filas: GastoGrupoRow[]
 }> {
-  const { cats, subs } = await getCatalogo()
-  const idsGasto = new Set(cats.filter(c => c.tipo === 'GASTO').map(c => c.id))
-  const subGasto = subs.filter(s => idsGasto.has(s.categoria_id))
-  const grupoBySub = new Map<number, GrupoKey>(subGasto.map(s => [s.id, mapearGrupoGasto(s)]))
-
+  const cat = await getCatalogo()
   const [act, prev] = await Promise.all([
     fetchMovimientosRango(r),
     fetchMovimientosRango(rangoAnterior(r)),
   ])
 
   function agregar(rows: MovRow[]) {
-    const out: Record<GrupoKey, number> = { rrhh: 0, vehiculos: 0, recargas: 0, controlables: 0, sinCategorizar: 0 }
+    const out: Record<GrupoKey, number> = { rrhh: 0, vehiculos: 0, recargas: 0, controlables: 0, prior: 0, sinCategorizar: 0 }
     let total = 0
     for (const m of rows) {
-      if (!m.subcategoria_id) continue
-      const g = grupoBySub.get(m.subcategoria_id)
+      const c = m.categoria ?? ''
+      if (c === 'pendiente-revisar-gasto') { out.sinCategorizar += -m.importe; total += -m.importe; continue }
+      const info = cat.gastos.get(c)
+      if (!info) continue
+      const g = grupoDeGasto(c, info)
       if (!g) continue
-      if (m.importe >= 0) continue
-      const abs = -m.importe
-      out[g] += abs
-      total += abs
+      // Los reembolsos (importe positivo en una categoría de gasto) restan del gasto
+      out[g] += -m.importe
+      total += -m.importe
     }
     return { ...out, total }
   }
@@ -348,6 +336,7 @@ export async function getGastosPorGrupo(r: Rango): Promise<{
     vehiculos:      { label: 'Vehículos',       color: COLOR_GRUPO.vehiculos },
     recargas:       { label: 'Recargas',        color: COLOR_GRUPO.recargas },
     controlables:   { label: 'Controlables',    color: COLOR_GRUPO.controlables },
+    prior:          { label: 'Entregas a Prior', color: '#16355C' },
     sinCategorizar: { label: 'Sin categorizar', color: COLOR_GRUPO.sinCategorizar },
   }
 
@@ -370,45 +359,41 @@ export async function getGastosPorGrupo(r: Rango): Promise<{
 
 /* ─────────────────────── Tesorería ───────────────────────── */
 
+/** Saldo real de las cuentas del negocio (lo guarda el robot de saldos cada noche). */
+async function saldoCuentas(): Promise<{ total: number; fecha: string | null }> {
+  const { data } = await supabase.from('cuentas_bancarias').select('saldo_actual, saldo_fecha, personal, activa')
+  const filas = ((data ?? []) as { saldo_actual: number | null; saldo_fecha: string | null; personal: boolean | null; activa: boolean | null }[])
+    .filter(c => c.activa !== false && !c.personal)
+  const total = filas.reduce((s, c) => s + Number(c.saldo_actual ?? 0), 0)
+  const fecha = filas.map(c => c.saldo_fecha).filter(Boolean).sort().pop() ?? null
+  return { total, fecha: fecha ? String(fecha).slice(0, 10) : null }
+}
+
+/** Movimientos de las cuentas propias desde `desde` (excluye las cuentas personales). */
+async function movimientosDesde(desde: string): Promise<MovRow[]> {
+  const filas = await fetchMovimientosRango({ start: desde, end: fmtISO(addDays(today(), 1)) })
+  return filas.filter(m => !(m.categoria ?? '').startsWith('pendiente-personal'))
+}
+
 export async function getTesoreria(): Promise<TesoreriaSnapshot> {
   const hoy = today()
   const hace30 = fmtISO(addDays(hoy, -30))
+  const [saldo, movs] = await Promise.all([saldoCuentas(), movimientosDesde(hace30)])
 
-  const { data: ult } = await supabase
-    .from('movimientos_banco')
-    .select('fecha, saldo')
-    .not('saldo', 'is', null)
-    .order('fecha', { ascending: false })
-    .order('id', { ascending: false })
-    .limit(1)
-
-  const { data: prev } = await supabase
-    .from('movimientos_banco')
-    .select('fecha, saldo')
-    .not('saldo', 'is', null)
-    .lte('fecha', hace30)
-    .order('fecha', { ascending: false })
-    .order('id', { ascending: false })
-    .limit(1)
-
-  const cajaActual   = Number(ult?.[0]?.saldo ?? 0)
-  const cajaHace30d  = Number(prev?.[0]?.saldo ?? cajaActual)
-  const fechaUltima  = ult?.[0]?.fecha ?? null
+  const cajaActual = saldo.total
+  // Saldo de hace 30 días = saldo de hoy menos todo lo que se ha movido desde entonces
+  const cajaHace30d = cajaActual - movs.filter(m => m.fecha > hace30).reduce((s, m) => s + m.importe, 0)
 
   // Proyecciones: extrapolación lineal del flujo medio diario últimos 30d
-  const flujo30 = cajaActual - cajaHace30d
-  const flujoDia = flujo30 / 30
-  const proyeccion7d  = cajaActual + flujoDia * 7
-  const proyeccion30d = cajaActual + flujoDia * 30
-
+  const flujoDia = (cajaActual - cajaHace30d) / 30
   return {
     cajaActual,
     cajaHace30d,
-    proyeccion7d,
-    proyeccion30d,
-    cobrosPendientes: 0,  // sin tabla de pendientes en David por ahora
+    proyeccion7d: cajaActual + flujoDia * 7,
+    proyeccion30d: cajaActual + flujoDia * 30,
+    cobrosPendientes: 0,
     pagosPendientes: 0,
-    fechaUltima,
+    fechaUltima: saldo.fecha,
   }
 }
 
@@ -447,23 +432,11 @@ async function getOrCreateObjetivoSemanaActual(weekStart: Date): Promise<Objetiv
 }
 
 async function calcularConseguido(start: string, end: string): Promise<number> {
-  const { cats, subs } = await getCatalogo()
-  const idsIngreso = new Set(cats.filter(c => c.tipo === 'INGRESO').map(c => c.id))
-  const subIng = new Set(subs.filter(s => idsIngreso.has(s.categoria_id)).map(s => s.id))
-
-  const { data, error } = await supabase
-    .from('movimientos_banco')
-    .select('importe, subcategoria_id, fecha')
-    .gte('fecha', start)
-    .lte('fecha', end)
-  if (error) return 0
+  const cat = await getCatalogo()
+  let movs: MovRow[]
+  try { movs = await fetchMovimientosRango({ start, end }) } catch { return 0 }
   let total = 0
-  for (const m of (data ?? []) as { importe: number; subcategoria_id: number | null }[]) {
-    if (!m.subcategoria_id) continue
-    if (!subIng.has(m.subcategoria_id)) continue
-    if (m.importe <= 0) continue
-    total += m.importe
-  }
+  for (const m of movs) if (origenIngreso(m, cat)) total += m.importe
   return total
 }
 
@@ -557,27 +530,19 @@ export async function getObjetivosDiariosSemana(): Promise<ObjetivoDiaFila[]> {
   const fi = fmtISO(ws)
   const ff = fmtISO(addDays(ws, 6))
 
-  const [{ data: objsRaw }, { cats, subs }] = await Promise.all([
+  const [{ data: objsRaw }, cat, movs] = await Promise.all([
     supabase.from('objetivos_diarios').select('fecha, importe_objetivo').gte('fecha', fi).lte('fecha', ff),
     getCatalogo(),
+    fetchMovimientosRango({ start: fi, end: ff }),
   ])
-
-  const idsIngreso = new Set(cats.filter(c => c.tipo === 'INGRESO').map(c => c.id))
-  const subIng = new Set(subs.filter(s => idsIngreso.has(s.categoria_id)).map(s => s.id))
-
-  const { data: movs } = await supabase
-    .from('movimientos_banco')
-    .select('fecha, importe, subcategoria_id')
-    .gte('fecha', fi).lte('fecha', ff)
 
   const obj = new Map<string, number>()
   for (const o of (objsRaw ?? []) as { fecha: string; importe_objetivo: number }[]) {
     obj.set(o.fecha, Number(o.importe_objetivo))
   }
   const con = new Map<string, number>()
-  for (const m of (movs ?? []) as { fecha: string; importe: number; subcategoria_id: number | null }[]) {
-    if (!m.subcategoria_id || !subIng.has(m.subcategoria_id)) continue
-    if (m.importe <= 0) continue
+  for (const m of movs) {
+    if (!origenIngreso(m, cat)) continue
     con.set(m.fecha, (con.get(m.fecha) ?? 0) + m.importe)
   }
 
@@ -682,48 +647,25 @@ export async function getPresupuestos(): Promise<PresupuestoCard[]> {
 export async function getSerieSaldoUlt30d(): Promise<PuntoSerie[]> {
   const hoy = today()
   const inicio = addDays(hoy, -29)
-  const { data, error } = await supabase
-    .from('movimientos_banco')
-    .select('fecha, saldo')
-    .gte('fecha', fmtISO(inicio))
-    .lte('fecha', fmtISO(hoy))
-    .not('saldo', 'is', null)
-    .order('fecha', { ascending: true })
-    .order('id', { ascending: true })
-  if (error) return []
-  // Quedarse con el último saldo de cada día
-  const byDay = new Map<string, number>()
-  for (const m of (data ?? []) as { fecha: string; saldo: number }[]) {
-    byDay.set(m.fecha, Number(m.saldo))
-  }
-  // Rellenar huecos con valor anterior
+  const [saldo, movs] = await Promise.all([saldoCuentas(), movimientosDesde(fmtISO(inicio))])
+  // Se reconstruye hacia atrás: el saldo de cada día es el de hoy menos lo movido después de ese día
   const out: PuntoSerie[] = []
-  let last = 0
   for (let i = 0; i < 30; i++) {
     const d = fmtISO(addDays(inicio, i))
-    if (byDay.has(d)) last = byDay.get(d)!
-    out.push({ fecha: d, valor: last })
+    const despues = movs.filter(m => m.fecha > d).reduce((s, m) => s + m.importe, 0)
+    out.push({ fecha: d, valor: saldo.total - despues })
   }
   return out
 }
 
 export async function getBarrasSemanas(weeks = 4): Promise<BarraSemana[]> {
-  const { cats, subs } = await getCatalogo()
-  const idsIng = new Set(cats.filter(c => c.tipo === 'INGRESO').map(c => c.id))
-  const idsGas = new Set(cats.filter(c => c.tipo === 'GASTO').map(c => c.id))
-  const subIng = new Set(subs.filter(s => idsIng.has(s.categoria_id)).map(s => s.id))
-  const subGas = new Set(subs.filter(s => idsGas.has(s.categoria_id)).map(s => s.id))
-
+  const cat = await getCatalogo()
   const hoy = today()
   const wsActual = inicioSemana(hoy)
   const inicio = addDays(wsActual, -7 * (weeks - 1))
   const fin = addDays(wsActual, 6)
 
-  const { data } = await supabase
-    .from('movimientos_banco')
-    .select('fecha, importe, subcategoria_id')
-    .gte('fecha', fmtISO(inicio))
-    .lte('fecha', fmtISO(fin))
+  const data = await fetchMovimientosRango({ start: fmtISO(inicio), end: fmtISO(fin) })
 
   const buckets: { ws: Date; ingresos: number; gastos: number }[] = Array.from({ length: weeks }, (_, i) => ({
     ws: addDays(wsActual, -7 * (weeks - 1 - i)),
@@ -731,13 +673,14 @@ export async function getBarrasSemanas(weeks = 4): Promise<BarraSemana[]> {
     gastos: 0,
   }))
 
-  for (const m of (data ?? []) as { fecha: string; importe: number; subcategoria_id: number | null }[]) {
-    if (!m.subcategoria_id) continue
+  for (const m of data) {
     const f = new Date(m.fecha + 'T00:00:00')
     const idx = buckets.findIndex(b => f.getTime() >= b.ws.getTime() && f.getTime() < addDays(b.ws, 7).getTime())
     if (idx === -1) continue
-    if (subIng.has(m.subcategoria_id) && m.importe > 0) buckets[idx].ingresos += m.importe
-    if (subGas.has(m.subcategoria_id) && m.importe < 0) buckets[idx].gastos += -m.importe
+    if (origenIngreso(m, cat)) { buckets[idx].ingresos += m.importe; continue }
+    const c = m.categoria ?? ''
+    const info = cat.gastos.get(c)
+    if (c === 'pendiente-revisar-gasto' || (info && cuenta(info.ambito))) buckets[idx].gastos += -m.importe
   }
   return buckets.map(b => ({
     semana: `S${isoWeek(b.ws)}`,

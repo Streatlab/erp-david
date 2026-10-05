@@ -24,6 +24,7 @@ import Tareas from '@/pages/Tareas'
 import Personas from '@/pages/equipo/Personas'
 import Organigrama from '@/pages/equipo/Organigrama'
 import Presencia from '@/pages/equipo/Presencia'
+import CalendarioLaboral from '@/pages/equipo/CalendarioLaboral'
 import Checklists from '@/pages/operaciones/Checklists'
 import Manuales from '@/pages/operaciones/Manuales'
 import LibroEquipos from '@/pages/operaciones/LibroEquipos'
@@ -88,6 +89,7 @@ function AppRoutes() {
         <Route path="personal"    element={<ProtectedRoute solo={['admin']}><Personas /></ProtectedRoute>} />
         <Route path="organigrama" element={<ProtectedRoute solo={['admin']}><Organigrama /></ProtectedRoute>} />
         <Route path="presencia"   element={<ProtectedRoute solo={['admin']}><Presencia /></ProtectedRoute>} />
+        <Route path="calendario-laboral" element={<ProtectedRoute solo={['admin']}><CalendarioLaboral /></ProtectedRoute>} />
 
         {/* Informes */}
         <Route path="informes"        element={<ProtectedRoute solo={['admin']}><Informes /></ProtectedRoute>} />
