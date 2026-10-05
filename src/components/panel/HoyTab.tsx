@@ -12,7 +12,7 @@ import { INK, ARENA, ARENA_CL, BLANCO, GRIS, OLIVA, TERRA, NARANJA, MARINO, AMBA
    4. Avisos que solo existen cuando hay algo que hacer (documentación de Cade, facturas sin enviar,
       movimientos sin categorizar, tareas). Cuando se resuelven, desaparecen. */
 
-interface Cuenta { banco: string; iban_mask: string | null; saldo_actual: number | null; saldo_fecha: string | null; personal: boolean | null; activa: boolean | null }
+interface Cuenta { banco: string; alias: string | null; iban: string | null; iban_mask: string | null; saldo_actual: number | null; saldo_fecha: string | null; personal: boolean | null; activa: boolean | null }
 interface Mov { fecha: string; importe: number; categoria: string | null }
 interface Doc { emisor: string; documento: string; como_obtenerlo: string; estado: string }
 interface Tarea { titulo: string; fecha_limite: string | null; prioridad: string | null; estado: string | null }
@@ -56,7 +56,7 @@ export default function HoyTab() {
     const mesFact = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1)
     const ini6 = new Date(hoy.getFullYear(), hoy.getMonth() - 6, 1)
     Promise.all([
-      supabase.from('cuentas_bancarias').select('banco, iban_mask, saldo_actual, saldo_fecha, personal, activa'),
+      supabase.from('cuentas_bancarias').select('banco, alias, iban, iban_mask, saldo_actual, saldo_fecha, personal, activa'),
       supabase.from('v_documentacion_pendiente').select('emisor, documento, como_obtenerlo, estado'),
       supabase.from('tareas').select('titulo, fecha_limite, prioridad, estado').order('fecha_limite', { ascending: true }).limit(50),
       supabase.from('facturas_emitidas').select('periodo, base_imponible, emisor, id').eq('cliente', 'CADE').gte('periodo', iso(ini6)),
@@ -99,6 +99,8 @@ export default function HoyTab() {
   const propias = cuentas.filter(c => c.activa !== false && !c.personal)
   const saldo = propias.reduce((s, c) => s + Number(c.saldo_actual ?? 0), 0)
   const porBanco = ['BBVA', 'N26'].map(b => ({ b, v: propias.filter(c => c.banco === b).reduce((s, c) => s + Number(c.saldo_actual ?? 0), 0), n: propias.filter(c => c.banco === b).length })).filter(x => x.n > 0)
+  const ultimos4 = (c: Cuenta) => (c.iban ? c.iban.replace(/\s/g, '').slice(-4) : (c.iban_mask ?? '').replace(/\D/g, '').slice(-4)) || '····'
+  const hogarCuentas = cuentas.filter(c => c.activa !== false && c.personal)
   const fechaSaldo = propias.map(c => c.saldo_fecha).filter(Boolean).sort().pop()
   const entradas = movs.filter(m => Number(m.importe) > 0).reduce((s, m) => s + Number(m.importe), 0)
   const salidas = movs.filter(m => Number(m.importe) < 0).reduce((s, m) => s + Number(m.importe), 0)
@@ -126,6 +128,36 @@ export default function HoyTab() {
         frase={propias.length === 0 ? 'Sin datos todavía' : fechaSaldo ? `Lo que hay en el banco ahora. Saldo a ${new Date(fechaSaldo).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}.` : 'Lo que hay en el banco ahora. Se actualiza cada noche.'}
         apoyo={porBanco.map(x => ({ label: `${x.b} · ${x.n} cuenta${x.n > 1 ? 's' : ''}`, valor: eur(x.v) }))}
       />
+
+      {/* 1b. SALDO POR CUENTA: banco, alias y 4 últimos dígitos */}
+      {cuentas.length > 0 && (
+        <Banda bg={BLANCO}>
+          {[{ t: 'Empresa', lista: propias }, { t: 'Hogar', lista: hogarCuentas }].filter(g => g.lista.length > 0).map(g => (
+            <div key={g.t} style={{ marginBottom: 18 }}>
+              <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 14, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>
+                Cuentas {g.t.toLowerCase()} · {eur(g.lista.reduce((a, c) => a + Number(c.saldo_actual ?? 0), 0))}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 12 }}>
+                {[...g.lista].sort((a, b) => Number(b.saldo_actual ?? 0) - Number(a.saldo_actual ?? 0)).map(c => {
+                  const sinSaldo = c.saldo_fecha == null
+                  return (
+                    <div key={`${c.banco}-${ultimos4(c)}`} style={{ background: ARENA_CL, border: BORDER_CARD, boxShadow: SHADOW, padding: '12px 14px' }}>
+                      <div style={{ fontFamily: OSW, fontWeight: 600, fontSize: 12, letterSpacing: 2, textTransform: 'uppercase' }}>{c.banco} · …{ultimos4(c)}</div>
+                      <div style={{ fontFamily: LEX, fontSize: 12, fontWeight: 600, color: GRIS, textTransform: 'capitalize', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{(c.alias ?? '').toLowerCase()}</div>
+                      <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 26, color: sinSaldo ? GRIS : Number(c.saldo_actual ?? 0) >= 0 ? OLIVA : NARANJA }}>
+                        {sinSaldo ? 'Sin saldo' : eur(Number(c.saldo_actual ?? 0))}
+                      </div>
+                      <div style={{ fontFamily: LEX, fontSize: 11, color: GRIS }}>
+                        {sinSaldo ? 'El banco no facilita el saldo de esta cuenta' : `Actualizado ${new Date(c.saldo_fecha as string).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
+        </Banda>
+      )}
 
       {/* 2. MOVIMIENTOS DEL PERIODO */}
       <Banda bg={ARENA_CL}>
