@@ -303,7 +303,7 @@ export default function PortadaFamilia() {
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
                   {c.subs.map(s => (
-                    <BadgeNeo key={s.k} color={ARENA_CL}>{labelSub(s.k)} {P0(c.total > 0 ? (s.v / c.total) * 100 : 0)}</BadgeNeo>
+                    <BadgeNeo key={s.k} color={MARINO}>{labelSub(s.k)} {P0(c.total > 0 ? (s.v / c.total) * 100 : 0)}</BadgeNeo>
                   ))}
                 </div>
                 {c.comercios.slice(0, 8).map(x => (
