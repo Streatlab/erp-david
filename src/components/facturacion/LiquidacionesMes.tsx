@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import RepartidorDias from '@/components/facturacion/RepartidorDias'
+import EnvioFacturas from '@/components/facturacion/EnvioFacturas'
 import { INK, ARENA, ARENA_CL, BLANCO, GRIS, OLIVA, TERRA, NARANJA, MARINO, OSW, BORDER, BORDER_CARD, SHADOW, PAD, eyebrow, d } from '@/styles/neobrutal'
 
 /* Facturación ▸ Liquidaciones del mes: qué ha liquidado Cade por código, cuánto pagaría sin el tope diario,
@@ -120,6 +121,7 @@ export default function LiquidacionesMes() {
       </div>
 
       <RepartidorDias mes={iso(mes)} />
+      <EnvioFacturas mes={iso(mes)} />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14, marginTop: 16 }}>
         {[{ k: 'DAVID', l: 'David' }, { k: 'JUAN', l: 'Juan' }, { k: undefined, l: 'Total' }].map(x => {
