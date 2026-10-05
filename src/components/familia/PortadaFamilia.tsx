@@ -190,12 +190,26 @@ export default function PortadaFamilia() {
   }, [])
 
   const mesActual = mesKey(hoy)
+  /* Seguros y suscripciones (pagos semestrales/anuales) cuentan como MEDIA MENSUAL del plan, no como el cargo del día que salen */
+  const movsAj = useMemo(() => {
+    const CATS: Record<string, { nombre: string; orden: number }> = { 'hogar-seguros': { nombre: 'Seguros', orden: 12 }, suscripciones: { nombre: 'Suscripciones', orden: 14 } }
+    const base = movs.filter(m => !(m.bloque === 'fijo' && CATS[m.categoria]))
+    const sint: Mov[] = []
+    for (const mes of new Set(movs.map(m => m.mes))) {
+      for (const f of plan.filter(x => CATS[x.categoria])) {
+        sint.push({ fecha: `${mes}-15`, mes, bloque: 'fijo', categoria: f.categoria, categoria_nombre: CATS[f.categoria].nombre, orden: CATS[f.categoria].orden,
+          subcategoria: 'prorrateo', comercio: `${f.concepto.replace(/\s*\(.*\)/, '')} (media mensual)`, importe: -f.importe_mensual })
+      }
+    }
+    return [...base, ...sint]
+  }, [movs, plan])
+
   /* últimos 3 meses COMPLETOS (sin el mes en curso) */
   const ultimos3 = useMemo(() => [1, 2, 3].map(i => mesKey(new Date(hoy.getFullYear(), hoy.getMonth() - i, 1))), [hoy])
 
   const nMeses = Math.max(1, per.meses.length)
-  const enPeriodo = useMemo(() => movs.filter(m => m.fecha >= per.desdeIso && m.fecha <= per.hastaIso), [movs, per.desdeIso, per.hastaIso])
-  const en3 = useMemo(() => movs.filter(m => ultimos3.includes(m.mes)), [movs, ultimos3])
+  const enPeriodo = useMemo(() => movsAj.filter(m => m.fecha >= per.desdeIso && m.fecha <= per.hastaIso), [movsAj, per.desdeIso, per.hastaIso])
+  const en3 = useMemo(() => movsAj.filter(m => ultimos3.includes(m.mes)), [movsAj, ultimos3])
 
   const etiquetaPeriodo = per.etiqueta
   const subMedia = nMeses > 1 ? `Media: ${EUR(0).replace('0', '')}` : undefined // se rellena abajo por bloque
@@ -323,7 +337,7 @@ export default function PortadaFamilia() {
   const prev = useMemo(() => {
     const diasMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).getDate()
     const dia = hoy.getDate()
-    const delMes = movs.filter(m => m.mes === mesActual)
+    const delMes = movsAj.filter(m => m.mes === mesActual)
     const varHastaHoy = -sumBy(delMes.filter(m => m.bloque === 'variable'), m => m.importe)
     const fijHastaHoy = -sumBy(delMes.filter(m => m.bloque === 'fijo'), m => m.importe)
     const ritmo = dia > 0 ? varHastaHoy / dia : 0
@@ -337,7 +351,7 @@ export default function PortadaFamilia() {
     const ingresosPrev = sumBy(en3.filter(m => m.bloque === 'ingreso'), m => m.importe) / mesesConDatos3
     return { diasMes, dia, varHastaHoy, varProyectado, varHabitual, varSemana, semanaHabitual, fijPendiente, fijHastaHoy, ingresosPrev,
       resultadoPrev: ingresosPrev - Math.max(totalPlanFijos, fijHastaHoy) - varProyectado }
-  }, [movs, hoy, mesActual, varPrev, totalPlanFijos, en3, mesesConDatos3])
+  }, [movs, movsAj, hoy, mesActual, varPrev, totalPlanFijos, en3, mesesConDatos3])
 
   const wrap = { fontFamily: OSW, fontWeight: 700 as const, fontSize: 16, letterSpacing: 1, textTransform: 'uppercase' as const, marginBottom: 12, color: INK }
 
