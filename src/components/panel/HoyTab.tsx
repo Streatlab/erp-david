@@ -92,7 +92,7 @@ export default function HoyTab() {
           </table>
         </div>
         <div style={{ marginTop: 12 }}>
-          <Link to="/finanzas/documentacion-cade" style={{ fontFamily: OSW, fontWeight: 700, fontSize: 13, textTransform: 'uppercase', color: INK, background: ARENA, border: `2px solid ${INK}`, padding: '5px 12px', textDecoration: 'none' }}>Subir documentos →</Link>
+          <Link to="/finanzas/documentacion" style={{ fontFamily: OSW, fontWeight: 700, fontSize: 13, textTransform: 'uppercase', color: INK, background: ARENA, border: `2px solid ${INK}`, padding: '5px 12px', textDecoration: 'none' }}>Subir documentos →</Link>
         </div>
       </Banda>
 
