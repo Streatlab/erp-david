@@ -1,0 +1,150 @@
+# 🚂 TREN DAVID-ERP — misiones encadenadas T1–T15 (sep–oct 2026)
+
+Fuente única: página Notion "🚂 TREN DAVID-ERP" en 99 Claude. Este fichero es su espejo para Claude Code.
+Método: FLUJO ÓPTIMO v2 (contrato de tarea con DoD ≤ 3 criterios · gate vitest+tsc+build · regla 2-strikes · rama `trabajo`, commits con `[deploy]` para preview · master solo con "publica" de Rubén).
+Aislamiento ABSOLUTO: solo repo erp-david, Supabase David (rribmludsuirmyprfkop), deploy davidparte. Nada de Binagre: ni código, ni tokens, ni datos. **Única excepción: T1 copia el mecanismo de acceso (no sus datos ni estilos).**
+Estilo visual: kit NeoUI (`src/components/neo/NeoUI.tsx`) + tokens `src/styles/neobrutal.ts`. Patrón: `src/pages/finanzas/Liquidaciones.tsx` y `RunningFamilia.tsx`.
+
+## Reglas transversales (aplican a TODAS las misiones)
+- **Cero datos TEST.** Ninguna pantalla muestra datos inventados. Si no hay datos reales: aviso "En construcción · sin datos" (AvisoNeo) y tabla vacía. Las pantallas holder SE QUEDAN en el menú.
+- **Periodo semana/mes.** Toda pantalla con series temporales ofrece selector Semana/Mes (semana por defecto en lo doméstico, mes en lo fiscal). Presupuestos se fijan en €/mes y se reparten × 12 ÷ 52 para semanas.
+- **Formato español** con `src/lib/format.ts` (fmtEur, fmtNum, fmtPct, fmtDate).
+- **Emisores por fecha.** Nunca hardcodear quién factura qué código: usar `emisores_transportistas` / función `emisor_de(transportista, fecha)`.
+
+## Datos de negocio fijos
+- Códigos Cade → repartidor: **9392 David · 939 Joel · 9391 Saad · 972 Juan**.
+- Hasta 31-ago-2026: David factura 9392, 939, 9391; Juan factura 972.
+- Desde 1-sep-2026: David factura solo 9392; **Juan factura 972, 939 y 9391** (límites de facturación de autónomo).
+- La facturación TOTAL del negocio = suma de los 4 códigos, la emita quien la emita y entre por la cuenta que entre. Vista `v_facturacion_total_david`.
+- El dinero que cobra Juan por 939/9391 entra por una cuenta distinta y **es ingreso del negocio de David**, no ajeno.
+
+## Ya hecho fuera del tren (no repetir)
+- Migración Supabase a cuenta de David (completa, verificada).
+- Login: PIN con hash verificado en servidor (`login_pin`), tabla `usuarios` cerrada al público. Google activado en Supabase Auth, `usuarios.email` dado de alta (Rubén y David), RPC `login_google`, botón "Entrar con Google" en `Login.tsx`.
+- P&G: `v_pyg_mensual`, `v_pyg_resumen`, `v_pyg_hogar`, `v_pyg_global`, `v_pyg_hogar_semana`, `v_pyg_global_semana`, `v_efectivo`, `presupuestos_hogar`, `ambito` en categorías, `origen_efectivo` en conciliación.
+- Emisores: `emisores_transportistas`, `emisor_de()`, `v_facturacion_consolidada`, `v_facturacion_total_david`.
+- Enable Banking: `cuentas_bancarias` (+cuenta_uid, titular, descargar, personal), `banco_sesiones` (BBVA y N26 autorizados hasta 28-dic-2026), `banco_movimientos_raw`, `robot_credenciales`, `robot_log`, `robot_salud`. Función `banco-auth` desplegada.
+- Cartero/liquidaciones: `correo_entrante`, `correo_reglas`, `reglas_liquidacion`, `liquidaciones_cade_lineas`, `envios_cade`, `documentacion_cade`, `v_liquidacion_repartidor`. Función `correo-auth` desplegada; **buzón davidsanzn@gmail.com conectado** (token en `robot_credenciales` google/cartero).
+- Pantalla Running Familia (semanas/meses) publicada.
+
+---
+
+## BLOQUE A — DINERO Y ACCESO
+
+### T1 · Acceso calcado del sistema de Binagre (Google + enlace mágico + PIN por dispositivo + huella)
+Excepción autorizada por Rubén (oct-2026) al aislamiento: se copia el **mecanismo** de acceso de Binagre, NUNCA sus datos, tokens visuales, permisos de cocina ni tablas. Referencia de lectura (solo leer, no importar): repo `Streatlab/binagre` → `src/context/AuthContext.tsx`, `src/lib/accesoRapido.ts`, `src/lib/dispositivo.ts`, `src/lib/passkey.ts`, la pantalla de PIN (`PinScreen`) y `api/_puertas/acceso-rapido.ts`.
+Base de partida en David: Google activado en Supabase Auth; `usuarios.email` (rubenrodriguezvinagre@gmail.com → Rubén admin, davidsanzn@gmail.com → David admin); RPC `login_google(email)`; PIN con hash `login_pin`; botón Google en `Login.tsx`.
+Qué hay que dejar igual que Binagre:
+1. **Sesión real de Supabase Auth** como única verdad. Lista blanca por email en `usuarios` (añadir `activo boolean default true`); fuera de lista → `signOut` + "Este correo no tiene acceso al ERP". Reintento ×3 (500 ms / 1500 ms) antes de echar a nadie por fallo de red.
+2. **Primera entrada en un dispositivo:** Google o **enlace mágico por email** (`signInWithOtp`, previa RPC `email_autorizado(email)` security definer). Pantalla de login: Entrar con Google · Recibir enlace por email · (si el dispositivo ya tiene PIN/huella del último usuario) Entrar con PIN / huella.
+3. **PIN de 4 cifras por dispositivo + usuario** (`dispositivoId()` síncrono en localStorage). Tras la primera entrada se pide crear PIN y opcionalmente registrar huella (WebAuthn/passkey). Tablas: `accesos_pin` (usuario, dispositivo, pin_hash bcrypt, intentos, bloqueado_hasta) y `accesos_huella` (usuario, dispositivo, credential_id, public_key). Bloqueo tras 5 fallos durante 15 min.
+4. **Entrada rápida sin sesión:** UNA función Supabase `acceso` (Deno; no Vercel, para no chocar con el límite de funciones del plan Hobby) con acciones `metodos`, `pin-crear`, `pin-entrar`, `huella-registrar`, `huella-reto`, `huella-entrar`. Comprueba PIN/firma con service role y devuelve `token_hash` de `auth.admin.generateLink({ type: 'magiclink' })`; el cliente lo canjea con `verifyOtp({ token_hash, type: 'magiclink' })`. Guardar último acceso (email + nombre) para ofrecer PIN directamente la próxima vez.
+5. **Desbloqueo persistente** por dispositivo+usuario en localStorage (F5 y pestaña nueva no piden PIN); se borra al "Cerrar sesión". Un SIGNED_IN interactivo desbloquea.
+6. Retirar de la pantalla el login antiguo nombre+PIN una vez funcione el PIN por dispositivo; mantener la RPC `login_pin` hasta verificar.
+7. Supabase Auth: comprobar Site URL `https://davidparte.vercel.app` y redirect `https://davidparte.vercel.app/**`; si faltan, avisar a Rubén con enlace directo, no inventar.
+Estilo: NeoUI de David, no copiar estilos de Binagre.
+DoD: (1) desde un navegador nuevo se entra con Google y con enlace mágico, y un email fuera de lista es rechazado; (2) tras crear PIN, cerrar y reabrir el navegador permite entrar solo con PIN (y huella en móvil compatible) sin volver a Google; (3) 5 PIN erróneos bloquean ese dispositivo 15 min y "Cerrar sesión" exige volver a entrar.
+
+### T2 · Robot bancario nocturno `banco-sync`
+Qué: función Supabase `banco-sync` (Deno) que, por cada `banco_sesiones` `autorizada`, descarga transacciones de cada cuenta con `descargar = true` desde la última fecha conocida (o 2026-06-01 la primera vez) con Enable Banking (JWT RS256, `robot_credenciales` plataforma=enablebanking cuenta=david; firma igual que `banco-auth`).
+- `banco_movimientos_raw` con `huella` = sha256(iban|fecha|importe|concepto|entry_reference). Sin duplicados.
+- Volcado a `conciliacion`: `dedup_key` formato de `useConciliacion.ts` (`fecha|importe.00|concepto_lower|orden`), `tipo` por signo, `origen_efectivo = true` si concepto empieza por "Ret. efectivo". Guardar IBAN/cuenta de origen.
+- Si la cuenta tiene `personal = true`, los movimientos sin regla van a `pendiente` con ámbito personal.
+- Aplica `reglas_conciliacion` activas (patrón con `normalizarConcepto`). Sin regla → `pendiente-revisar-gasto` / `pendiente-revisar-ingreso`.
+- `robot_log` y `robot_salud` (fuente `banco_sync`). Aviso si una sesión caduca en < 10 días.
+- pg_cron diario 05:10 Europe/Madrid.
+DoD: (1) ejecución manual trae movimientos reales y no duplica en segunda pasada; (2) aparecen en Conciliación categorizados; (3) cron visible en `cron.job`.
+
+### T3 · Cuentas bancarias: pantalla real
+Qué: `src/pages/configuracion/bancos/BancosPage.tsx` lee/escribe `cuentas_bancarias` y `banco_sesiones`. Sin mock.
+- Por cuenta: alias, banco, IBAN enmascarado, titular, toggles **Descargar** y **Personal / Actividad**, flag **Cobro del negocio vía Juan**, estado de sesión y caducidad.
+- Botón "Conectar banco" → `banco-auth?llave=david-banco-2026&accion=menu` en nueva pestaña.
+- Aviso rojo si alguna sesión caduca en < 10 días.
+DoD: (1) cambiar Personal afecta al ámbito de movimientos futuros; (2) caducidad visible por banco; (3) sin datos mock.
+
+### T4 · Conciliación: destino del efectivo + ámbito
+Qué: en `src/pages/Conciliacion.tsx` y `useConciliacion.ts`:
+- Filtro "Solo efectivo" (`origen_efectivo`) y columna Destino: Prior, extras en mano, incentivos en mano, mantenimiento, alquiler furgoneta, gastos personales, sin justificar.
+- Al asignar destino se crea/actualiza regla (aprendizaje existente).
+- Chip de ámbito (actividad / personal / interno / pendiente) desde la categoría.
+- KPI "Efectivo sin justificar" desde `v_efectivo`. Selector Semana/Mes.
+DoD: (1) 22 retiradas pequeñas visibles con filtro; (2) asignar destino crea regla; (3) KPI cuadra con `v_efectivo`.
+
+### T5 · Cartero de correo `correo-cartero` (DESBLOQUEADO: buzón conectado)
+Qué: función Supabase que lee Gmail (token `robot_credenciales` plataforma=google cuenta=cartero; credenciales de la app en plataforma=google cuenta=app), clasifica por `correo_reglas`, guarda en `correo_entrante` con adjuntos en Storage bucket `correo`.
+- `liquidacion` → llama a `liquidacion-parser` (T6). `penalizacion` → crea `reclamaciones_cade` abierta.
+- pg_cron 05:00 Europe/Madrid. `robot_salud` fuente `cartero`.
+DoD: (1) correo de prueba con adjunto queda en `correo_entrante` y Storage; (2) clasificación correcta; (3) cron visible.
+
+### T6 · Parser liquidación Cade + factura por repartidor + envíos (BLOQUEADO: ejemplo real)
+Qué: desde el PDF/Excel real, extraer por código y día: entregas, importe, garantía aplicada, penalización (motivo), extra (motivo) → `liquidaciones_cade` + `liquidaciones_cade_lineas`.
+- Una `facturas_emitidas` por código con el **emisor vigente** (`emisor_de`), numeración correlativa por emisor.
+- `envios_cade`: tipo `factura` (una por código) + tipo `documentacion` según `documentacion_cade`. Estado inicial `borrador`.
+- Pantalla en Liquidaciones para aprobar y enviar (Gmail send con el mismo token). Nada sale sin aprobación.
+DoD: (1) la liquidación de ejemplo cuadra con su total; (2) N facturas = N códigos con el emisor correcto según fecha; (3) envío aprobado llega a buzón de prueba con adjuntos.
+
+---
+
+## BLOQUE B — PANTALLAS VACÍAS QUE COBRAN VIDA
+
+### T7 · Pagos y Cobros real
+Qué: `src/pages/finanzas/PagosCobros.tsx` desde `facturas_emitidas` (cobros pendientes a Cade por emisor) y `conciliacion` (pagos). Marca cobrada cuando un ingreso de banco casa con el total de la factura (±1 €, ventana 15 días).
+DoD: (1) lista de facturas pendientes de cobro con días de retraso; (2) cobro casado automáticamente con banco; (3) totales cuadran con `v_facturacion_total_david`.
+
+### T8 · Ventas consolidadas
+Qué: `src/pages/finanzas/Ventas.tsx` desde `v_facturacion_consolidada` + `v_liquidacion_repartidor`: por código/repartidor y periodo, total del negocio, emitido por David, emitido por Juan. Selector Semana/Mes.
+DoD: (1) desde sep-2026 939/9391 aparecen emitidos por Juan y sumados al total de David; (2) desglose por repartidor; (3) cero datos TEST.
+
+### T9 · Punto de equilibrio y Escenarios con costes reales
+Qué: `PuntoEquilibrio.tsx` y `Escenarios.tsx` leen costes fijos reales (`furgonetas_prestamos`, `furgonetas_seguros`, cuota autónomo, gestoría) y variables (media 3 meses de conciliación por categoría). Escenarios: +/− un repartidor, +/− entregas/día, subida garantía.
+DoD: (1) costes fijos = suma real de préstamos+seguros+cuotas; (2) punto de equilibrio en entregas/mes y €/mes; (3) cero datos TEST.
+
+### T10 · Papeleo = bandeja del cartero
+Qué: `src/pages/Papeleo.tsx` muestra `correo_entrante` (tipo, remitente, adjuntos, estado) y permite reclasificar (crea `correo_reglas`). Aviso "sin datos" hasta que T5 funcione.
+DoD: (1) lista de correos procesados; (2) reclasificar crea regla; (3) cero datos TEST.
+
+### T11 · Flota: mantenimiento, daños y fondo de reposición reales
+Qué: `Mantenimiento.tsx`, `DanosVehiculos.tsx` y `flota/Reposicion.tsx` enganchados a las 4 furgonetas reales (`furgonetas`, `furgonetas_mantenimientos_hist`, `furgonetas_incidencias`, `furgonetas_prestamos`). Alta de mantenimiento/daño con coste; gastos de taller de conciliación se proponen como vínculo. Fondo de reposición = cuota mensual necesaria para sustituir cada furgoneta al fin de su vida útil.
+DoD: (1) alta de mantenimiento y daño funcionan sobre furgonetas reales; (2) fondo calculado por furgoneta; (3) cero datos TEST.
+
+### T12 · Entregas (depende de T6)
+Qué: `src/pages/Entregas.tsx` desde `liquidaciones_cade_lineas`: entregas por día, código y repartidor; media diaria; días con penalización. Si Cade no da dato diario, mostrar mensual y aviso.
+DoD: (1) cuadra con el total de la liquidación; (2) filtro por repartidor; (3) cero datos TEST.
+
+---
+
+## BLOQUE C — FUERA DATOS INVENTADOS
+
+### T13 · Usuarios reales + limpieza de repo
+Qué: `Usuarios.tsx` vía RPC de solo lectura (`usuarios_listado`: id, nombre, perfil, email, activo); alta/baja de emails en la lista blanca de T1; reseteo de PIN de un dispositivo; activar/desactivar.
+- Borrar documentación heredada de Binagre (docs/, README) y generar `docs/MAPA-CONTEXTO.md` con módulos, tablas y funciones reales de David.
+DoD: (1) sin TEST en Usuarios; (2) dar de alta un email permite entrar y darlo de baja lo impide; (3) `grep -ri binagre docs/` = 0 (salvo la referencia de T1 en este fichero).
+
+### T14 · Personas y Organigrama reales
+Qué: `equipo/Personas.tsx` y `equipo/Organigrama.tsx` sobre `equipo`/`empleados`/`conductores` reales: David, Juan, Joel, Saad (+ quien haya). Cada uno con código Cade, emisor vigente (`emisor_de`) y furgoneta asignada. Organigrama muestra quién factura a quién desde sep-2026. `Presencia.tsx`: sin datos → aviso holder honesto.
+DoD: (1) 4 repartidores con código correcto; (2) emisor cambia según fecha; (3) cero datos TEST en las tres pantallas.
+
+### T15 · Informes sobre datos reales + holders honestos
+Qué: `informes/Informes.tsx` e `InformesEquipo.tsx` se reconstruyen sobre `v_pyg_resumen`, `v_pyg_global_semana`, `v_facturacion_total_david`, `v_liquidacion_repartidor`, `v_efectivo`. Checklists, Manuales y Libro Equipos: quitar datos TEST, dejar aviso "En construcción · sin datos", mantener en menú.
+DoD: (1) informes cuadran con las vistas; (2) cero datos TEST en todo el ERP (`grep -ri "TEST ·" src/` = 0); (3) holders visibles con aviso.
+
+---
+Orden: T1 → T2 → T3 → T4 → T5 → T7 → T8 → T9 → T11 → T13 → T14 → T15 → T10 → (T6, T12 al desbloquear).
+Cierre de cada misión: LOG de 1 línea al final de este fichero y en Notion, pendings al día, preview en rama `trabajo` con `[deploy]`. No se publica a master sin "publica" de Rubén.
+
+## LOG
+- 2026-10-02 · fuera del tren: Google activado + botón en login + lista blanca por email (Rubén, David). T1 amplía a sistema completo de Binagre.
+- 2026-10-02 · T1 ✅ acceso calcado: sesión Supabase real + lista blanca (activo), Google, enlace mágico, PIN por dispositivo (bloqueo 5×15 min) y huella vía función `acceso`; probado PIN→sesión real en servidor. Pendiente Rubén: confirmar Site URL/redirect en Supabase Auth.
+- 2026-10-02 · T2 ✅ banco-sync v4: respeta Descargar, alta automática de cuentas nuevas, cuentas personales → «Pendiente revisar (personal)», cuenta de origen guardada, cron 05:10 Madrid todo el año; pasada manual 9 cuentas sin errores ni duplicados.
+- 2026-10-02 · T3 ✅ Bancos › Cuentas bancarias real (NeoUI): Descargar, Personal/Actividad, Cobro vía Juan, caducidad por banco, aviso < 10 días y botón Conectar banco; panel antiguo retirado.
+- 2026-10-02 · T4 ✅ Conciliación: filtro «Solo efectivo», columna Destino (7 destinos) que aprende regla, chip de ámbito por categoría, KPI «Efectivo sin justificar» desde v_efectivo y selector Semana.
+- 2026-10-02 · T5 ✅ correo-cartero: lee Gmail de David, clasifica por reglas, adjuntos a Storage «correo», penalización → reclamación, cron 05:00 Madrid; primera pasada: 9 liquidaciones reales de Cade (jun–ago) con 18 adjuntos.
+- 2026-10-02 · T7 ✅ Pagos y Cobros real: pendientes con días sin cobrar, casado automático con banco (±1 €, 15 días; 6 facturas casadas), cuadre mensual con v_facturacion_total_david, pagos desde conciliación.
+- 2026-10-02 · T8 ✅ Ventas real desde v_facturacion_consolidada: total negocio (4 códigos), emitido David/Juan, desglose por código y repartidor, evolución mensual; Semana con aviso honesto (Cade factura por mes); fuera datos TEST.
+- 2026-10-02 · T9 ✅ Punto de equilibrio y Escenarios con costes reales del banco (fijos: leasing/préstamos, seguros, cuotas; variables: media 3 meses cerrados), € por entrega de liquidaciones y palancas ±repartidor/±entregas/subida garantía. Préstamos y seguros de flota son de relleno (Mockup): no se usan; aviso de gastos sin categorizar.
+- 2026-10-02 · T11 ✅ Mantenimiento y Daños sobre las 4 furgonetas reales (alta con coste, marcar resuelto, coste por furgoneta); gastos de taller del banco se proponen para vincular; Reposición ignora préstamos de relleno (Mockup). Fondo por furgoneta pendiente de precio real de compra (no se inventa).
+- 2026-10-02 · T13 ✅ Usuarios real (lista blanca: alta/baja/reactivar, perfil, dispositivos con PIN/huella y reseteo por dispositivo, solo administradores); fuera documentación heredada (incluido un fichero público) y nuevo docs/MAPA-CONTEXTO.md.
+- 2026-10-02 · T14 ✅ Personas y Organigrama sobre el equipo real: código Cade, emisor vigente según fecha (selector «a fecha»: hasta agosto David, desde septiembre Juan para 939/9391) y furgoneta asignada; Presencia con aviso honesto.
+- 2026-10-02 · T15 ✅ Informes sobre v_pyg_resumen / v_pyg_global_semana (Semana/Mes) + facturado (v_facturacion_total_david) y efectivo sin justificar (v_efectivo); Informes de equipo desde facturación por repartidor y v_liquidacion_repartidor; Checklists, Manuales y Libro de equipos como holders honestos; Tareas conectada a su tabla real.
+- 2026-10-02 · T10 ✅ Papeleo = bandeja del cartero: correos reales (9 liquidaciones Cade), adjuntos descargables, archivar y reclasificar (crea regla en correo_reglas). Cero «TEST ·» en src/.
+- 2026-10-02 · T6/T12 siguen fuera del tren, pero T6 ya tiene ejemplo real: PDFs de liquidación Cade jun–ago 2026 (9392, 939, 9391) en Storage «correo».

@@ -6,6 +6,8 @@ import {
   PageNeo, Banda, CabeceraNeo, PillsNeo, KpiNeo, AvisoNeo,
   TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo, BotonNeo,
 } from '@/components/neo/NeoUI'
+import DocumentacionYTope from '@/components/facturacion/DocumentacionYTope'
+import LiquidacionesMes from '@/components/facturacion/LiquidacionesMes'
 
 interface FacturaEmitida {
   id: string
@@ -101,6 +103,10 @@ export default function FacturacionEmitida() {
           <PillsNeo value={estado} onChange={v => setEstado(v as EstadoFilter)} options={['TODAS', 'PENDIENTE', 'COBRADA']} />
         </div>
       </CabeceraNeo>
+
+      {/* Cade: liquidaciones del mes, facturas, documentación y tope */}
+      <LiquidacionesMes />
+      <DocumentacionYTope />
 
       {errMsg && <AvisoNeo>ERROR: {errMsg}</AvisoNeo>}
 

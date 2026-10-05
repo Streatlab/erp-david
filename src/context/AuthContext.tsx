@@ -1,63 +1,162 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
+import type { Session } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase'
+import { dispositivoId } from '@/lib/dispositivo'
+import {
+  guardarUltimoAcceso, estaDesbloqueado, marcarDesbloqueado, borrarDesbloqueo,
+  consumirAccesoPendiente, marcarAccesoPendiente, metodosDisponibles,
+} from '@/lib/accesoRapido'
 
-interface Usuario {
+export interface Usuario {
+  id: number
   nombre: string
-  perfil: 'admin' | 'cocina'
-  rol?: 'admin' | 'cocina' | null
+  perfil: string
+  email: string
 }
+
+/* cargando → fuera (pantalla de entrada) → crear-pin (primera vez en el dispositivo)
+   → bloqueado (sesión abierta pero sin desbloquear) → dentro */
+export type EstadoAcceso = 'cargando' | 'fuera' | 'crear-pin' | 'bloqueado' | 'dentro'
 
 interface AuthContextType {
   usuario: Usuario | null
-  login: (nombre: string, pin: string) => Promise<string | null>
+  estado: EstadoAcceso
+  pendiente: Usuario | null
+  error: string | null
+  loginGoogle: () => Promise<void>
+  enviarEnlace: (email: string) => Promise<string | null>
+  pinCreado: () => void
   logout: () => void
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
 
+const PIN_OK = 'david_pin_ok'
+const espera = (ms: number) => new Promise(r => setTimeout(r, ms))
+
+function pinMarcado(email: string) {
+  try { return localStorage.getItem(PIN_OK) === `${dispositivoId()}|${email.toLowerCase()}` } catch { return false }
+}
+function marcarPin(email: string) {
+  try { localStorage.setItem(PIN_OK, `${dispositivoId()}|${email.toLowerCase()}`) } catch { /* nada */ }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [usuario, setUsuario] = useState<Usuario | null>(() => {
-    const saved = localStorage.getItem('streatlab_user')
-    return saved ? JSON.parse(saved) : null
-  })
+  const [estado, setEstado] = useState<EstadoAcceso>('cargando')
+  const [pendiente, setPendiente] = useState<Usuario | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const resolviendo = useRef<string | null>(null)
 
   useEffect(() => {
-    if (usuario) {
-      localStorage.setItem('streatlab_user', JSON.stringify(usuario))
-    } else {
-      localStorage.removeItem('streatlab_user')
+    // Restos del login antiguo nombre+PIN
+    try { localStorage.removeItem('david_user'); localStorage.removeItem('streatlab_user') } catch { /* nada */ }
+
+    async function resolver(session: Session, interactivo: boolean) {
+      const email = session.user.email
+      if (!email) return
+      const clave = `${session.access_token}|${interactivo}`
+      if (resolviendo.current === clave) return
+      resolviendo.current = clave
+
+      // Lista blanca: 3 intentos (500 ms / 1500 ms) antes de echar a nadie por un fallo de red
+      let fila: Usuario | null = null
+      let fallo = false
+      for (const pausa of [0, 500, 1500]) {
+        if (pausa) await espera(pausa)
+        const { data, error: e } = await supabase.rpc('mi_usuario')
+        if (e) { fallo = true; continue }
+        fallo = false
+        fila = (Array.isArray(data) ? data[0] : data) ?? null
+        break
+      }
+      if (fallo) {
+        setError('No se pudo comprobar el acceso. Revisa la conexión y recarga.')
+        setEstado('fuera')
+        return
+      }
+      if (!fila) {
+        await supabase.auth.signOut()
+        borrarDesbloqueo()
+        setPendiente(null)
+        setError('Este correo no tiene acceso al ERP')
+        setEstado('fuera')
+        return
+      }
+
+      setError(null)
+      setPendiente(fila)
+      guardarUltimoAcceso({ email: fila.email, nombre: fila.nombre })
+      if (interactivo) marcarDesbloqueado(fila.email)
+
+      let tienePin = pinMarcado(fila.email)
+      if (!tienePin) {
+        const m = await metodosDisponibles(fila.email)
+        tienePin = m.pin
+        if (tienePin) marcarPin(fila.email)
+      }
+      if (!estaDesbloqueado(fila.email)) { setEstado(tienePin ? 'bloqueado' : 'fuera'); if (!tienePin) await supabase.auth.signOut(); return }
+      setEstado(tienePin ? 'dentro' : 'crear-pin')
     }
-  }, [usuario])
 
-  async function login(nombre: string, pin: string): Promise<string | null> {
-    const { supabase } = await import('@/lib/supabase')
+    const { data: sub } = supabase.auth.onAuthStateChange((evento, session) => {
+      // Diferido: no llamar a Supabase dentro del propio callback
+      setTimeout(() => {
+        if (evento === 'SIGNED_OUT' || !session) {
+          resolviendo.current = null
+          setPendiente(null)
+          setEstado('fuera')
+          return
+        }
+        if (evento === 'INITIAL_SESSION') resolver(session, consumirAccesoPendiente())
+        else if (evento === 'SIGNED_IN') resolver(session, consumirAccesoPendiente())
+      }, 0)
+    })
+    return () => sub.subscription.unsubscribe()
+  }, [])
 
-    // DEBUG: fetch by nombre only, log both pins before comparing
-    const { data, error } = await supabase
-      .from('usuarios')
-      .select('nombre, perfil, pin')
-      .eq('nombre', nombre)
-      .maybeSingle()
+  async function loginGoogle() {
+    setError(null)
+    marcarAccesoPendiente()
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin },
+    })
+  }
 
-    console.log('[LOGIN DEBUG] query error:', error)
-    console.log('[LOGIN DEBUG] row from DB:', data)
-    console.log('[LOGIN DEBUG] pin input   →', JSON.stringify(pin), 'typeof:', typeof pin, 'length:', pin.length)
-    console.log('[LOGIN DEBUG] pin from DB →', JSON.stringify(data?.pin), 'typeof:', typeof data?.pin, 'length:', data?.pin?.length)
-    console.log('[LOGIN DEBUG] strict equal (===):', data?.pin === pin)
+  async function enviarEnlace(email: string): Promise<string | null> {
+    const limpio = email.trim().toLowerCase()
+    if (!limpio.includes('@')) return 'Escribe un correo válido'
+    const { data: ok, error: e } = await supabase.rpc('email_autorizado', { p_email: limpio })
+    if (e) return 'No se pudo comprobar el correo. Inténtalo de nuevo.'
+    if (!ok) return 'Este correo no tiene acceso al ERP'
+    marcarAccesoPendiente()
+    const { error: e2 } = await supabase.auth.signInWithOtp({
+      email: limpio,
+      options: { emailRedirectTo: window.location.origin, shouldCreateUser: false },
+    })
+    return e2 ? 'No se pudo enviar el enlace. Inténtalo en un minuto.' : null
+  }
 
-    if (error || !data) return 'Usuario o PIN incorrecto'
-    if (data.pin !== pin) return 'Usuario o PIN incorrecto'
-
-    setUsuario({ nombre: data.nombre, perfil: data.perfil })
-    return null
+  function pinCreado() {
+    if (!pendiente) return
+    marcarPin(pendiente.email)
+    marcarDesbloqueado(pendiente.email)
+    setEstado('dentro')
   }
 
   function logout() {
-    setUsuario(null)
+    borrarDesbloqueo()
+    resolviendo.current = null
+    setPendiente(null)
+    setEstado('fuera')
+    supabase.auth.signOut().catch(() => {})
   }
 
+  const usuario = estado === 'dentro' ? pendiente : null
+
   return (
-    <AuthContext.Provider value={{ usuario, login, logout }}>
+    <AuthContext.Provider value={{ usuario, estado, pendiente, error, loginGoogle, enviarEnlace, pinCreado, logout }}>
       {children}
     </AuthContext.Provider>
   )

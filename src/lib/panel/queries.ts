@@ -82,20 +82,25 @@ export interface BarraSemana { semana: string; ingresos: number; gastos: number 
 
 /* ───────────────────────── Helpers ───────────────────────── */
 
+/* Ingresos de David: solo tres conceptos.
+   Cade liquida 2-3 veces al mes y llega AGRUPADO en el banco, no desglosado
+   por Mercadona/Carrefour/Lidl/Dia. Prior factura cada quince dias (David esta
+   en modulos y Prior le devuelve el IVA). Portes son trabajos por cuenta propia. */
 const COLOR_OP = {
-  mercadona: '#F26B1F',
-  carrefour: '#7A8B4F',
-  lidl: '#C89B2A',
-  dia: '#A34E2A',
+  cade: '#F26B1F',
   prior: '#16355C',
+  portes: '#7A8B4F',
 } as const
 
+/* Gastos de David en cuatro grupos reales. No hay renting: las furgonetas son
+   suyas y se pagan con prestamos de cuota fija. Las recargas electricas van
+   aparte porque son un gasto variable diario, no una cuota. */
 const COLOR_GRUPO = {
   rrhh: '#7A8B4F',
-  renting: '#F26B1F',
-  combustible: '#C89B2A',
+  vehiculos: '#F26B1F',
+  recargas: '#C89B2A',
   controlables: '#A34E2A',
-  otros: '#16355C',
+  sinCategorizar: '#9C8A6E',
 } as const
 
 const fmtISO = (d: Date) => d.toISOString().slice(0, 10)
@@ -160,20 +165,12 @@ export function isoWeek(d: Date): number {
 }
 
 const norm = (s: string | null | undefined) =>
-  (s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase()
+  (s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase()
 
-function detectarOperador(concepto: string): keyof typeof COLOR_OP | null {
-  const c = norm(concepto)
-  if (c.includes('MERCADONA')) return 'mercadona'
-  if (c.includes('CARREFOUR')) return 'carrefour'
-  if (c.includes('LIDL'))      return 'lidl'
-  if (/\bDIA\b/.test(c) || c.includes('SUPERMERCADO DIA')) return 'dia'
-  return null
-}
-
-function detectarPortesPrior(concepto: string): boolean {
-  const c = norm(concepto)
-  return c.includes('PRIOR') || c.includes('PORTES')
+/* Prior factura aparte cada 15 dias (David esta en modulos, Prior le devuelve el IVA).
+   Cade llega agrupado en el banco: NO se desglosa por Mercadona/Carrefour/Lidl/Dia. */
+function detectarPrior(concepto: string): boolean {
+  return norm(concepto).includes('PRIOR')
 }
 
 /* ─────────────────────── Catálogo Subcat ─────────────────── */
@@ -243,20 +240,19 @@ export async function getIngresosOperadores(r: Rango): Promise<{
   ])
 
   function agregar(rows: MovRow[]) {
-    const out = { mercadona: 0, carrefour: 0, lidl: 0, dia: 0, prior: 0, cadeOtro: 0, total: 0 }
+    const out = { cade: 0, prior: 0, portes: 0, sinClasificar: 0, total: 0 }
     for (const m of rows) {
       if (!m.subcategoria_id) continue
       if (!subIngreso.has(m.subcategoria_id)) continue
       if (m.importe < 0) continue
       out.total += m.importe
       if (subCade.has(m.subcategoria_id)) {
-        const op = detectarOperador(m.concepto || '')
-        if (op) out[op] += m.importe
-        else    out.cadeOtro += m.importe
+        out.cade += m.importe
       } else if (subPortes.has(m.subcategoria_id)) {
-        out.prior += m.importe
+        if (detectarPrior(m.concepto || '')) out.prior += m.importe
+        else                                 out.portes += m.importe
       } else {
-        out.cadeOtro += m.importe
+        out.sinClasificar += m.importe
       }
     }
     return out
@@ -265,15 +261,13 @@ export async function getIngresosOperadores(r: Rango): Promise<{
   const agPrev = agregar(prev)
 
   const total = ag.total
-  const filasBase: { key: keyof typeof COLOR_OP | 'cadeOtro'; label: string; importe: number; importeAnterior: number; color: string }[] = [
-    { key: 'mercadona', label: 'Cade · Mercadona', color: COLOR_OP.mercadona, importe: ag.mercadona, importeAnterior: agPrev.mercadona },
-    { key: 'carrefour', label: 'Cade · Carrefour', color: COLOR_OP.carrefour, importe: ag.carrefour, importeAnterior: agPrev.carrefour },
-    { key: 'lidl',      label: 'Cade · Lidl',      color: COLOR_OP.lidl,      importe: ag.lidl,      importeAnterior: agPrev.lidl },
-    { key: 'dia',       label: 'Cade · Día',       color: COLOR_OP.dia,       importe: ag.dia,       importeAnterior: agPrev.dia },
-    { key: 'prior',     label: 'Portes · Prior',   color: COLOR_OP.prior,     importe: ag.prior,     importeAnterior: agPrev.prior },
+  const filasBase: { key: keyof typeof COLOR_OP | 'sinClasificar'; label: string; importe: number; importeAnterior: number; color: string }[] = [
+    { key: 'cade',   label: 'Cade',   color: COLOR_OP.cade,   importe: ag.cade,   importeAnterior: agPrev.cade },
+    { key: 'prior',  label: 'Prior',  color: COLOR_OP.prior,  importe: ag.prior,  importeAnterior: agPrev.prior },
+    { key: 'portes', label: 'Portes', color: COLOR_OP.portes, importe: ag.portes, importeAnterior: agPrev.portes },
   ]
-  if (ag.cadeOtro > 0 || agPrev.cadeOtro > 0) {
-    filasBase.push({ key: 'cadeOtro' as never, label: 'Cade · Sin operador', color: '#9C8A6E', importe: ag.cadeOtro, importeAnterior: agPrev.cadeOtro })
+  if (ag.sinClasificar > 0 || agPrev.sinClasificar > 0) {
+    filasBase.push({ key: 'sinClasificar' as never, label: 'Sin clasificar', color: '#9C8A6E', importe: ag.sinClasificar, importeAnterior: agPrev.sinClasificar })
   }
 
   const filas: IngresoOperadorRow[] = filasBase.map(f => ({
@@ -291,24 +285,30 @@ export async function getIngresosOperadores(r: Rango): Promise<{
 
 /* ─────────────────────── Gastos por grupo ────────────────── */
 
-const GRUPOS_GASTO = ['rrhh','renting','combustible','controlables','otros'] as const
+const GRUPOS_GASTO = ['rrhh','vehiculos','recargas','controlables','sinCategorizar'] as const
 type GrupoKey = typeof GRUPOS_GASTO[number]
 
 function mapearGrupoGasto(sub: SubcatLite): GrupoKey {
   const grupo = (sub.grupo || '').toUpperCase()
   const nombre = (sub.nombre || '').toUpperCase()
-  // RRHH = todas las subcat de grupos RRHH
+  // 1) RRHH: sueldos, cuota autonomo, SS, IRPF, gestoria, Legalitas, seleccion
   if (grupo.includes('RRHH')) return 'rrhh'
-  // Renting / préstamos / alquiler / seguros furgonetas
-  if (grupo.includes('RENTING')) return 'renting'
-  // Combustible y recargas dentro de "VEHÍCULOS"
-  if (grupo.includes('VEHICULOS') || grupo.includes('VEHÍCULOS')) {
-    if (nombre.includes('COMBUSTIBLE') || nombre.includes('RECARGA') || nombre.includes('CARBURANTE')) return 'combustible'
-    return 'otros'
-  }
-  // Controlables = grupo "OTROS GASTOS" y similares (categoria_id=5)
-  if (grupo.includes('OTROS') || grupo.includes('INTERNET') || grupo.includes('CONTROLABLE')) return 'controlables'
-  return 'otros'
+
+  // 2) Recargas electricas: gasto VARIABLE diario. Se comprueba antes que Vehiculos
+  //    porque las recargas viven dentro del grupo VEHICULOS en el catalogo.
+  if (nombre.includes('RECARGA') || nombre.includes('COMBUSTIBLE') || nombre.includes('CARBURANTE')) return 'recargas'
+
+  // 3) Vehiculos: prestamos de cuota FIJA mensual, seguros, ITV, mantenimiento, reparaciones.
+  //    David NO tiene renting: las furgonetas son suyas y se pagan a plazos.
+  if (grupo.includes('VEHICULOS') || grupo.includes('VEHÍCULOS') || grupo.includes('RENTING')) return 'vehiculos'
+
+  // 4) Controlables: todo lo que no sea vehiculos, recargas ni RRHH.
+  //    Comisiones cajero/BBVA, movil, telefono, seguro baja autonomo, fraccionamientos.
+  if (grupo.includes('OTROS') || grupo.includes('INTERNET') || grupo.includes('CONTROLABLE')
+      || grupo.includes('ADMIN') || grupo.includes('SUMINISTRO')) return 'controlables'
+
+  // Sin encaje: NO es un cajon de sastre, es deuda pendiente de categorizar.
+  return 'sinCategorizar'
 }
 
 export async function getGastosPorGrupo(r: Rango): Promise<{
@@ -327,7 +327,7 @@ export async function getGastosPorGrupo(r: Rango): Promise<{
   ])
 
   function agregar(rows: MovRow[]) {
-    const out: Record<GrupoKey, number> = { rrhh: 0, renting: 0, combustible: 0, controlables: 0, otros: 0 }
+    const out: Record<GrupoKey, number> = { rrhh: 0, vehiculos: 0, recargas: 0, controlables: 0, sinCategorizar: 0 }
     let total = 0
     for (const m of rows) {
       if (!m.subcategoria_id) continue
@@ -344,11 +344,11 @@ export async function getGastosPorGrupo(r: Rango): Promise<{
   const agPrev = agregar(prev)
 
   const META: Record<GrupoKey, { label: string; color: string }> = {
-    rrhh:         { label: 'RRHH',                 color: COLOR_GRUPO.rrhh },
-    renting:      { label: 'Vehículos · Renting',  color: COLOR_GRUPO.renting },
-    combustible:  { label: 'Vehículos · Combustible', color: COLOR_GRUPO.combustible },
-    controlables: { label: 'Controlables',         color: COLOR_GRUPO.controlables },
-    otros:        { label: 'Otros',                color: COLOR_GRUPO.otros },
+    rrhh:           { label: 'RRHH',            color: COLOR_GRUPO.rrhh },
+    vehiculos:      { label: 'Vehículos',       color: COLOR_GRUPO.vehiculos },
+    recargas:       { label: 'Recargas',        color: COLOR_GRUPO.recargas },
+    controlables:   { label: 'Controlables',    color: COLOR_GRUPO.controlables },
+    sinCategorizar: { label: 'Sin categorizar', color: COLOR_GRUPO.sinCategorizar },
   }
 
   const filas: GastoGrupoRow[] = GRUPOS_GASTO.map(k => {
@@ -542,7 +542,11 @@ export async function setObjetivoMensual(periodo: 'semanal' | 'mensual' | 'anual
   }
 }
 
-/* ─────────────────────── Objetivos diarios ───────────────── */
+/* ─────────────────────── Objetivos diarios ───────────────────
+   DEPRECADO en el Panel: David no tiene objetivo diario de facturación.
+   Cade liquida 2-3 veces al mes y Prior cada quince días, así que un objetivo
+   por día no mide nada útil. Se mantiene la función por si algún módulo futuro
+   (Entregas) necesita metas diarias de VOLUMEN, que sí tienen sentido.        */
 
 export async function getObjetivosDiariosSemana(): Promise<ObjetivoDiaFila[]> {
   const hoy = today()
@@ -612,10 +616,10 @@ export async function setObjetivoDia(fecha: string, importe: number) {
 
 /* ─────────────────────── Presupuestos ────────────────────── */
 
-const META_PRESUP: Record<string, { label: string; key: 'rrhh'|'renting'|'combustible'|'controlables' }> = {
+const META_PRESUP: Record<string, { label: string; key: 'rrhh'|'vehiculos'|'recargas'|'controlables' }> = {
   RRHH:              { label: 'RRHH',                  key: 'rrhh' },
-  VEHICULOS_RENTING: { label: 'Vehículos · Renting',   key: 'renting' },
-  COMBUSTIBLE:       { label: 'Combustible',           key: 'combustible' },
+  VEHICULOS_RENTING: { label: 'Vehículos',             key: 'vehiculos' },
+  COMBUSTIBLE:       { label: 'Recargas',              key: 'recargas' },
   CONTROLABLES:      { label: 'Controlables',          key: 'controlables' },
 }
 

@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { Search, Zap } from 'lucide-react'
 import { fmtEur } from '@/utils/format'
 import {
@@ -17,6 +17,11 @@ import { useAniosDisponibles } from '@/hooks/useAniosDisponibles'
 import { toast } from '@/lib/toastStore'
 import type { Movimiento } from '@/types/conciliacion'
 import { useConciliacion } from '@/hooks/useConciliacion'
+import { supabase } from '@/lib/supabase'
+import { rangoSemana, etiquetaSemana, isoLocal } from '@/lib/periodo'
+import { DESTINOS_EFECTIVO, efectivoPorJustificar } from '@/lib/efectivo'
+
+const COLOR_AMBITO: Record<string, string> = { actividad: MARINO, personal: CELESTE, interno: GRIS, pendiente: AMBAR }
 
 /* ═══════════════════════════════════════════════════════════
    HELPERS (lógica intacta)
@@ -62,6 +67,8 @@ function detectarOperador(nombre: string): OperadorKey | null {
 function calcularLabelPeriodo(periodo: string, customDesde?: string, customHasta?: string): string {
   const now = new Date()
   const mes = now.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })
+  if (periodo === 'semana') return etiquetaSemana(rangoSemana(now).inicio)
+  if (periodo === 'semana_anterior') return etiquetaSemana(rangoSemana(now, -1).inicio)
   if (periodo === 'mes') return mes.toUpperCase()
   if (periodo === 'mes_anterior') {
     const ma = new Date(now.getFullYear(), now.getMonth() - 1, 1)
@@ -89,8 +96,8 @@ export default function Conciliacion() {
   const aniosDisponibles = useAniosDisponibles()
   const [catFiltro, setCatFiltro] = useState<string>('todas')
   const [busqueda, setBusqueda] = useState('')
-  const [filtroCard, setFiltroCard] = useState<'pendientes' | 'ingreso' | 'gasto' | null>(null)
-  const toggleFiltroCard = (k: 'pendientes' | 'ingreso' | 'gasto') => {
+  const [filtroCard, setFiltroCard] = useState<'pendientes' | 'ingreso' | 'gasto' | 'efectivo' | null>(null)
+  const toggleFiltroCard = (k: 'pendientes' | 'ingreso' | 'gasto' | 'efectivo') => {
     setFiltroCard(prev => prev === k ? null : k)
   }
 
@@ -101,6 +108,19 @@ export default function Conciliacion() {
     categorias: categoriasBD,
     loading: loadingBD,
   } = useConciliacion()
+
+  /* — Efectivo por justificar según la vista v_efectivo (por mes) — */
+  const [vEfectivo, setVEfectivo] = useState<{ mes: string; estado: string; euros: number; retiradas: number }[]>([])
+  useEffect(() => {
+    supabase.from('v_efectivo').select('mes, estado, euros, retiradas')
+      .then(({ data }) => setVEfectivo((data ?? []).map((r: any) => ({ ...r, euros: Number(r.euros), retiradas: Number(r.retiradas) }))))
+  }, [movimientosBD])
+
+  const ambitoPorCodigo = useMemo(() => {
+    const m: Record<string, string> = {}
+    categoriasBD.forEach(c => { if (c.ambito) m[c.codigo] = c.ambito })
+    return m
+  }, [categoriasBD])
 
   /* — Agrupación dropdown: Ingresos arriba, gastos por `grupo` — */
   const dropdownGroups = useMemo(() => {
@@ -130,6 +150,7 @@ export default function Conciliacion() {
       categoria_id: m.categoria,
       contraparte: m.proveedor ?? '',
       gasto_id: m.gasto_id ?? null,
+      origen_efectivo: !!m.origen_efectivo,
     })),
     [movimientosBD]
   )
@@ -172,7 +193,11 @@ export default function Conciliacion() {
     let inicio: Date
     let fin: Date = new Date(hoy)
 
-    if (periodo === 'mes') {
+    if (periodo === 'semana' || periodo === 'semana_anterior') {
+      const r = rangoSemana(new Date(), periodo === 'semana' ? 0 : -1)
+      inicio = r.inicio
+      fin = r.fin
+    } else if (periodo === 'mes') {
       inicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1)
     } else if (periodo === 'mes_anterior') {
       inicio = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1)
@@ -221,6 +246,7 @@ export default function Conciliacion() {
         if (filtroCard === 'pendientes') return !m.categoria_id
         if (filtroCard === 'ingreso')    return m.importe > 0
         if (filtroCard === 'gasto')      return m.importe < 0
+        if (filtroCard === 'efectivo')   return !!m.origen_efectivo
         return true
       })
       .sort((a, b) => b.fecha.localeCompare(a.fecha))
@@ -242,6 +268,28 @@ export default function Conciliacion() {
     const pendientes = movimientosFiltrados.filter(m => !m.categoria_id).length
     return { ingresos, gastos, sumIng, sumGst, balance, pendientes }
   }, [movimientosFiltrados])
+
+  /* KPI efectivo sin justificar: en periodos de meses completos sale de v_efectivo; en semanas, misma regla sobre los movimientos */
+  const efectivo = useMemo(() => {
+    const enRango = movimientos.filter(m => {
+      const f = new Date(m.fecha + 'T12:00:00')
+      return m.origen_efectivo && f >= rangoActual.inicio && f <= rangoActual.fin
+    })
+    const local = enRango.filter(m => efectivoPorJustificar(m.categoria_id))
+    const porSemana = periodo === 'semana' || periodo === 'semana_anterior' || periodo === 'personalizado' || periodo === '30d' || periodo === 'trimestre'
+    if (!porSemana) {
+      const desde = isoLocal(new Date(rangoActual.inicio.getFullYear(), rangoActual.inicio.getMonth(), 1))
+      const hasta = isoLocal(rangoActual.fin)
+      const filas = vEfectivo.filter(r => r.estado === 'por justificar' && r.mes >= desde && r.mes <= hasta)
+      return { euros: filas.reduce((s, r) => s + r.euros, 0), n: filas.reduce((s, r) => s + r.retiradas, 0), total: enRango.length }
+    }
+    return { euros: local.reduce((s, m) => s + Math.abs(m.importe), 0), n: local.length, total: enRango.length }
+  }, [movimientos, rangoActual, periodo, vEfectivo])
+
+  const handleDestino = (m: Movimiento, codigo: string) => {
+    if (!codigo || codigo === m.categoria_id) return
+    handleCategorizar(m.id, codigo, m.concepto)
+  }
 
   const periodoLabel = calcularLabelPeriodo(periodo, customDesde, customHasta)
 
@@ -275,6 +323,7 @@ export default function Conciliacion() {
           <SelectorPeriodoDropdown
             value={periodo}
             onChange={setPeriodo}
+            conSemana
             anios={aniosDisponibles}
             desde={customDesde}
             hasta={customHasta}
@@ -393,7 +442,9 @@ export default function Conciliacion() {
                 </select>
               </div>
               <div>
-                <label style={labelStyle}>Buscar concepto</label>
+                <label style={labelStyle}>Buscar concepto · <button onClick={() => toggleFiltroCard('efectivo')}
+                  style={{ background: filtroCard === 'efectivo' ? NARANJA : 'none', color: filtroCard === 'efectivo' ? ARENA : INK, border: `2px solid ${INK}`, padding: '0 6px', fontFamily: OSW, fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', cursor: 'pointer' }}>
+                  Solo efectivo</button></label>
                 <div style={{ position: 'relative' }}>
                   <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: GRIS }} />
                   <input
@@ -420,6 +471,10 @@ export default function Conciliacion() {
                 label="Pendientes categorizar" periodo={periodoLabel}
                 valor={datos.pendientes > 0 ? String(datos.pendientes) : 'Al día ✓'}
                 color={datos.pendientes > 0 ? AMBAR : OLIVA} />
+              <KpiClick activo={filtroCard === 'efectivo'} onClick={() => toggleFiltroCard('efectivo')}
+                label="Efectivo sin justificar" periodo={`${periodoLabel} · ${efectivo.n} de ${efectivo.total} retiradas`}
+                valor={efectivo.euros > 0 ? fmtEur(efectivo.euros) : 'Al día ✓'}
+                color={efectivo.euros > 0 ? TERRA : OLIVA} />
             </div>
 
             {/* Banner filtro activo */}
@@ -433,7 +488,8 @@ export default function Conciliacion() {
                 <span>
                   Mostrando: <strong style={{ fontFamily: OSW, textTransform: 'uppercase' }}>{
                     filtroCard === 'pendientes' ? 'Pendientes categorizar' :
-                    filtroCard === 'ingreso' ? 'Solo ingresos' : 'Solo gastos'
+                    filtroCard === 'ingreso' ? 'Solo ingresos' :
+                    filtroCard === 'efectivo' ? 'Solo efectivo' : 'Solo gastos'
                   }</strong>
                   <span style={{ marginLeft: 6 }}>
                     ({movimientosFiltrados.length} {movimientosFiltrados.length === 1 ? 'movimiento' : 'movimientos'})
@@ -455,13 +511,14 @@ export default function Conciliacion() {
                   <th style={thNeo}>Concepto</th>
                   <th style={{ ...thNeo, textAlign: 'right' }}>Importe</th>
                   <th style={thNeo}>Categoría</th>
+                  <th style={thNeo}>Destino efectivo</th>
                   <th style={thNeo}>Contraparte</th>
                 </tr>
               </thead>
               <tbody>
                 {movimientosFiltrados.length === 0 ? (
                   <tr>
-                    <td colSpan={5} style={{ ...tdNeo(false), textAlign: 'center', color: GRIS, padding: '28px 12px' }}>
+                    <td colSpan={6} style={{ ...tdNeo(false), textAlign: 'center', color: GRIS, padding: '28px 12px' }}>
                       Sin movimientos en este rango
                     </td>
                   </tr>
@@ -521,7 +578,27 @@ export default function Conciliacion() {
                           {m.auto_categorizado && (
                             <Zap size={12} color={AMBAR} aria-label="Auto: regla aplicada" />
                           )}
+                          <BadgeNeo color={COLOR_AMBITO[m.categoria_id ? (ambitoPorCodigo[m.categoria_id] ?? 'actividad') : 'pendiente']}>
+                            {m.categoria_id ? (ambitoPorCodigo[m.categoria_id] ?? 'actividad') : 'pendiente'}
+                          </BadgeNeo>
                         </div>
+                      </td>
+                      <td style={tdNeo(alt)}>
+                        {m.origen_efectivo ? (
+                          <select
+                            value={DESTINOS_EFECTIVO.some(d => d.codigo === m.categoria_id) ? m.categoria_id ?? '' : ''}
+                            onChange={e => handleDestino(m, e.target.value)}
+                            style={{
+                              backgroundColor: efectivoPorJustificar(m.categoria_id) ? ARENA : BLANCO, color: INK,
+                              border: `2px dashed ${efectivoPorJustificar(m.categoria_id) ? TERRA : CELESTE}`,
+                              borderRadius: 0, padding: '4px 8px', fontFamily: OSW, fontSize: 11, fontWeight: 600,
+                              letterSpacing: 1, textTransform: 'uppercase', cursor: 'pointer', outline: 'none',
+                            }}
+                          >
+                            <option value="">— Destino —</option>
+                            {DESTINOS_EFECTIVO.map(d => <option key={d.codigo} value={d.codigo}>{d.nombre}</option>)}
+                          </select>
+                        ) : <span style={{ color: GRIS }}>—</span>}
                       </td>
                       <td style={tdNeo(alt)}>
                         {operador ? (

@@ -7,8 +7,11 @@ import Entregas from '@/pages/Entregas'
 import Conciliacion from '@/pages/Conciliacion'
 import Flota from '@/pages/Flota'
 import FurgonetaDetalle from '@/pages/FurgonetaDetalle'
+import Reposicion from '@/pages/flota/Reposicion'
 import BancosPage from '@/pages/configuracion/bancos/BancosPage'
 import Running from '@/pages/finanzas/Running'
+import RunningFamilia from '@/pages/finanzas/RunningFamilia'
+import DocumentacionCade from '@/pages/finanzas/DocumentacionCade'
 import FacturacionEmitida from '@/pages/finanzas/FacturacionEmitida'
 import Liquidaciones from '@/pages/finanzas/Liquidaciones'
 import PagosCobros from '@/pages/finanzas/PagosCobros'
@@ -32,7 +35,8 @@ import Usuarios from '@/pages/configuracion/Usuarios'
 import Placeholder from '@/pages/Placeholder'
 
 function ProtectedRoute({ children, solo }: { children: React.ReactNode; solo?: string[] }) {
-  const { usuario } = useAuth()
+  const { usuario, estado } = useAuth()
+  if (estado === 'cargando') return null
   if (!usuario) return <Navigate to="/login" replace />
   if (solo && !solo.includes(usuario.perfil)) return <Navigate to="/" replace />
   return <>{children}</>
@@ -63,13 +67,16 @@ function AppRoutes() {
         <Route path="finanzas/pagos-cobros"  element={<ProtectedRoute solo={['admin']}><PagosCobros /></ProtectedRoute>} />
         <Route path="punto-equilibrio"       element={<ProtectedRoute solo={['admin']}><PuntoEquilibrio /></ProtectedRoute>} />
         <Route path="running"                element={<ProtectedRoute solo={['admin']}><Running /></ProtectedRoute>} />
+        <Route path="finanzas/running-familia" element={<ProtectedRoute solo={['admin']}><RunningFamilia /></ProtectedRoute>} />
+        <Route path="finanzas/documentacion" element={<ProtectedRoute solo={['admin']}><DocumentacionCade /></ProtectedRoute>} />
         <Route path="finanzas/escenarios"    element={<ProtectedRoute solo={['admin']}><Escenarios /></ProtectedRoute>} />
         <Route path="conciliacion"           element={<ProtectedRoute solo={['admin']}><Conciliacion /></ProtectedRoute>} />
 
         {/* Operación */}
         <Route path="entregas"      element={<ProtectedRoute solo={['admin']}><Entregas /></ProtectedRoute>} />
-        <Route path="flota"         element={<ProtectedRoute solo={['admin']}><Flota /></ProtectedRoute>} />
-        <Route path="flota/:codigo" element={<ProtectedRoute solo={['admin']}><FurgonetaDetalle /></ProtectedRoute>} />
+        <Route path="flota"             element={<ProtectedRoute solo={['admin']}><Flota /></ProtectedRoute>} />
+        <Route path="flota/reposicion"  element={<ProtectedRoute solo={['admin']}><Reposicion /></ProtectedRoute>} />
+        <Route path="flota/:codigo"     element={<ProtectedRoute solo={['admin']}><FurgonetaDetalle /></ProtectedRoute>} />
         <Route path="reclamaciones" element={<ProtectedRoute solo={['admin']}><ReclamacionesCade /></ProtectedRoute>} />
         <Route path="danos-vehiculos" element={<ProtectedRoute solo={['admin']}><DanosVehiculos /></ProtectedRoute>} />
         <Route path="mantenimiento" element={<ProtectedRoute solo={['admin']}><Mantenimiento /></ProtectedRoute>} />
