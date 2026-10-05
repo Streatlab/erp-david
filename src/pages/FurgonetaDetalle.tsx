@@ -18,6 +18,8 @@ import {
   type Conductor, type ParteKm, type RevisionVisual, type Mantenimiento,
   type Prestamo, type Documento, type Incidencia,
 } from '../lib/flota/queries';
+import { HeroNeo } from '@/components/neo/NeoUI';
+import { OLIVA, NARANJA, AMBAR } from '@/styles/neobrutal';
 import Modal, { FormRow, Input, Select, TextArea, BtnPrimary, BtnGhost } from '../components/Modal';
 
 type Tab = 'general' | 'seguro' | 'itv' | 'prestamo' | 'mantenim' | 'kms' | 'visual' | 'fotos' | 'multas' | 'docs' | 'conductor';
@@ -110,6 +112,10 @@ export default function FurgonetaDetalle() {
 
   const reload = () => recargar(furgo.id, furgo.conductor_id);
 
+  const itvFecha = itv?.proxima_fecha ?? furgo.itv_fecha ?? null;
+  const diasItv = itvFecha ? Math.ceil((new Date(itvFecha + 'T00:00:00').getTime() - Date.now()) / 86400000) : null;
+  const diasItvOk = diasItv != null && !Number.isNaN(diasItv);
+
   return (
     <div className="p-6 space-y-5">
       <button onClick={() => navigate('/flota')} className="text-sm text-[var(--fuego,#F26B1F)] font-semibold">
@@ -153,6 +159,14 @@ export default function FurgonetaDetalle() {
           </div>
         </div>
       </div>
+
+      <HeroNeo
+        eyebrowTxt={`ITV · ${furgo.matricula}`}
+        cifra={diasItvOk ? String(Math.abs(diasItv as number)) : '—'}
+        frase={!diasItvOk ? 'Sin datos todavía' : (diasItv as number) >= 0 ? 'Días hasta la próxima ITV de esta furgoneta' : 'Días de retraso: la ITV de esta furgoneta está vencida'}
+        color={!diasItvOk ? AMBAR : (diasItv as number) < 0 ? NARANJA : (diasItv as number) <= 30 ? AMBAR : OLIVA}
+        apoyo={diasItvOk ? [{ label: 'Fecha ITV', valor: itvFecha as string }] : undefined}
+      />
 
       {/* Tabs */}
       <div className="flex gap-2 flex-wrap border-b border-[var(--arena,#EFE6D8)]">

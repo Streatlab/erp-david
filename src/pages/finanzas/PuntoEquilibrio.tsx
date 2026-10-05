@@ -2,8 +2,8 @@ import { useMemo } from 'react'
 import { useCostesReales } from '@/hooks/useCostesReales'
 import { puntoEquilibrio } from '@/lib/equilibrio'
 import { fmtEur } from '@/lib/format'
-import { INK, MARINO, ARENA, ARENA_CL, BLANCO, GRIS, OLIVA, TERRA, NARANJA, CELESTE, AMBAR, OSW, LEX, SHADOW, BORDER_CARD, card } from '@/styles/neobrutal'
-import { PageNeo, Banda, CabeceraNeo, KpiNeo, AvisoNeo } from '@/components/neo/NeoUI'
+import { MARINO, ARENA, ARENA_CL, BLANCO, GRIS, OLIVA, TERRA, NARANJA, CELESTE, AMBAR, OSW, LEX, SHADOW, BORDER_CARD, card } from '@/styles/neobrutal'
+import { PageNeo, Banda, CabeceraNeo, KpiNeo, AvisoNeo, HeroNeo } from '@/components/neo/NeoUI'
 
 const fmtNum = (n: number | null) => n === null ? '—' : Math.round(n).toLocaleString('es-ES')
 
@@ -20,8 +20,9 @@ export default function PuntoEquilibrio() {
   const calc = useMemo(() => {
     if (!datos) return null
     const { costes, ingresos, eurEntrega } = datos
-    const pe = puntoEquilibrio(costes.fijos, costes.variables, ingresos, eurEntrega)
-    const gastoMes = costes.fijos + costes.variables
+    const fijosConSueldo = costes.fijos + datos.sueldoDavid /* el sueldo de David = lo que envía a la familia */
+    const pe = puntoEquilibrio(fijosConSueldo, costes.variables, ingresos, eurEntrega)
+    const gastoMes = fijosConSueldo + costes.variables
     const margenMes = ingresos - gastoMes
     return {
       ...pe, gastoMes, ingresoMes: ingresos, margenMes, eurEntrega,
@@ -41,6 +42,14 @@ export default function PuntoEquilibrio() {
         </div>
       </CabeceraNeo>
 
+      <HeroNeo
+        eyebrowTxt="Tu número mágico · entregas al mes"
+        cifra={!loading && !sinDatos && calc ? fmtNum(calc.entregas) : '—'}
+        frase={!loading && !sinDatos && calc ? `Entregas al mes para cubrir todos los gastos · ≈ ${fmtNum(calc.porDia)} al día` : 'Sin datos todavía'}
+        color={!loading && !sinDatos && calc ? (cubierto ? OLIVA : NARANJA) : undefined}
+        apoyo={!loading && !sinDatos && calc ? [{ label: 'Base facturada/mes', valor: fmtEur(calc.euros) }] : undefined}
+      />
+
       {errMsg && <AvisoNeo>ERROR: {errMsg}</AvisoNeo>}
 
       {loading && (
@@ -59,23 +68,10 @@ export default function PuntoEquilibrio() {
       )}
 
       {!loading && !sinDatos && calc && datos && (<>
-        {/* HERO: el número que importa */}
-        <Banda bg={cubierto ? OLIVA : NARANJA}>
-          <span style={{ display: 'inline-block', background: INK, color: ARENA, fontFamily: OSW, fontWeight: 600, fontSize: 13, letterSpacing: 2, textTransform: 'uppercase', padding: '4px 12px', border: `2px solid ${INK}` }}>
-            Tu número mágico
-          </span>
-          <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 'clamp(38px,6vw,80px)', lineHeight: 0.95, letterSpacing: '-0.5px', textTransform: 'uppercase', color: ARENA, marginTop: 14 }}>
-            NECESITAS <span style={{ background: INK, color: cubierto ? OLIVA : NARANJA, padding: '0 12px' }}>{fmtNum(calc.entregas)}</span> ENTREGAS/MES
-          </div>
-          <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 'clamp(18px,2.4vw,28px)', color: ARENA, marginTop: 12, textTransform: 'uppercase' }}>
-            ≈ {fmtNum(calc.porDia)} entregas al día · {fmtEur(calc.euros)} de base facturada al mes
-          </div>
-        </Banda>
-
         {/* Las piezas del cálculo */}
         <Banda bg={ARENA_CL}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 18 }}>
-            <KpiNeo label="Costes fijos / mes" valor={fmtEur(datos.costes.fijos)} color={TERRA} sub="préstamos, seguros, cuotas (banco)" />
+            <KpiNeo label="Costes fijos / mes" valor={fmtEur(datos.costes.fijos + datos.sueldoDavid)} color={TERRA} sub={`préstamos, seguros, cuotas + sueldo de David ${fmtEur(datos.sueldoDavid)} (lo que envía a la familia)`} />
             <KpiNeo label="Costes variables / mes" valor={fmtEur(datos.costes.variables)} color={NARANJA} sub={`media ${datos.costes.meses.join(', ')}`} />
             <KpiNeo label="Cobras por entrega" valor={fmtEur(calc.eurEntrega, { decimals: 2 })} color={CELESTE} sub={`Real: ${fmtNum(datos.entregasLiquidadas)} entregas liquidadas`} />
             <KpiNeo label="Ingreso medio / mes" valor={fmtEur(calc.ingresoMes)} color={OLIVA} sub={`base facturada ${datos.mesesIngreso.map(m => m.slice(0, 7)).join(', ')}`} />

@@ -1,6 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
+import { usePeriodo } from '@/lib/periodoGlobal'
+import { HeroNeo } from '@/components/neo/NeoUI'
 import { INK, ARENA, ARENA_CL, BLANCO, GRIS, OLIVA, TERRA, NARANJA, MARINO, AMBAR, CELESTE, OSW, LEX, BORDER, BORDER_CARD, SHADOW, PAD, eyebrow, d } from '@/styles/neobrutal'
 
 /* Pestaña HOY del Panel global: el dashboard de ahora, de un vistazo. Solo lo que importa hoy:
@@ -10,9 +12,7 @@ import { INK, ARENA, ARENA_CL, BLANCO, GRIS, OLIVA, TERRA, NARANJA, MARINO, AMBA
    4. Avisos que solo existen cuando hay algo que hacer (documentación de Cade, facturas sin enviar,
       movimientos sin categorizar, tareas). Cuando se resuelven, desaparecen. */
 
-type Periodo = 'mes-actual' | 'mes-anterior' | 'ultimos-30' | 'trimestre' | 'anio'
-
-interface Cuenta { banco: string; iban_mask: string | null; saldo_actual: number | null; saldo_fecha: string | null; personal: boolean | null; activa: boolean | null }
+interface Cuenta { banco: string; alias: string | null; iban: string | null; iban_mask: string | null; saldo_actual: number | null; saldo_fecha: string | null; personal: boolean | null; activa: boolean | null }
 interface Mov { fecha: string; importe: number; categoria: string | null }
 interface Doc { emisor: string; documento: string; como_obtenerlo: string; estado: string }
 interface Tarea { titulo: string; fecha_limite: string | null; prioridad: string | null; estado: string | null }
@@ -26,17 +26,6 @@ const conIva = (n: number) => Math.round(Number(n ?? 0) * 121) / 100
 const iso = (dt: Date) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
 const primero = (dt: Date) => new Date(dt.getFullYear(), dt.getMonth(), 1)
 
-function rango(p: Periodo, hoy: Date): { desde: Date; hasta: Date; txt: string } {
-  if (p === 'mes-anterior') {
-    const d1 = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1), d2 = new Date(hoy.getFullYear(), hoy.getMonth(), 0)
-    return { desde: d1, hasta: d2, txt: `${MESES[d1.getMonth()]} ${d1.getFullYear()}` }
-  }
-  if (p === 'ultimos-30') return { desde: new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - 29), hasta: hoy, txt: 'últimos 30 días' }
-  if (p === 'trimestre') return { desde: new Date(hoy.getFullYear(), Math.floor(hoy.getMonth() / 3) * 3, 1), hasta: hoy, txt: 'este trimestre' }
-  if (p === 'anio') return { desde: new Date(hoy.getFullYear(), 0, 1), hasta: hoy, txt: `${hoy.getFullYear()}` }
-  return { desde: primero(hoy), hasta: hoy, txt: `${MESES[hoy.getMonth()]} hasta hoy` }
-}
-
 function Banda({ bg, children }: { bg: string; children: ReactNode }) {
   return <section style={{ background: bg, borderBottom: BORDER, padding: `24px ${PAD}` }}>{children}</section>
 }
@@ -49,14 +38,10 @@ function Aviso({ color, texto, enlace, boton }: { color: string; texto: ReactNod
   )
 }
 
-const PERIODOS: { k: Periodo; l: string }[] = [
-  { k: 'mes-actual', l: 'Este mes' }, { k: 'mes-anterior', l: 'Mes anterior' }, { k: 'ultimos-30', l: 'Últimos 30 días' }, { k: 'trimestre', l: 'Trimestre' }, { k: 'anio', l: 'Año' },
-]
-
 export default function HoyTab() {
   const hoy = new Date()
-  const [periodo, setPeriodo] = useState<Periodo>('mes-actual')
-  const { desde, hasta, txt } = rango(periodo, hoy)
+  const per = usePeriodo()
+  const txt = per.etiqueta
   const [cuentas, setCuentas] = useState<Cuenta[]>([])
   const [movs, setMovs] = useState<Mov[]>([])
   const [docs, setDocs] = useState<Doc[]>([])
@@ -71,7 +56,7 @@ export default function HoyTab() {
     const mesFact = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1)
     const ini6 = new Date(hoy.getFullYear(), hoy.getMonth() - 6, 1)
     Promise.all([
-      supabase.from('cuentas_bancarias').select('banco, iban_mask, saldo_actual, saldo_fecha, personal, activa'),
+      supabase.from('cuentas_bancarias').select('banco, alias, iban, iban_mask, saldo_actual, saldo_fecha, personal, activa'),
       supabase.from('v_documentacion_pendiente').select('emisor, documento, como_obtenerlo, estado'),
       supabase.from('tareas').select('titulo, fecha_limite, prioridad, estado').order('fecha_limite', { ascending: true }).limit(50),
       supabase.from('facturas_emitidas').select('periodo, base_imponible, emisor, id').eq('cliente', 'CADE').gte('periodo', iso(ini6)),
@@ -106,14 +91,16 @@ export default function HoyTab() {
 
   /* Movimientos del periodo elegido (sin las cuentas personales) */
   useEffect(() => {
-    supabase.from('conciliacion').select('fecha, importe, categoria').gte('fecha', iso(desde)).lte('fecha', iso(hasta)).limit(5000)
+    supabase.from('conciliacion').select('fecha, importe, categoria').gte('fecha', per.desdeIso).lte('fecha', per.hastaIso).limit(5000)
       .then(({ data }) => setMovs(((data ?? []) as Mov[]).filter(m => !(m.categoria ?? '').startsWith('pendiente-personal'))))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [periodo])
+  }, [per.desdeIso, per.hastaIso])
 
   const propias = cuentas.filter(c => c.activa !== false && !c.personal)
   const saldo = propias.reduce((s, c) => s + Number(c.saldo_actual ?? 0), 0)
   const porBanco = ['BBVA', 'N26'].map(b => ({ b, v: propias.filter(c => c.banco === b).reduce((s, c) => s + Number(c.saldo_actual ?? 0), 0), n: propias.filter(c => c.banco === b).length })).filter(x => x.n > 0)
+  const ultimos4 = (c: Cuenta) => (c.iban ? c.iban.replace(/\s/g, '').slice(-4) : (c.iban_mask ?? '').replace(/\D/g, '').slice(-4)) || '····'
+  const hogarCuentas = cuentas.filter(c => c.activa !== false && c.personal)
   const fechaSaldo = propias.map(c => c.saldo_fecha).filter(Boolean).sort().pop()
   const entradas = movs.filter(m => Number(m.importe) > 0).reduce((s, m) => s + Number(m.importe), 0)
   const salidas = movs.filter(m => Number(m.importe) < 0).reduce((s, m) => s + Number(m.importe), 0)
@@ -134,35 +121,48 @@ export default function HoyTab() {
   return (
     <>
       {/* 1. SALDO */}
-      <Banda bg={MARINO}>
-        <span style={eyebrow(AMBAR)}>Saldo de las cuentas · hoy {hoy.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}</span>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24, marginTop: 14, alignItems: 'end' }}>
-          <div>
-            <div style={{ ...d('clamp(44px,6vw,84px)', AMBAR) }}>{cargando ? '…' : eur0(saldo)}</div>
-            <div style={{ color: ARENA, fontSize: 13, fontWeight: 600, marginTop: 6 }}>
-              {fechaSaldo ? `Saldo del banco a ${new Date(fechaSaldo).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}` : 'El saldo se actualiza cada noche'}
-            </div>
-          </div>
-          <div style={{ display: 'grid', gap: 10 }}>
-            {porBanco.map(x => (
-              <div key={x.b} style={{ background: BLANCO, border: BORDER_CARD, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                <span style={{ fontFamily: OSW, fontWeight: 700, fontSize: 14, textTransform: 'uppercase' }}>{x.b} <span style={{ color: GRIS, fontWeight: 600, fontSize: 12 }}>· {x.n} cuenta{x.n > 1 ? 's' : ''}</span></span>
-                <span style={{ fontFamily: OSW, fontWeight: 700, fontSize: 22 }}>{eur(x.v)}</span>
+      <HeroNeo
+        eyebrowTxt={`Saldo de las cuentas · hoy ${hoy.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}`}
+        cifra={cargando ? '…' : propias.length === 0 ? '—' : eur0(saldo)}
+        color={propias.length === 0 ? AMBAR : saldo >= 0 ? OLIVA : NARANJA}
+        frase={propias.length === 0 ? 'Sin datos todavía' : fechaSaldo ? `Lo que hay en el banco ahora. Saldo a ${new Date(fechaSaldo).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}.` : 'Lo que hay en el banco ahora. Se actualiza cada noche.'}
+        apoyo={porBanco.map(x => ({ label: `${x.b} · ${x.n} cuenta${x.n > 1 ? 's' : ''}`, valor: eur(x.v) }))}
+      />
+
+      {/* 1b. SALDO POR CUENTA: banco, alias y 4 últimos dígitos */}
+      {cuentas.length > 0 && (
+        <Banda bg={BLANCO}>
+          {[{ t: 'Empresa', lista: propias }, { t: 'Hogar', lista: hogarCuentas }].filter(g => g.lista.length > 0).map(g => (
+            <div key={g.t} style={{ marginBottom: 18 }}>
+              <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 14, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>
+                Cuentas {g.t.toLowerCase()} · {eur(g.lista.reduce((a, c) => a + Number(c.saldo_actual ?? 0), 0))}
               </div>
-            ))}
-          </div>
-        </div>
-      </Banda>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 12 }}>
+                {[...g.lista].sort((a, b) => Number(b.saldo_actual ?? 0) - Number(a.saldo_actual ?? 0)).map(c => {
+                  const sinSaldo = c.saldo_fecha == null
+                  return (
+                    <div key={`${c.banco}-${ultimos4(c)}`} style={{ background: ARENA_CL, border: BORDER_CARD, boxShadow: SHADOW, padding: '12px 14px' }}>
+                      <div style={{ fontFamily: OSW, fontWeight: 600, fontSize: 12, letterSpacing: 2, textTransform: 'uppercase' }}>{c.banco} · …{ultimos4(c)}</div>
+                      <div style={{ fontFamily: LEX, fontSize: 12, fontWeight: 600, color: GRIS, textTransform: 'capitalize', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{(c.alias ?? '').toLowerCase()}</div>
+                      <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 26, color: sinSaldo ? GRIS : Number(c.saldo_actual ?? 0) >= 0 ? OLIVA : NARANJA }}>
+                        {sinSaldo ? 'Sin saldo' : eur(Number(c.saldo_actual ?? 0))}
+                      </div>
+                      <div style={{ fontFamily: LEX, fontSize: 11, color: GRIS }}>
+                        {sinSaldo ? 'El banco no facilita el saldo de esta cuenta' : `Actualizado ${new Date(c.saldo_fecha as string).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
+        </Banda>
+      )}
 
       {/* 2. MOVIMIENTOS DEL PERIODO */}
       <Banda bg={ARENA_CL}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <span style={eyebrow(OLIVA, ARENA)}>Movimientos · {txt}</span>
-          <div style={{ display: 'flex', flexWrap: 'wrap', border: BORDER_CARD, boxShadow: SHADOW, background: BLANCO }}>
-            {PERIODOS.map((p, i) => (
-              <button key={p.k} onClick={() => setPeriodo(p.k)} style={{ padding: '7px 12px', border: 'none', borderRight: i < PERIODOS.length - 1 ? `3px solid ${INK}` : 'none', background: periodo === p.k ? NARANJA : BLANCO, color: periodo === p.k ? ARENA : INK, fontFamily: OSW, fontSize: 12, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', cursor: 'pointer' }}>{p.l}</button>
-            ))}
-          </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginTop: 14 }}>
           {[{ l: 'Ha entrado', v: entradas, c: OLIVA }, { l: 'Ha salido', v: salidas, c: TERRA }, { l: 'Neto', v: entradas + salidas, c: entradas + salidas >= 0 ? OLIVA : TERRA }].map(k => (

@@ -3,7 +3,7 @@ import { Inbox, Check, Paperclip } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { fmtDate } from '@/lib/format'
 import { INK, ARENA, BLANCO, GRIS, OLIVA, NARANJA, CELESTE, AMBAR, BERENJENA, MARINO, OSW, LEX } from '@/styles/neobrutal'
-import { PageNeo, CabeceraNeo, Banda, KpiNeo, PillsNeo, TablaWrap, thNeo, tdNeo, tdEstado, AvisoNeo, BadgeNeo } from '@/components/neo/NeoUI'
+import { PageNeo, CabeceraNeo, Banda, KpiNeo, PillsNeo, TablaWrap, thNeo, tdNeo, tdEstado, AvisoNeo, BadgeNeo, HeroNeo } from '@/components/neo/NeoUI'
 import { TIPOS_CORREO, reglaDesdeCorreo } from '@/lib/papeleo'
 
 /* Papeleo = bandeja del cartero (correo_entrante). Reclasificar crea regla en correo_reglas. */
@@ -64,6 +64,13 @@ export default function Papeleo() {
       <CabeceraNeo eyebrowTxt="Finanzas" titulo="Papeleo">
         <PillsNeo value={filtro} onChange={setFiltro} options={['Pendientes', 'Archivados', 'Todos']} />
       </CabeceraNeo>
+      <HeroNeo
+        eyebrowTxt="Papeleo pendiente"
+        cifra={correos.length === 0 ? '—' : String(pendientes.length)}
+        color={correos.length === 0 ? AMBAR : pendientes.length > 0 ? NARANJA : OLIVA}
+        frase={correos.length === 0 ? 'Sin datos todavía' : pendientes.length > 0 ? 'Correos del cartero sin archivar: revísalos y archívalos.' : 'Bandeja al día, nada por revisar.'}
+        apoyo={correos.length === 0 ? undefined : [{ label: 'Traídos', valor: String(correos.length) }, { label: 'Liquidaciones', valor: String(correos.filter(c => c.tipo === 'liquidacion').length) }]}
+      />
       {error && <AvisoNeo>ERROR: {error}</AvisoNeo>}
       {aviso && (
         <Banda bg={OLIVA} style={{ padding: '12px 40px' }}>

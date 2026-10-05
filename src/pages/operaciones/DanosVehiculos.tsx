@@ -3,7 +3,8 @@ import { Plus } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { fmtEur, fmtDate } from '@/lib/format'
 import { GRIS, OLIVA, TERRA, NARANJA, AMBAR, OSW, BLANCO, ARENA } from '@/styles/neobrutal'
-import { PageNeo, CabeceraNeo, Banda, TablaWrap, thNeo, tdNeo, tdEstado, KpiNeo, BotonNeo, BadgeNeo, AvisoNeo } from '@/components/neo/NeoUI'
+import { PageNeo, CabeceraNeo, Banda, TablaWrap, thNeo, tdNeo, tdEstado, KpiNeo, BotonNeo, BadgeNeo, AvisoNeo, HeroNeo } from '@/components/neo/NeoUI'
+import { usePeriodo } from '@/lib/periodoGlobal'
 import { FormAlta, nombreFurgo, aNumero } from '@/components/flota/FormFlota'
 import type { FurgoMin } from '@/components/flota/FormFlota'
 
@@ -14,8 +15,9 @@ interface Inc { id: string; furgoneta_id: string; tipo: string; fecha: string; i
 const TIPOS = ['SINIESTRO', 'MULTA', 'OTRO']
 
 export default function DanosVehiculos() {
+  const periodo = usePeriodo()
   const [furgos, setFurgos] = useState<FurgoMin[]>([])
-  const [incs, setIncs] = useState<Inc[]>([])
+  const [incsTodas, setIncs] = useState<Inc[]>([])
   const [alta, setAlta] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [tick, setTick] = useState(0)
@@ -33,6 +35,10 @@ export default function DanosVehiculos() {
   }, [tick])
 
   const porId = useMemo(() => Object.fromEntries(furgos.map(f => [f.id, f])), [furgos])
+  const incs = useMemo(
+    () => incsTodas.filter(i => i.fecha.slice(0, 10) >= periodo.desdeIso && i.fecha.slice(0, 10) <= periodo.hastaIso),
+    [incsTodas, periodo.desdeIso, periodo.hastaIso],
+  )
   const pendientes = incs.filter(i => (i.estado ?? 'pendiente') !== 'resuelto')
   const coste = incs.reduce((s, i) => s + Number(i.importe_eur ?? 0), 0)
 
@@ -63,6 +69,14 @@ export default function DanosVehiculos() {
           <FormAlta furgos={furgos} tipos={TIPOS} onGuardar={guardar} onCancelar={() => setAlta(false)} />
         </Banda>
       )}
+
+      <HeroNeo
+        eyebrowTxt={`Daños abiertos · ${periodo.etiqueta}`}
+        cifra={incs.length === 0 ? '—' : String(pendientes.length)}
+        frase={incs.length === 0 ? 'Sin datos todavía' : pendientes.length > 0 ? 'Siniestros, multas y daños de las furgonetas sin resolver' : 'Ningún daño pendiente en este periodo'}
+        color={incs.length === 0 ? AMBAR : pendientes.length > 0 ? NARANJA : OLIVA}
+        apoyo={incs.length ? [{ label: 'Registrados', valor: String(incs.length) }, { label: 'Coste', valor: fmtEur(coste) }] : undefined}
+      />
 
       <Banda bg={BLANCO}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 22 }}>

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Archive, ArchiveRestore } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { INK, MARINO, ARENA, BLANCO, GRIS, OLIVA, AMBAR, OSW } from '@/styles/neobrutal'
-import { PageNeo, CabeceraNeo, Banda, TablaWrap, thNeo, tdNeo, tdEstado, BotonNeo, BadgeNeo, KpiNeo, AvisoNeo } from '@/components/neo/NeoUI'
+import { PageNeo, CabeceraNeo, Banda, TablaWrap, thNeo, tdNeo, tdEstado, BotonNeo, BadgeNeo, KpiNeo, AvisoNeo, HeroNeo } from '@/components/neo/NeoUI'
 import { useEquipo, hoyISO } from '@/hooks/useEquipo'
 import { codigosDe } from '@/lib/equipo'
 
@@ -34,6 +34,9 @@ export default function Personas() {
         </label>
       </CabeceraNeo>
       {(error || errGuardar) && <AvisoNeo>ERROR: {error ?? errGuardar}</AvisoNeo>}
+      <HeroNeo eyebrowTxt="Equipo hoy" cifra={cargando || activas.length === 0 ? '—' : String(activas.length)}
+        frase={activas.length === 0 ? 'Sin datos todavía' : `${activas.length === 1 ? 'persona en plantilla' : 'personas en plantilla'}, ${conCodigo.length} con código Cade`}
+        color={activas.length > 0 ? OLIVA : AMBAR} />
 
       <Banda bg={BLANCO}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 20 }}>

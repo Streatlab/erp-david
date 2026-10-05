@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase'
 import { fmtEur, fmtDate } from '@/lib/format'
 import { CELESTE, OLIVA, TERRA, NARANJA, GRIS, ARENA_CL, BLANCO, OSW } from '@/styles/neobrutal'
 import {
-  PageNeo, Banda, CabeceraNeo, PillsNeo, KpiNeo, AvisoNeo,
+  PageNeo, Banda, CabeceraNeo, HeroNeo, PillsNeo, KpiNeo, AvisoNeo,
   TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo, BotonNeo,
 } from '@/components/neo/NeoUI'
 import DocumentacionYTope from '@/components/facturacion/DocumentacionYTope'
@@ -103,6 +103,19 @@ export default function FacturacionEmitida() {
           <PillsNeo value={estado} onChange={v => setEstado(v as EstadoFilter)} options={['TODAS', 'PENDIENTE', 'COBRADA']} />
         </div>
       </CabeceraNeo>
+
+      <HeroNeo
+        eyebrowTxt="Lo que te debe Cade"
+        cifra={loading || kpis.n === 0 ? '—' : fmtEur(kpis.pendiente)}
+        frase={loading || kpis.n === 0 ? 'Sin datos todavía'
+          : kpis.nVencidas > 0 ? `${kpis.nVencidas} factura${kpis.nVencidas > 1 ? 's' : ''} fuera de plazo (${fmtEur(kpis.vencido)}). Reclama ya.`
+          : kpis.pendiente > 0 ? 'Pendiente de cobro y dentro de plazo. Nada que reclamar aún.' : 'Todo cobrado. Sin pendientes.'}
+        color={loading || kpis.n === 0 ? undefined : kpis.nVencidas > 0 ? NARANJA : kpis.pendiente > 0 ? undefined : OLIVA}
+        apoyo={kpis.n === 0 ? undefined : [
+          { label: 'Cobrado', valor: fmtEur(kpis.total - kpis.pendiente) },
+          { label: 'Facturado', valor: fmtEur(kpis.total) },
+        ]}
+      />
 
       {/* Cade: liquidaciones del mes, facturas, documentación y tope */}
       <LiquidacionesMes />

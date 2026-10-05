@@ -19,7 +19,7 @@ import {
   OSW, LEX, SHADOW, BORDER_CARD, EUR, E, N, P0,
 } from '@/styles/neobrutal'
 import {
-  PageNeo, Banda, CabeceraNeo, KpiNeo, TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo, BotonNeo,
+  PageNeo, Banda, CabeceraNeo, KpiNeo, HeroNeo, TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo, BotonNeo,
 } from '@/components/neo/NeoUI'
 
 /* ── Input neobrutal ────────────────────────────────────────── */
@@ -157,6 +157,17 @@ export default function Reposicion() {
           al mes desde hoy para pagarla sin pedir otro préstamo.
         </div>
       </CabeceraNeo>
+
+      <HeroNeo
+        eyebrowTxt="Ahorro necesario al mes"
+        cifra={loading || resumen.cuotaMensualTotal <= 0 ? '—' : EUR(resumen.cuotaMensualTotal)}
+        frase={loading || resumen.cuotaMensualTotal <= 0 ? 'Sin datos todavía' : 'Lo que tienes que apartar cada mes para cambiar las furgonetas sin otro préstamo'}
+        color={AMBAR}
+        apoyo={!loading && resumen.cuotaMensualTotal > 0 ? [
+          { label: 'Falta por reunir', valor: EUR(resumen.necesidadTotal) },
+          { label: 'Próximo cambio', valor: resumen.proxima ? resumen.proxima.fechaReposicion : '—' },
+        ] : undefined}
+      />
 
       {loading && (
         <Banda bg={ARENA}>

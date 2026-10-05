@@ -5,8 +5,9 @@ import { fmtEur, fmtDate } from '@/lib/format'
 import { OLIVA, TERRA, NARANJA, MARINO, AMBAR, GRIS, ARENA, ARENA_CL, BLANCO, INK, OSW, LEX } from '@/styles/neobrutal'
 import {
   PageNeo, Banda, CabeceraNeo, KpiNeo, AvisoNeo,
-  TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo,
+  TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo, HeroNeo,
 } from '@/components/neo/NeoUI'
+import { usePeriodo } from '@/lib/periodoGlobal'
 
 interface Reclamacion {
   id: string
@@ -167,7 +168,8 @@ function textoReclamacion(items: Incidencia[]): string {
 }
 
 export default function ReclamacionesCade() {
-  const [incs, setIncs] = useState<Incidencia[]>([])
+  const periodo = usePeriodo()
+  const [incsTodas, setIncsTodas] = useState<Incidencia[]>([])
   const [loading, setLoading] = useState(true)
   const [errMsg, setErrMsg] = useState<string | null>(null)
   const [saving, setSaving] = useState<number | null>(null)
@@ -180,10 +182,15 @@ export default function ReclamacionesCade() {
       .select('id, transportista, fecha, codigo, importe, descripcion, estado')
       .order('fecha', { ascending: false })
     if (error) setErrMsg(error.message)
-    setIncs((data ?? []) as Incidencia[])
+    setIncsTodas((data ?? []) as Incidencia[])
     setLoading(false)
   }
   useEffect(() => { cargar() }, [])
+
+  const incs = useMemo(
+    () => incsTodas.filter(i => !!i.fecha && i.fecha.slice(0, 10) >= periodo.desdeIso && i.fecha.slice(0, 10) <= periodo.hastaIso),
+    [incsTodas, periodo.desdeIso, periodo.hastaIso],
+  )
 
   const totales = useMemo(() => {
     const t: Record<EstadoInc, { n: number; eur: number }> = {
@@ -236,6 +243,17 @@ export default function ReclamacionesCade() {
         {totales.propuesta.eur > 0 && (
           <AvisoNeo>HAY {fmtEur(totales.propuesta.eur)} POR DECIDIR · {totales.propuesta.n} cargos.</AvisoNeo>
         )}
+
+        <HeroNeo
+          eyebrowTxt={`Por decidir · ${periodo.etiqueta}`}
+          cifra={loading || incs.length === 0 ? '—' : fmtEur(totales.propuesta.eur)}
+          frase={loading || incs.length === 0 ? 'Sin datos todavía' : totales.propuesta.n > 0 ? `${totales.propuesta.n} cargos no habituales de Cade pendientes de decidir si se reclaman` : 'No tienes cargos pendientes de decidir en este periodo'}
+          color={totales.propuesta.eur > 0 ? NARANJA : OLIVA}
+          apoyo={incs.length ? [
+            { label: 'Reclamadas', valor: fmtEur(totales.reclamada.eur) },
+            { label: 'Recuperadas', valor: fmtEur(totales.recuperada.eur) },
+          ] : undefined}
+        />
 
         <Banda bg={ARENA_CL}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 18 }}>

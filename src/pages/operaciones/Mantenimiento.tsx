@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { Plus } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { fmtEur, fmtDate } from '@/lib/format'
-import { GRIS, OLIVA, NARANJA, CELESTE, MARINO, OSW, LEX, BLANCO, ARENA } from '@/styles/neobrutal'
-import { PageNeo, CabeceraNeo, Banda, TablaWrap, thNeo, tdNeo, tdEstado, KpiNeo, BotonNeo, AvisoNeo } from '@/components/neo/NeoUI'
+import { GRIS, OLIVA, NARANJA, CELESTE, MARINO, AMBAR, OSW, LEX, BLANCO, ARENA } from '@/styles/neobrutal'
+import { PageNeo, CabeceraNeo, Banda, TablaWrap, thNeo, tdNeo, tdEstado, KpiNeo, BotonNeo, AvisoNeo, HeroNeo } from '@/components/neo/NeoUI'
+import { usePeriodo } from '@/lib/periodoGlobal'
 import { FormAlta, nombreFurgo, aNumero } from '@/components/flota/FormFlota'
 import type { FurgoMin } from '@/components/flota/FormFlota'
 
@@ -15,8 +16,9 @@ interface GastoTaller { id: string; fecha: string; concepto: string; importe: nu
 const TIPOS = ['Revisión', 'Neumáticos', 'Frenos', 'ITV', 'Avería', 'Carga / batería', 'Otro']
 
 export default function Mantenimiento() {
+  const periodo = usePeriodo()
   const [furgos, setFurgos] = useState<FurgoMin[]>([])
-  const [mants, setMants] = useState<Mant[]>([])
+  const [mantsTodos, setMants] = useState<Mant[]>([])
   const [gastos, setGastos] = useState<GastoTaller[]>([])
   const [alta, setAlta] = useState<Partial<Record<string, string>> | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -36,12 +38,15 @@ export default function Mantenimiento() {
     })
   }, [tick])
 
-  const vinculados = useMemo(() => new Set(mants.map(m => m.conciliacion_id).filter(Boolean)), [mants])
+  const mants = useMemo(
+    () => mantsTodos.filter(m => m.fecha.slice(0, 10) >= periodo.desdeIso && m.fecha.slice(0, 10) <= periodo.hastaIso),
+    [mantsTodos, periodo.desdeIso, periodo.hastaIso],
+  )
+  const vinculados = useMemo(() => new Set(mantsTodos.map(m => m.conciliacion_id).filter(Boolean)), [mants])
   const sinVincular = gastos.filter(g => !vinculados.has(g.id))
   const porId = useMemo(() => Object.fromEntries(furgos.map(f => [f.id, f])), [furgos])
-  const anio = String(new Date().getFullYear())
-  const costeAnio = mants.filter(m => m.fecha.startsWith(anio)).reduce((s, m) => s + Number(m.coste_eur ?? 0), 0)
-  const porFurgo = furgos.map(f => ({ f, coste: mants.filter(m => m.furgoneta_id === f.id && m.fecha.startsWith(anio)).reduce((s, m) => s + Number(m.coste_eur ?? 0), 0), ultimo: mants.find(m => m.furgoneta_id === f.id) }))
+  const costePeriodo = mants.reduce((s, m) => s + Number(m.coste_eur ?? 0), 0)
+  const porFurgo = furgos.map(f => ({ f, coste: mants.filter(m => m.furgoneta_id === f.id).reduce((s, m) => s + Number(m.coste_eur ?? 0), 0), ultimo: mantsTodos.find(m => m.furgoneta_id === f.id) }))
 
   async function guardar(v: Record<string, string>) {
     const { error: e } = await supabase.from('furgonetas_mantenimientos_hist').insert({
@@ -69,9 +74,17 @@ export default function Mantenimiento() {
         </Banda>
       )}
 
+      <HeroNeo
+        eyebrowTxt={`Coste de mantenimiento · ${periodo.etiqueta}`}
+        cifra={mants.length === 0 ? '—' : fmtEur(costePeriodo)}
+        frase={mants.length === 0 ? 'Sin datos todavía' : 'Lo que te han costado revisiones, averías y taller en este periodo'}
+        color={AMBAR}
+        apoyo={mants.length ? [{ label: 'Registros', valor: String(mants.length) }, { label: 'Taller sin vincular', valor: String(sinVincular.length) }] : undefined}
+      />
+
       <Banda bg={BLANCO}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 22 }}>
-          <KpiNeo label={`Coste mantenimiento ${anio}`} valor={fmtEur(costeAnio)} color={NARANJA} sub={`${mants.length} registros`} />
+          <KpiNeo label="Coste mantenimiento" valor={fmtEur(costePeriodo)} color={NARANJA} sub={`${mants.length} registros`} />
           <KpiNeo label="Gastos de taller sin vincular" valor={String(sinVincular.length)} color={sinVincular.length ? CELESTE : OLIVA} sub="del banco (conciliación)" />
           {porFurgo.map(p => (
             <KpiNeo key={p.f.id} label={nombreFurgo(p.f)} valor={fmtEur(p.coste)} color={MARINO} sub={p.ultimo ? `último: ${fmtDate(p.ultimo.fecha)}` : 'sin registros'} />

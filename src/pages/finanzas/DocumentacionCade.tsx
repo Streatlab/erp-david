@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { OLIVA, TERRA, GRIS, ARENA_CL, BLANCO, ARENA, INK, OSW } from '@/styles/neobrutal'
-import { PageNeo, Banda, CabeceraNeo, AvisoNeo, TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo, BotonNeo } from '@/components/neo/NeoUI'
+import { OLIVA, NARANJA, TERRA, GRIS, ARENA_CL, BLANCO, ARENA, INK, OSW } from '@/styles/neobrutal'
+import { PageNeo, Banda, CabeceraNeo, AvisoNeo, HeroNeo, TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo, BotonNeo } from '@/components/neo/NeoUI'
 
 interface Pend { emisor: string; documento: string; como_obtenerlo: string | null; ultimo_expedido: string | null; estado: 'ok' | 'pedir' }
 interface Doc { id: number; emisor: string; documento: string; expedido: string | null; caduca: string | null; importe: number | null; ruta: string | null; created_at: string }
@@ -64,6 +64,14 @@ export default function DocumentacionCade() {
         </div>
       </CabeceraNeo>
 
+      <HeroNeo
+        eyebrowTxt="Documentos pendientes para Cade"
+        cifra={!loading && pend.length > 0 ? String(faltan) : '—'}
+        frase={!loading && pend.length > 0 ? (faltan > 0 ? 'Documentos por subir antes de que salgan las facturas' : 'Todo al día: las facturas pueden salir a Cade') : 'Sin datos todavía'}
+        color={!loading && pend.length > 0 ? (faltan > 0 ? NARANJA : OLIVA) : undefined}
+        apoyo={!loading && pend.length > 0 ? [{ label: 'Al día', valor: String(pend.length - faltan) }, { label: 'Total', valor: String(pend.length) }] : undefined}
+      />
+
       {msg && <AvisoNeo>{msg}</AvisoNeo>}
       {!loading && faltan > 0 && <AvisoNeo>FALTAN {faltan} DOCUMENTO{faltan > 1 ? 'S' : ''}. Las facturas de ese emisor no salen a Cade hasta completarlo.</AvisoNeo>}
 
@@ -93,7 +101,7 @@ export default function DocumentacionCade() {
                       <label style={{ cursor: 'pointer' }}>
                         <input type="file" accept="application/pdf,image/*" style={{ display: 'none' }}
                           onChange={e => { const f = e.target.files?.[0]; if (f) subir(p, f); e.currentTarget.value = '' }} />
-                        <span style={{ display: 'inline-block', background: ok ? ARENA : '#F26B1F', color: ok ? INK : BLANCO, border: `2px solid ${INK}`, padding: '5px 12px', fontFamily: OSW, fontWeight: 700, fontSize: 13, textTransform: 'uppercase' }}>
+                        <span style={{ display: 'inline-block', background: ok ? ARENA : NARANJA, color: ok ? INK : BLANCO, border: `2px solid ${INK}`, padding: '5px 12px', fontFamily: OSW, fontWeight: 700, fontSize: 13, textTransform: 'uppercase' }}>
                           {subiendo === clave ? 'Subiendo…' : ok ? 'Reemplazar' : 'Subir'}
                         </span>
                       </label>

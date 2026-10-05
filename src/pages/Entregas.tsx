@@ -1,5 +1,5 @@
 import { CELESTE, GRIS, ARENA, BLANCO, OSW } from '@/styles/neobrutal'
-import { PageNeo, Banda, CabeceraNeo, TablaWrap, thNeo, tdNeo } from '@/components/neo/NeoUI'
+import { PageNeo, Banda, CabeceraNeo, TablaWrap, thNeo, tdNeo, HeroNeo } from '@/components/neo/NeoUI'
 
 const COLUMNS = ['Fecha', 'Zona', 'Rider', 'Cliente', 'Estado', 'Importe']
 
@@ -11,6 +11,8 @@ export default function Entregas() {
           Aquí vivirá el registro diario de repartos por operador y furgoneta.
         </div>
       </CabeceraNeo>
+
+      <HeroNeo eyebrowTxt="Entregas registradas" cifra="—" frase="Sin datos todavía" />
 
       <Banda bg={BLANCO}>
         <TablaWrap>
