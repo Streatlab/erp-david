@@ -64,12 +64,17 @@ function aprender(valores: number[]) {
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
 
 const etiquetaSub: Record<string, string> = {
-  supermercado: 'Supermercado', 'comida-animales': 'Comida de animales', 'carniceria-panaderia': 'Carnicería y panadería',
-  'bizum-comida': 'Bizum de comida', restaurantes: 'Restaurantes', heladerias: 'Heladerías', 'cafeterias-pastelerias': 'Cafeterías y pastelerías',
-  ocio: 'Ocio', viajes: 'Viajes', peluqueria: 'Peluquería', 'calefaccion-pellets': 'Calefacción y pellets', reparaciones: 'Reparaciones',
-  ropa: 'Ropa', regalos: 'Regalos', ninos: 'Niños', bazar: 'Bazar', drogueria: 'Droguería', otros: 'Otros',
-  farmacia: 'Farmacia', optica: 'Óptica', suplementos: 'Suplementos', herbolario: 'Herbolario',
-  recarga: 'Recarga eléctrica', parking: 'Parking', efectivo: 'Efectivo', documentacion: 'Documentación', fotografo: 'Fotógrafo', bizum: 'Bizum',
+  supermercado: 'Supermercado y tiendas', mascotas: 'Mascotas',
+  'bares-restaurantes': 'Bares y restaurantes', regalos: 'Regalos', 'planes-viajes': 'Planes y viajes',
+  'recarga-parking': 'Recarga y parking', mantenimiento: 'Mantenimiento',
+  farmacia: 'Farmacia y suplementos', 'optica-peluqueria': 'Óptica y peluquería',
+  ropa: 'Ropa y calzado', ninos: 'Niños y colegio', online: 'Online',
+  reformas: 'Reformas', calefaccion: 'Calefacción', tramites: 'Trámites', efectivo: 'Efectivo',
+  caixabank: 'CaixaBank', kona: 'Kona (Cetelem)', oney: 'Oney', seguros: 'Seguros', internet: 'Internet y teléfono',
+  suscripciones: 'Suscripciones', hacienda: 'Hacienda', suma: 'Suma', unicef: 'Unicef', msf: 'Médicos Sin Fronteras',
+}
+const NOMBRE_CAT: Record<string, string> = {
+  financiacion: 'Préstamos', 'impuestos-familia': 'Impuestos', 'seguros-suministros': 'Seguros y suministros', donaciones: 'Donaciones',
 }
 const labelSub = (s: string) => etiquetaSub[s] ?? (s.charAt(0).toUpperCase() + s.slice(1).replace(/-/g, ' '))
 
@@ -193,13 +198,14 @@ export default function PortadaFamilia() {
   const mesActual = mesKey(hoy)
   /* Seguros y suscripciones (pagos semestrales/anuales) cuentan como MEDIA MENSUAL del plan, no como el cargo del día que salen */
   const movsAj = useMemo(() => {
-    const CATS: Record<string, { nombre: string; orden: number }> = { 'hogar-seguros': { nombre: 'Seguros', orden: 12 }, suscripciones: { nombre: 'Suscripciones', orden: 14 } }
-    const base = movs.filter(m => !(m.bloque === 'fijo' && CATS[m.categoria]))
+    const esPeriodico = (m: Mov) => m.bloque === 'fijo' && m.categoria === 'seguros-suministros' && (m.subcategoria === 'seguros' || m.subcategoria === 'suscripciones')
+    const base = movs.filter(m => !esPeriodico(m))
     const sint: Mov[] = []
     for (const mes of new Set(movs.map(m => m.mes))) {
-      for (const f of plan.filter(x => CATS[x.categoria])) {
-        sint.push({ fecha: `${mes}-15`, mes, bloque: 'fijo', categoria: f.categoria, categoria_nombre: CATS[f.categoria].nombre, orden: CATS[f.categoria].orden,
-          subcategoria: 'prorrateo', comercio: `${f.concepto.replace(/\s*\(.*\)/, '')} (media mensual)`, importe: -f.importe_mensual })
+      for (const f of plan.filter(x => x.periodicidad !== 'mensual')) {
+        sint.push({ fecha: `${mes}-15`, mes, bloque: 'fijo', categoria: f.categoria, categoria_nombre: NOMBRE_CAT[f.categoria] ?? f.categoria, orden: 12,
+          subcategoria: /google|suscrip/i.test(f.concepto) ? 'suscripciones' : 'seguros',
+          comercio: `${f.concepto.replace(/\s*\(.*\)/, '')} (media mensual)`, importe: -f.importe_mensual })
       }
     }
     return [...base, ...sint]
@@ -529,7 +535,7 @@ export default function PortadaFamilia() {
               </div>
               {mensualPlan.map(g => (
                 <div key={g.cat} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 700, borderTop: `2px solid ${ARENA_CL}`, padding: '6px 0' }}>
-                  <span style={{ textTransform: 'capitalize' }}>{g.cat.replace(/-familia|hogar-/g, '').replace(/-/g, ' ')}</span>
+                  <span style={{ textTransform: 'capitalize' }}>{NOMBRE_CAT[g.cat] ?? g.cat}</span>
                   <span style={{ fontFamily: OSW }}>{E2(g.total)}</span>
                 </div>
               ))}
@@ -719,7 +725,7 @@ export default function PortadaFamilia() {
                     <td style={tdEstado(alt, NARANJA)}>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}><ComercioIcon nombre={f.concepto} rubro={f.categoria} size={22} />{f.concepto}</span>
                     </td>
-                    <td style={tdNeo(alt)}>{f.categoria.replace(/-familia|hogar-/g, '').replace(/-/g, ' ')}</td>
+                    <td style={tdNeo(alt)}>{NOMBRE_CAT[f.categoria] ?? f.categoria}</td>
                     <td style={tdNeo(alt)}>{f.dia_cobro ? `${f.periodicidad} · ${f.dia_cobro}` : f.periodicidad}</td>
                     <td style={{ ...tdNeo(alt), textAlign: 'right' }}>{f.importe_real != null ? E2(f.importe_real) : 'varía'}</td>
                     <td style={{ ...tdNeo(alt), textAlign: 'right' }}>
