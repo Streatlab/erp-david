@@ -33,6 +33,9 @@ const POR_SUB: Record<string, Icono> = {
   financiacion: Landmark, 'impuestos-familia': Receipt, 'hogar-seguros': Shield, internet: Wifi, suscripciones: CreditCard,
   'ropa-calzado': Shirt, 'compras-online': Package, online: Package, 'reformas-bricolaje': Wrench, calefaccion: Flame,
   tramites: Receipt, 'efectivo-hogar': Wallet, 'cuidado-personal': Heart,
+  mascotas: PawPrint, 'bares-restaurantes': Utensils, 'planes-viajes': Plane, 'recarga-parking': Zap, mantenimiento: Wrench,
+  'optica-peluqueria': Glasses, reformas: Wrench, caixabank: Landmark, kona: Car, oney: CreditCard, hacienda: Receipt, suma: Receipt,
+  unicef: HandHeart, msf: HandHeart, seguros: Shield, 'seguros-suministros': Shield,
   donaciones: HandHeart, alimentacion: ShoppingCart, compras: Store, coche: Car, hogar: House, salud: Heart,
 }
 
