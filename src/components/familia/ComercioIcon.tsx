@@ -6,7 +6,7 @@ import { useState, type ComponentType } from 'react'
 import {
   ShoppingCart, PawPrint, Beef, Banknote, Utensils, IceCreamCone, Coffee, Ticket, Shirt, Gift, Baby, Store, SprayCan,
   Pill, Glasses, Leaf, Zap, Wallet, Wrench, Camera, Package, Landmark, Shield, Wifi, Phone, Heart, Receipt, Car, House,
-  Plane, CreditCard, HandHeart,
+  Plane, CreditCard, HandHeart, Flame,
 } from 'lucide-react'
 import { INK, BLANCO } from '@/styles/neobrutal'
 
@@ -31,6 +31,8 @@ const POR_SUB: Record<string, Icono> = {
   suplementos: Pill, herbolario: Leaf, recarga: Zap, parking: Car, efectivo: Wallet, reparaciones: Wrench,
   fotografo: Camera, bizum: Banknote, otros: Package,
   financiacion: Landmark, 'impuestos-familia': Receipt, 'hogar-seguros': Shield, internet: Wifi, suscripciones: CreditCard,
+  'ropa-calzado': Shirt, 'compras-online': Package, online: Package, 'reformas-bricolaje': Wrench, calefaccion: Flame,
+  tramites: Receipt, 'efectivo-hogar': Wallet, 'cuidado-personal': Heart,
   donaciones: HandHeart, alimentacion: ShoppingCart, compras: Store, coche: Car, hogar: House, salud: Heart,
 }
 

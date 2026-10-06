@@ -69,7 +69,7 @@ const etiquetaSub: Record<string, string> = {
   ocio: 'Ocio', viajes: 'Viajes', peluqueria: 'Peluquería', 'calefaccion-pellets': 'Calefacción y pellets', reparaciones: 'Reparaciones',
   ropa: 'Ropa', regalos: 'Regalos', ninos: 'Niños', bazar: 'Bazar', drogueria: 'Droguería', otros: 'Otros',
   farmacia: 'Farmacia', optica: 'Óptica', suplementos: 'Suplementos', herbolario: 'Herbolario',
-  recarga: 'Recarga eléctrica', parking: 'Parking', efectivo: 'Efectivo', documentacion: 'Documentación', fotografo: 'Fotógrafo', bizum: 'Bizum',
+  recarga: 'Recarga eléctrica', online: 'Compras online', 'cuidado-personal': 'Cuidado personal', parking: 'Parking', efectivo: 'Efectivo', documentacion: 'Documentación', fotografo: 'Fotógrafo', bizum: 'Bizum',
 }
 const labelSub = (s: string) => etiquetaSub[s] ?? (s.charAt(0).toUpperCase() + s.slice(1).replace(/-/g, ' '))
 
