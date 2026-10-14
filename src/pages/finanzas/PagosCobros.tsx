@@ -4,7 +4,7 @@ import { fmtEur, fmtDate } from '@/lib/format'
 import { CELESTE, OLIVA, TERRA, NARANJA, MARINO, AMBAR, GRIS, ARENA_CL, BLANCO, INK, OSW, ARENA } from '@/styles/neobrutal'
 import { card } from '@/styles/neobrutal'
 import {
-  PageNeo, Banda, CabeceraNeo, HeroNeo, KpiNeo, AvisoNeo,
+  PageNeo, Banda, CabeceraNeo, HeroNeo, KpiNeo, AvisoNeo, TabsNeo, usePestana,
   TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo,
 } from '@/components/neo/NeoUI'
 import { diasDesde } from '@/lib/cobros'
@@ -28,7 +28,10 @@ interface TotalMes { mes: string; total_negocio: number; emitido_por_david: numb
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
 const h2 = { fontFamily: OSW, fontWeight: 700, fontSize: 'clamp(20px,2.4vw,28px)', textTransform: 'uppercase' as const, letterSpacing: '-0.5px', margin: '0 0 16px' }
 
+const PEST_IDS = ['cobrar', 'cobrados', 'cuadre', 'pagos'] as const
+
 export default function PagosCobros() {
+  const [pestana, setPestana] = usePestana('pagoscobros', PEST_IDS, 'cobrar')
   const [facturas, setFacturas] = useState<Factura[]>([])
   const [pagos, setPagos] = useState<Pago[]>([])
   const [totales, setTotales] = useState<TotalMes[]>([])
@@ -125,9 +128,17 @@ export default function PagosCobros() {
         ]}
       />
 
+      <TabsNeo value={pestana} onChange={setPestana} tabs={[
+        { id: 'cobrar', label: 'Por cobrar', badge: cobros.pend.length || undefined },
+        { id: 'cobrados', label: 'Cobrados' },
+        { id: 'cuadre', label: 'Facturación' },
+        { id: 'pagos', label: 'Pagos banco' },
+      ]} />
+
       {errMsg && <AvisoNeo>ERROR: {errMsg}</AvisoNeo>}
       {cobros.mas60 > 0 && <AvisoNeo>{fmtEur(cobros.mas60)} EN FACTURAS CON MÁS DE 60 DÍAS SIN COBRAR. Revisar con Cade.</AvisoNeo>}
 
+      {pestana === 'cobrar' && <>
       <Banda bg={ARENA_CL}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 18 }}>
           <KpiNeo label="Pendiente de cobro" valor={fmtEur(cobros.total)} color={CELESTE} sub={`${cobros.pend.length} facturas`} />
@@ -172,7 +183,9 @@ export default function PagosCobros() {
         </TablaWrap>
       </Banda>
 
-      {cobros.autos.length > 0 && (
+      </>}
+
+      {pestana === 'cobrados' && (cobros.autos.length > 0 ? (
         <Banda bg={ARENA}>
           <h2 style={h2}>Cobros casados con el banco</h2>
           <TablaWrap>
@@ -191,8 +204,11 @@ export default function PagosCobros() {
             </tbody>
           </TablaWrap>
         </Banda>
-      )}
+      ) : (
+        <Banda bg={ARENA}><div style={{ color: GRIS, fontSize: 13, fontWeight: 600 }}>Todavía no hay cobros casados con el banco.</div></Banda>
+      ))}
 
+      {pestana === 'cuadre' && (
       <Banda bg={BLANCO}>
         <h2 style={h2}>Facturación total del negocio (4 códigos)</h2>
         <TablaWrap>
@@ -213,7 +229,9 @@ export default function PagosCobros() {
           </tbody>
         </TablaWrap>
       </Banda>
+      )}
 
+      {pestana === 'pagos' && (
       <Banda bg={ARENA}>
         <h2 style={h2}>¿Qué has pagado? (banco)</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 18 }}>
@@ -236,6 +254,7 @@ export default function PagosCobros() {
           )}
         </div>
       </Banda>
+      )}
     </PageNeo>
   )
 }

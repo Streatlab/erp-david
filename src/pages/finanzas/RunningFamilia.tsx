@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase'
 import { fmtEur, fmtPct } from '@/lib/format'
 import { OLIVA, TERRA, AMBAR, CELESTE, GRIS, ARENA_CL, BLANCO, ARENA, INK, OSW } from '@/styles/neobrutal'
 import {
-  PageNeo, Banda, CabeceraNeo, KpiNeo, AvisoNeo,
+  PageNeo, Banda, CabeceraNeo, KpiNeo, AvisoNeo, TabsNeo,
   TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo, BotonNeo,
 } from '@/components/neo/NeoUI'
 import PortadaFamilia, { type SeccionFamilia } from '@/components/familia/PortadaFamilia'
@@ -163,18 +163,7 @@ export default function RunningFamilia() {
       </CabeceraNeo>
 
       {/* Pestañas: una pantalla por tema, sin scroll infinito */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 20, background: INK, display: 'flex', gap: 0, overflowX: 'auto', borderBottom: `3px solid ${INK}` }}>
-        {PESTANAS.map(p => (
-          <button key={p.id} onClick={() => setPestana(p.id)}
-            style={{
-              fontFamily: OSW, fontWeight: 700, fontSize: 14, letterSpacing: 2, textTransform: 'uppercase', whiteSpace: 'nowrap',
-              padding: '12px 18px', border: 0, cursor: 'pointer',
-              background: pestana === p.id ? AMBAR : INK, color: pestana === p.id ? INK : ARENA,
-            }}>
-            {p.t}
-          </button>
-        ))}
-      </div>
+      <TabsNeo value={pestana} onChange={setPestana} tabs={PESTANAS.map(p => ({ id: p.id, label: p.t }))} />
 
       {errMsg && <AvisoNeo>ERROR: {errMsg}</AvisoNeo>}
 

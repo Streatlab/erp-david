@@ -3,7 +3,7 @@ import { Plus } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { fmtEur, fmtDate } from '@/lib/format'
 import { GRIS, OLIVA, NARANJA, CELESTE, MARINO, AMBAR, OSW, LEX, BLANCO, ARENA } from '@/styles/neobrutal'
-import { PageNeo, CabeceraNeo, Banda, TablaWrap, thNeo, tdNeo, tdEstado, KpiNeo, BotonNeo, AvisoNeo, HeroNeo } from '@/components/neo/NeoUI'
+import { PageNeo, CabeceraNeo, Banda, TablaWrap, thNeo, tdNeo, tdEstado, KpiNeo, BotonNeo, AvisoNeo, HeroNeo, TabsNeo, usePestana } from '@/components/neo/NeoUI'
 import { usePeriodo } from '@/lib/periodoGlobal'
 import { FormAlta, nombreFurgo, aNumero } from '@/components/flota/FormFlota'
 import type { FurgoMin } from '@/components/flota/FormFlota'
@@ -15,7 +15,10 @@ interface GastoTaller { id: string; fecha: string; concepto: string; importe: nu
 
 const TIPOS = ['Revisión', 'Neumáticos', 'Frenos', 'ITV', 'Avería', 'Carga / batería', 'Otro']
 
+const IDS_PESTANA = ['historial', 'taller'] as const
+
 export default function Mantenimiento() {
+  const [pestana, setPestana] = usePestana('mantenimiento', IDS_PESTANA, 'historial')
   const periodo = usePeriodo()
   const [furgos, setFurgos] = useState<FurgoMin[]>([])
   const [mantsTodos, setMants] = useState<Mant[]>([])
@@ -82,6 +85,12 @@ export default function Mantenimiento() {
         apoyo={mants.length ? [{ label: 'Registros', valor: String(mants.length) }, { label: 'Taller sin vincular', valor: String(sinVincular.length) }] : undefined}
       />
 
+      <TabsNeo value={pestana} onChange={setPestana} tabs={[
+        { id: 'historial', label: 'Historial' },
+        { id: 'taller', label: 'Gastos de taller', badge: sinVincular.length },
+      ]} />
+
+      {pestana === 'historial' && (
       <Banda bg={BLANCO}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 22 }}>
           <KpiNeo label="Coste mantenimiento" valor={fmtEur(costePeriodo)} color={NARANJA} sub={`${mants.length} registros`} />
@@ -114,8 +123,15 @@ export default function Mantenimiento() {
           </TablaWrap>
         )}
       </Banda>
+      )}
 
-      {sinVincular.length > 0 && (
+      {pestana === 'taller' && sinVincular.length === 0 && (
+        <Banda bg={ARENA}>
+          <div style={{ fontFamily: OSW, fontWeight: 700, textTransform: 'uppercase', color: GRIS }}>No hay gastos de taller del banco pendientes de vincular.</div>
+        </Banda>
+      )}
+
+      {pestana === 'taller' && sinVincular.length > 0 && (
         <Banda bg={ARENA}>
           <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 18, textTransform: 'uppercase', marginBottom: 12 }}>Gastos de taller del banco · ¿de qué furgoneta?</div>
           <TablaWrap>

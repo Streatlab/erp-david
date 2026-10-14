@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { usePeriodo } from '@/lib/periodoGlobal'
 import { supabase } from '@/lib/supabase'
 import { INK, ARENA, ARENA_CL, BLANCO, GRIS, OLIVA, TERRA, NARANJA, CELESTE, AMBAR, OSW, LEX, BORDER_CARD } from '@/styles/neobrutal'
-import { PageNeo, CabeceraNeo, Banda, KpiNeo, TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo, BotonNeo, HeroNeo } from '@/components/neo/NeoUI'
+import { PageNeo, CabeceraNeo, Banda, KpiNeo, TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo, BotonNeo, HeroNeo, TabsNeo, usePestana } from '@/components/neo/NeoUI'
 
 interface Festivo { fecha: string; nombre: string; ambito: string }
 
@@ -27,7 +27,10 @@ const inputStyle = {
   border: `2px solid ${INK}`, padding: '7px 10px', fontFamily: LEX, fontSize: 13, background: BLANCO, color: INK,
 } as const
 
+const IDS_PESTANA = ['festivos', 'anadir'] as const
+
 export default function CalendarioLaboral() {
+  const [pestana, setPestana] = usePestana('calendario-laboral', IDS_PESTANA, 'festivos')
   const hoy = new Date()
   const per = usePeriodo()
   const anio = String(per.rango.inicio.getFullYear())
@@ -84,6 +87,11 @@ export default function CalendarioLaboral() {
         frase={cargando ? 'Sin datos todavía' : delAnio.length === 0 ? 'Sin festivos en este periodo' : `festivos en el periodo, ${locales} locales de Alcoi y Ontinyent`}
         color={delAnio.length > 0 ? OLIVA : AMBAR} />
 
+      <TabsNeo value={pestana} onChange={setPestana} tabs={[
+        { id: 'festivos', label: 'Festivos' },
+        { id: 'anadir', label: 'Añadir festivo', badge: avisoRenovar ? 1 : 0 },
+      ]} />
+
       {error && (
         <Banda bg={TERRA} style={{ padding: '14px 40px' }}>
           <div style={{ fontFamily: OSW, fontWeight: 700, color: ARENA, textTransform: 'uppercase' }}>{error}</div>
@@ -104,6 +112,7 @@ export default function CalendarioLaboral() {
         </Banda>
       )}
 
+      {pestana === 'festivos' && (<>
       <Banda bg={ARENA_CL}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 18 }}>
           <KpiNeo label="Festivos en el periodo" valor={String(delAnio.length)} color={CELESTE} />
@@ -112,7 +121,9 @@ export default function CalendarioLaboral() {
           <KpiNeo label="Próximo festivo" valor={siguiente ? fechaLarga(siguiente.fecha).replace(/^\S+ /, '') : '—'} color={AMBAR} sub={siguiente?.nombre} />
         </div>
       </Banda>
+      </>)}
 
+      {pestana === 'anadir' && (
       <Banda bg={BLANCO}>
         <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 16, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 12, color: INK }}>
           Añadir festivo
@@ -129,7 +140,9 @@ export default function CalendarioLaboral() {
           Los festivos de este calendario se usan para no marcar como "día sin pagar" los días en que Cade no trabaja.
         </div>
       </Banda>
+      )}
 
+      {pestana === 'festivos' && (
       <Banda bg={ARENA_CL}>
         <TablaWrap>
           <thead>
@@ -159,6 +172,7 @@ export default function CalendarioLaboral() {
           Alcoi (códigos 939, 9391, 9392) y Ontinyent (códigos 972, 9721, 9723) pueden tener festivos locales distintos.
         </div>
       </Banda>
+      )}
     </PageNeo>
   )
 }

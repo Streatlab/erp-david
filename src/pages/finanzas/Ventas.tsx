@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { fmtEur, fmtDate } from '@/lib/format'
 import { INK, ARENA, ARENA_CL, BLANCO, GRIS, OLIVA, NARANJA, MARINO, AMBAR, OSW } from '@/styles/neobrutal'
-import { PageNeo, CabeceraNeo, Banda, TablaWrap, thNeo, tdNeo, tdEstado, KpiNeo, HeroNeo, AvisoNeo, BadgeNeo } from '@/components/neo/NeoUI'
+import { PageNeo, CabeceraNeo, Banda, TablaWrap, thNeo, tdNeo, tdEstado, KpiNeo, HeroNeo, AvisoNeo, BadgeNeo, TabsNeo, usePestana } from '@/components/neo/NeoUI'
 import { usePeriodo } from '@/lib/periodoGlobal'
 import { agruparVentas } from '@/lib/ventas'
 import type { FilaConsolidada } from '@/lib/ventas'
@@ -12,8 +12,11 @@ import type { FilaConsolidada } from '@/lib/ventas'
 
 interface FilaLiq { mes: string; transportista: string; repartidor: string; entregas: number | null; total: number | null }
 
+const PESTANAS_VENTAS = ['resumen', 'detalle', 'evolucion'] as const
+
 export default function Ventas() {
   const periodo = usePeriodo()
+  const [pestana, setPestana] = usePestana('ventas', PESTANAS_VENTAS, 'resumen')
   const [filas, setFilas] = useState<FilaConsolidada[]>([])
   const [liq, setLiq] = useState<FilaLiq[]>([])
   const [cargando, setCargando] = useState(true)
@@ -62,6 +65,13 @@ export default function Ventas() {
         <AvisoNeo>Sin facturación en este periodo.</AvisoNeo>
       ) : (
         <>
+          <TabsNeo value={pestana} onChange={setPestana} tabs={[
+            { id: 'resumen', label: 'Resumen' },
+            { id: 'detalle', label: 'Por código' },
+            { id: 'evolucion', label: 'Evolución' },
+          ]} />
+
+          {pestana === 'resumen' && (<>
           <Banda bg={BLANCO}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
               <KpiNeo label={`Total negocio · ${periodo.etiqueta}`} valor={fmtEur(resumen.total)} color={OLIVA} sub="los 4 códigos con IVA" />
@@ -86,7 +96,9 @@ export default function Ventas() {
               ))}
             </div>
           </Banda>
+          </>)}
 
+          {pestana === 'detalle' && (
           <Banda bg={BLANCO}>
             <TablaWrap>
               <thead>
@@ -115,7 +127,9 @@ export default function Ventas() {
               </tbody>
             </TablaWrap>
           </Banda>
+          )}
 
+          {pestana === 'evolucion' && (
           <Banda bg={ARENA}>
             <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 13, letterSpacing: 2, textTransform: 'uppercase', color: INK, marginBottom: 18 }}>Evolución mensual</div>
             <TablaWrap>
@@ -133,6 +147,7 @@ export default function Ventas() {
               </tbody>
             </TablaWrap>
           </Banda>
+          )}
         </>
       )}
     </PageNeo>
