@@ -3,7 +3,7 @@
  * Usadas por las páginas recompuestas (Panel, Finanzas, Conciliación…).
  * Fuente de tokens: src/styles/neobrutal.ts. NO improvisar hex.
  */
-import type { CSSProperties, ReactNode } from 'react'
+import { useState, type CSSProperties, type ReactNode } from 'react'
 import {
   INK, MARINO, ARENA, ARENA_CL, BLANCO, GRIS, OLIVA, TERRA, NARANJA, AMBAR,
   OSW, LEX, SHADOW, BORDER, BORDER_CARD, PAD, d, eyebrow, card,
@@ -182,3 +182,32 @@ export function TablaWrap({ children }: { children: ReactNode }) {
 }
 
 export const COLORES = { INK, MARINO, ARENA, ARENA_CL, BLANCO, GRIS, OLIVA, TERRA, NARANJA, AMBAR }
+
+/* Pestañas de pantalla: barra fija arriba (sticky) para no hacer scroll infinito.
+   usePestana recuerda la última pestaña de cada pantalla en este navegador. */
+export function usePestana<T extends string>(clave: string, ids: readonly T[], inicial: T): [T, (t: T) => void] {
+  const [p, setP] = useState<T>(() => {
+    try { const v = localStorage.getItem(`david.pestana.${clave}`) as T | null; return v && ids.includes(v) ? v : inicial } catch { return inicial }
+  })
+  const set = (t: T) => { setP(t); try { localStorage.setItem(`david.pestana.${clave}`, t) } catch { /* sin almacenamiento */ } }
+  return [p, set]
+}
+
+export function TabsNeo<T extends string>({ value, onChange, tabs }: { value: T; onChange: (t: T) => void; tabs: { id: T; label: string; badge?: number }[] }) {
+  return (
+    <div style={{ position: 'sticky', top: 0, zIndex: 20, background: INK, display: 'flex', overflowX: 'auto', borderBottom: `3px solid ${INK}` }}>
+      {tabs.map(t => {
+        const on = value === t.id
+        return (
+          <button key={t.id} onClick={() => onChange(t.id)}
+            style={{
+              fontFamily: OSW, fontWeight: 700, fontSize: 14, letterSpacing: 2, textTransform: 'uppercase', whiteSpace: 'nowrap',
+              padding: '12px 18px', border: 0, cursor: 'pointer', background: on ? AMBAR : INK, color: on ? INK : ARENA,
+            }}>
+            {t.label}{t.badge ? <span style={{ marginLeft: 6, background: NARANJA, color: BLANCO, padding: '0 6px', fontSize: 12 }}>{t.badge}</span> : null}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
