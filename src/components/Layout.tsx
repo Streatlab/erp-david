@@ -5,6 +5,7 @@ import Sidebar from '@/components/Sidebar'
 import MenuCuenta from '@/components/MenuCuenta'
 import SelectorPeriodoNeo from '@/components/neo/SelectorPeriodoNeo'
 import { PeriodoProvider } from '@/lib/periodoGlobal'
+import { FavoritosProvider } from '@/lib/favoritos'
 import { ARENA, INK, MARINO, OSW } from '@/styles/neobrutal'
 
 /* Papel mediterráneo: arena cálida con trama de puntos celeste + terracota.
@@ -22,6 +23,7 @@ export default function Layout() {
 
   return (
     <PeriodoProvider>
+    <FavoritosProvider>
     <div
       className="flex h-screen"
       style={{ ...PAPEL_MEDITERRANEO, color: INK, fontFamily: "'Lexend', sans-serif" }}
@@ -69,6 +71,7 @@ export default function Layout() {
         </main>
       </div>
     </div>
+    </FavoritosProvider>
     </PeriodoProvider>
   )
 }
