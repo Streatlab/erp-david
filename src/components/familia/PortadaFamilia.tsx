@@ -68,7 +68,7 @@ const etiquetaSub: Record<string, string> = {
   'bares-restaurantes': 'Bares y restaurantes', regalos: 'Regalos', 'planes-viajes': 'Planes y viajes',
   'recarga-parking': 'Recarga y parking', mantenimiento: 'Mantenimiento',
   farmacia: 'Farmacia y suplementos', 'optica-peluqueria': 'Óptica y peluquería',
-  ropa: 'Ropa y calzado', ninos: 'Niños y colegio', online: 'Online',
+  ropa: 'Ropa y calzado', ninos: 'Niños y colegio', online: 'Online y bazar',
   reformas: 'Reformas', calefaccion: 'Calefacción', tramites: 'Trámites', efectivo: 'Efectivo',
   caixabank: 'CaixaBank', kona: 'Kona (Cetelem)', oney: 'Oney', seguros: 'Seguros', internet: 'Internet y teléfono',
   suscripciones: 'Suscripciones', hacienda: 'Hacienda', suma: 'Suma', unicef: 'Unicef', msf: 'Médicos Sin Fronteras',
