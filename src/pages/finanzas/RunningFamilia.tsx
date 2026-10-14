@@ -6,7 +6,8 @@ import {
   PageNeo, Banda, CabeceraNeo, KpiNeo, AvisoNeo,
   TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo, BotonNeo,
 } from '@/components/neo/NeoUI'
-import PortadaFamilia from '@/components/familia/PortadaFamilia'
+import PortadaFamilia, { type SeccionFamilia } from '@/components/familia/PortadaFamilia'
+import PresupuestoFamilia from '@/components/familia/PresupuestoFamilia'
 import { usePeriodo } from '@/lib/periodoGlobal'
 
 type Vista = 'semana' | 'mes'
@@ -62,6 +63,15 @@ export default function RunningFamilia() {
   const [errMsg, setErrMsg] = useState<string | null>(null)
   const [editando, setEditando] = useState<string | null>(null)
   const [valorEdit, setValorEdit] = useState('')
+  type Pestana = SeccionFamilia | 'presupuesto'
+  const PESTANAS: { id: Pestana; t: string }[] = [
+    { id: 'hoy', t: 'Hoy' }, { id: 'resumen', t: 'Resumen' }, { id: 'presupuesto', t: 'Presupuesto' }, { id: 'prevision', t: 'Previsión' }, { id: 'recibos', t: 'Recibos' },
+  ]
+  const [pestana, setPestanaState] = useState<Pestana>(() => {
+    try { const v = localStorage.getItem('david.familia.pestana') as Pestana | null; return v && PESTANAS.some(p => p.id === v) ? v : 'hoy' } catch { return 'hoy' }
+  })
+  const setPestana = (p: Pestana) => { setPestanaState(p); try { localStorage.setItem('david.familia.pestana', p) } catch { /* sin almacenamiento */ } }
+  const escala: 'mes' | 'semana' = per.esSemana ? 'semana' : 'mes'
 
   async function cargar(v: Vista) {
     setLoading(true)
@@ -143,99 +153,36 @@ export default function RunningFamilia() {
   return (
     <PageNeo>
       <CabeceraNeo eyebrowTxt="Finanzas · Hogar" titulo="Running Familia">
-        <div style={{ fontFamily: OSW, fontWeight: 600, fontSize: 13, letterSpacing: 2, textTransform: 'uppercase', color: ARENA }}>{per.etiqueta}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <BotonNeo bg={escala === 'mes' ? AMBAR : ARENA} onClick={() => per.setKey('mes')}>Por meses</BotonNeo>
+            <BotonNeo bg={escala === 'semana' ? AMBAR : ARENA} onClick={() => per.setKey('semana')}>Por semanas</BotonNeo>
+          </div>
+          <div style={{ fontFamily: OSW, fontWeight: 600, fontSize: 13, letterSpacing: 2, textTransform: 'uppercase', color: ARENA }}>{per.etiqueta}</div>
+        </div>
       </CabeceraNeo>
+
+      {/* Pestañas: una pantalla por tema, sin scroll infinito */}
+      <div style={{ position: 'sticky', top: 0, zIndex: 20, background: INK, display: 'flex', gap: 0, overflowX: 'auto', borderBottom: `3px solid ${INK}` }}>
+        {PESTANAS.map(p => (
+          <button key={p.id} onClick={() => setPestana(p.id)}
+            style={{
+              fontFamily: OSW, fontWeight: 700, fontSize: 14, letterSpacing: 2, textTransform: 'uppercase', whiteSpace: 'nowrap',
+              padding: '12px 18px', border: 0, cursor: 'pointer',
+              background: pestana === p.id ? AMBAR : INK, color: pestana === p.id ? INK : ARENA,
+            }}>
+            {p.t}
+          </button>
+        ))}
+      </div>
 
       {errMsg && <AvisoNeo>ERROR: {errMsg}</AvisoNeo>}
 
-      <PortadaFamilia />
+      {pestana !== 'presupuesto' && <PortadaFamilia seccion={pestana} escala={escala} />}
 
-      {kpis.desviadas > 0 && (
-        <AvisoNeo>
-          {kpis.desviadas} PARTIDA{kpis.desviadas > 1 ? 'S' : ''} POR ENCIMA DE PRESUPUESTO en {etiquetaActual || estaUnidad}.
-        </AvisoNeo>
-      )}
+      {pestana === 'presupuesto' && <PresupuestoFamilia escala={escala} />}
 
-      <Banda bg={ARENA_CL}>
-        <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 16, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 14, color: INK }}>
-          Presupuesto por partidas · {etiquetaActual || 'sin datos'}
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 18 }}>
-          <KpiNeo label={`Gasto familiar ${delUnidad}`} valor={fmtEur(kpis.gastado)} color={CELESTE} sub={etiquetaActual || undefined} />
-          <KpiNeo label={`Presupuesto ${delUnidad}`} valor={kpis.presupuesto > 0 ? fmtEur(kpis.presupuesto) : '— sin definir'} />
-          <KpiNeo label="Partidas desviadas" valor={String(kpis.desviadas)} color={kpis.desviadas > 0 ? TERRA : OLIVA} />
-          <KpiNeo label="Ahorro real (empresa − casa)" valor={kpis.ahorro != null ? fmtEur(kpis.ahorro) : '—'}
-            color={kpis.ahorro != null && kpis.ahorro >= 0 ? OLIVA : TERRA}
-            sub={`Resultado de la actividad menos el gasto del hogar en ${vista === 'semana' ? 'la semana' : 'el mes'}`} />
-        </div>
-      </Banda>
-
-      <Banda bg={BLANCO}>
-        <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 16, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6, color: INK }}>
-          Partidas del hogar {etiquetaActual ? `· ${etiquetaActual}` : ''}
-        </div>
-        <div style={{ fontSize: 12, color: GRIS, marginBottom: 12 }}>
-          El presupuesto se fija en importe mensual. En la vista por semanas se reparte automáticamente (mensual × 12 ÷ 52).
-        </div>
-        <TablaWrap>
-          <thead>
-            <tr>
-              {['Partida', 'Gastado', `Presupuesto ${unidad}`, 'Desviación', '% consumido', 'Estado', ''].map(h => (
-                <th key={h} style={thNeo}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {loading && (
-              <tr><td colSpan={7} style={{ ...tdNeo(false), textAlign: 'center', color: GRIS, padding: 32 }}>Cargando…</td></tr>
-            )}
-            {!loading && filasActuales.length === 0 && (
-              <tr><td colSpan={7} style={{ ...tdNeo(false), textAlign: 'center', color: GRIS, padding: 32 }}>Sin gasto doméstico registrado todavía.</td></tr>
-            )}
-            {filasActuales.map((f, i) => {
-              const alt = i % 2 === 1
-              const color = colorEstado(f.estado)
-              const enEdicion = editando === f.categoria
-              return (
-                <tr key={f.categoria}>
-                  <td style={tdEstado(alt, color)}>{f.partida}</td>
-                  <td style={{ ...tdNeo(alt), textAlign: 'right' }}>{fmtEur(f.gastado)}</td>
-                  <td style={{ ...tdNeo(alt), textAlign: 'right' }}>
-                    {enEdicion ? (
-                      <input
-                        autoFocus type="text" value={valorEdit} placeholder="€/mes"
-                        onChange={e => setValorEdit(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter') guardarPresupuesto(f.categoria); if (e.key === 'Escape') setEditando(null) }}
-                        onBlur={() => guardarPresupuesto(f.categoria)}
-                        style={{ width: 90, textAlign: 'right', border: `2px solid ${INK}`, padding: '3px 6px', fontFamily: OSW, fontSize: 13 }}
-                      />
-                    ) : (
-                      <span
-                        onClick={() => { setEditando(f.categoria); setValorEdit('') }}
-                        style={{ cursor: 'pointer', borderBottom: `1px dashed ${GRIS}` }}
-                        title="Clic para fijar el presupuesto mensual de esta partida"
-                      >
-                        {f.presupuesto != null ? fmtEur(f.presupuesto) : 'Fijar →'}
-                      </span>
-                    )}
-                  </td>
-                  <td style={{ ...tdNeo(alt), textAlign: 'right', color: f.desviacion > 0 ? TERRA : OLIVA, fontFamily: OSW, fontWeight: 700 }}>
-                    {f.presupuesto != null ? (f.desviacion > 0 ? `+${fmtEur(f.desviacion)}` : fmtEur(f.desviacion)) : '—'}
-                  </td>
-                  <td style={{ ...tdNeo(alt), textAlign: 'right' }}>{f.pct_consumido != null ? fmtPct(f.pct_consumido) : '—'}</td>
-                  <td style={tdNeo(alt)}><BadgeNeo color={color}>{labelEstado[f.estado]}</BadgeNeo></td>
-                  <td style={tdNeo(alt)}>
-                    {!enEdicion && (
-                      <BotonNeo bg={ARENA} onClick={() => { setEditando(f.categoria); setValorEdit('') }}>Editar</BotonNeo>
-                    )}
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </TablaWrap>
-      </Banda>
-
+      {pestana === 'presupuesto' && (
       <Banda bg={ARENA_CL}>
         <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 16, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 14, color: INK }}>
           Empresa + Hogar · {vista === 'semana' ? 'últimas 12 semanas' : 'últimos 6 meses'}
@@ -272,6 +219,7 @@ export default function RunningFamilia() {
           </tbody>
         </TablaWrap>
       </Banda>
+      )}
     </PageNeo>
   )
 }

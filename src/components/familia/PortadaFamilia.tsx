@@ -68,7 +68,7 @@ const etiquetaSub: Record<string, string> = {
   'bares-restaurantes': 'Bares y restaurantes', regalos: 'Regalos', 'planes-viajes': 'Planes y viajes',
   'recarga-parking': 'Recarga y parking', mantenimiento: 'Mantenimiento',
   farmacia: 'Farmacia y suplementos', 'optica-peluqueria': 'Óptica y peluquería',
-  ropa: 'Ropa y calzado', ninos: 'Niños y colegio', online: 'Online',
+  ropa: 'Ropa y calzado', ninos: 'Niños y colegio', online: 'Online y bazar',
   reformas: 'Reformas', calefaccion: 'Calefacción', tramites: 'Trámites', efectivo: 'Efectivo',
   caixabank: 'CaixaBank', kona: 'Kona (Cetelem)', oney: 'Oney', seguros: 'Seguros', internet: 'Internet y teléfono',
   suscripciones: 'Suscripciones', hacienda: 'Hacienda', suma: 'Suma', unicef: 'Unicef', msf: 'Médicos Sin Fronteras',
@@ -169,10 +169,17 @@ function DonutCard({ titulo, total, sub, filas, color, paleta, detalle }: {
   )
 }
 
-export default function PortadaFamilia() {
+export type SeccionFamilia = 'hoy' | 'resumen' | 'prevision' | 'recibos'
+
+export default function PortadaFamilia({ seccion = 'hoy', escala = 'mes' }: { seccion?: SeccionFamilia; escala?: 'mes' | 'semana' }) {
+  const ver = (s: SeccionFamilia) => seccion === s
+  /* Escala de lectura: mensual o semanal (× 12 ÷ 52) */
+  const k = escala === 'semana' ? 12 / 52 : 1
+  const uni = escala === 'semana' ? 'semana' : 'mes'
   const [movs, setMovs] = useState<Mov[]>([])
   const [plan, setPlan] = useState<FijoPlan[]>([])
   const [cargando, setCargando] = useState(true)
+  const [alias, setAlias] = useState<Record<string, string>>({})
   const [error, setError] = useState<string | null>(null)
   const hoy = useMemo(() => new Date(), [])
   const per = usePeriodo()
@@ -181,10 +188,14 @@ export default function PortadaFamilia() {
   useEffect(() => {
     let cancel = false
     ;(async () => {
-      const [a, b] = await Promise.all([
+      const [a, b, c] = await Promise.all([
         supabase.from('v_familia_mov').select('*').order('fecha', { ascending: false }).range(0, 4999),
         supabase.from('familia_fijos').select('*').eq('activo', true).order('id'),
+        supabase.from('cuentas_bancarias').select('alias, iban_mask').in('iban_mask', ['…5513', '…5042']),
       ])
+      const al: Record<string, string> = {}
+      for (const r of (c.data ?? []) as { alias: string | null; iban_mask: string }[]) al[r.iban_mask.replace(/\D/g, '')] = r.alias ?? ''
+      setAlias(al)
       if (cancel) return
       if (a.error) setError(a.error.message)
       else if (b.error) setError(b.error.message)
@@ -292,6 +303,11 @@ export default function PortadaFamilia() {
   const aportarVariables = Math.max(0, varPrev - rebecaMedia3)
   const aportarTotal = totalPlanFijos + aportarVariables
   const diferencia = aportarTotal - davidReal3
+  const ctaGastos = `${alias['5513'] || 'Caixa Gastos'} …5513`
+  const ctaFamilia = `${alias['5042'] || 'Caixa Familia'} …5042`
+  /* Ingresos de David: Gastos una vez al mes (día 28), Familia cada lunes */
+  const familiaSemanal = (aportarVariables * 12) / 52
+  const proxLunes = (() => { const d = new Date(hoy); const add = ((8 - d.getDay()) % 7) || 7; d.setDate(d.getDate() + add); return d })()
 
   /* ── Último cobro REAL de cada fijo del plan (movimientos del banco) ── */
   const movsFijo = useMemo(() => {
@@ -417,33 +433,33 @@ export default function PortadaFamilia() {
 
   return (
     <>
-      {!cargando && (
+      {ver('hoy') && !cargando && (
         <HeroNeo
           eyebrowTxt="Finanzas · Hogar"
-          cifra={`${EUR(necesidadCasa)} /mes`}
+          cifra={`${EUR(necesidadCasa * k)} /${uni}`}
           frase={`Es lo que necesita la casa cada mes (fijos ${E(totalPlanFijos)} + variables previstos ${E(varPrev)}). Rebeca cubre ${E(rebecaMedia3)}; David tiene que aportar ${E(davidSaca)}.`}
           color={diferencia > 0 ? NARANJA : OLIVA}
           apoyo={[
-            { label: 'David aporta de media', valor: E(davidReal3) },
-            { label: diferencia > 0 ? 'Le falta al mes' : 'Le sobra al mes', valor: E(Math.abs(diferencia)) },
+            { label: `David aporta de media /${uni}`, valor: E(davidReal3 * k) },
+            { label: diferencia > 0 ? `Le falta /${uni}` : `Le sobra /${uni}`, valor: E(Math.abs(diferencia) * k) },
             { label: 'Acierto de la previsión', valor: pronVar.acierto != null ? P0(pronVar.acierto * 100) : '—' },
           ]}
         />
       )}
 
-      {!cargando && (
+      {ver('hoy') && !cargando && (
         <Banda bg={BLANCO}>
           <div style={wrap}>Hoy · {hoy.getDate()} de {MESES[hoy.getMonth()]} · qué toca</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 18 }}>
             <div style={{ ...card(MARINO), padding: '18px 20px', color: ARENA }}>
-              <div style={{ fontFamily: OSW, fontWeight: 600, fontSize: 12, letterSpacing: 2, textTransform: 'uppercase' }}>Cuenta Pagos …5513</div>
+              <div style={{ fontFamily: OSW, fontWeight: 600, fontSize: 12, letterSpacing: 2, textTransform: 'uppercase' }}>{ctaGastos}</div>
               {pendientes.length > 0 ? (
                 <>
                   <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 'clamp(24px,3vw,36px)', color: AMBAR, margin: '6px 0 4px' }}>
                     Ten {EUR(sumBy(pendientes, c => c.importe))} antes del {fechaCorta(pendientes[0].fecha)}
                   </div>
                   <div style={{ fontSize: 12, fontWeight: 600, opacity: 0.9 }}>
-                    Para cubrir {pendientes.length} recibo{pendientes.length > 1 ? 's' : ''} de los próximos 14 días. No leo el saldo del banco: comprueba que ya esté.
+                    Para cubrir {pendientes.length} recibo{pendientes.length > 1 ? 's' : ''} de los próximos 14 días. El banco no da el saldo de esta cuenta: comprueba que ya esté.
                   </div>
                 </>
               ) : (
@@ -453,10 +469,13 @@ export default function PortadaFamilia() {
                 Provisión que no se toca: {EUR(provApartado)} (seguros y pagos anuales)
               </div>
               <div style={{ fontSize: 13, fontWeight: 700, borderTop: `2px solid ${ARENA}`, marginTop: 8, paddingTop: 8 }}>
-                Siguiente ingreso fijo: el {fechaCorta(proxIngreso)} → {EUR(totalPlanFijos)}
+                Lunes {fechaCorta(proxLunes)}: ingresar {EUR(familiaSemanal)} en {ctaFamilia}
               </div>
               <div style={{ fontSize: 13, fontWeight: 700, borderTop: `2px solid ${ARENA}`, marginTop: 8, paddingTop: 8 }}>
-                Cuenta Caixa …5042: {diferencia > 0 ? `a David le faltan ${EUR(diferencia)} al mes por aportar` : 'aportación al día'}
+                Día {fechaCorta(proxIngreso)}: ingresar {EUR(totalPlanFijos)} en {ctaGastos}
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 700, borderTop: `2px solid ${ARENA}`, marginTop: 8, paddingTop: 8 }}>
+                {ctaFamilia}: {diferencia > 0 ? `a David le faltan ${EUR(diferencia)} al mes por aportar` : 'aportación al día'}
               </div>
             </div>
             <div style={{ ...card(BLANCO), padding: '18px 20px' }}>
@@ -483,6 +502,7 @@ export default function PortadaFamilia() {
         </Banda>
       )}
 
+      {ver('resumen') && (
       <Banda bg={ARENA_CL}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
           <div style={{ ...wrap, textTransform: 'capitalize' }}>Portada · {etiquetaPeriodo}</div>
@@ -506,8 +526,9 @@ export default function PortadaFamilia() {
           </>
         )}
       </Banda>
+      )}
 
-      {!cargando && per.key === 'mes' && (
+      {ver('hoy') && !cargando && per.key === 'mes' && (
         <Banda bg={BLANCO}>
           <div style={wrap}>Cómo va el mes y la semana</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 18 }}>
@@ -523,33 +544,33 @@ export default function PortadaFamilia() {
         </Banda>
       )}
 
-      {!cargando && (
+      {ver('prevision') && !cargando && (
         <Banda bg={AMBAR}>
-          <div style={wrap}>Cuánto meter cada mes en cada cuenta</div>
+          <div style={wrap}>Cuánto ingresar en cada cuenta</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 18 }}>
             <div style={{ ...card(BLANCO), padding: '18px 20px' }}>
-              <div style={{ fontFamily: OSW, fontWeight: 600, fontSize: 12, letterSpacing: 2, textTransform: 'uppercase' }}>Cuenta Pagos …5513 · gastos fijos</div>
-              <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 'clamp(26px,3vw,40px)', color: NARANJA, margin: '6px 0 4px' }}>{EUR(totalPlanFijos)}</div>
+              <div style={{ fontFamily: OSW, fontWeight: 600, fontSize: 12, letterSpacing: 2, textTransform: 'uppercase' }}>{ctaGastos} · recibos</div>
+              <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 'clamp(26px,3vw,40px)', color: NARANJA, margin: '6px 0 4px' }}>{EUR(totalPlanFijos)} <span style={{ fontSize: 16 }}>/mes</span></div>
               <div style={{ fontSize: 12, fontWeight: 600, color: GRIS, marginBottom: 10 }}>
-                Meter el día 28 de cada mes, antes de que pasen los recibos del 1 al 3. Seguros y suscripciones anuales van prorrateados.
+                Una vez al mes, el día 28, antes de los recibos del 1 al 3. Incluye la parte proporcional de seguros y pagos anuales{escala === 'semana' ? ` (equivale a ${E(totalPlanFijos * k)} por semana)` : ''}.
               </div>
               {mensualPlan.map(g => (
                 <div key={g.cat} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 700, borderTop: `2px solid ${ARENA_CL}`, padding: '6px 0' }}>
-                  <span style={{ textTransform: 'capitalize' }}>{NOMBRE_CAT[g.cat] ?? g.cat}</span>
+                  <span>{NOMBRE_CAT[g.cat] ?? g.cat}</span>
                   <span style={{ fontFamily: OSW }}>{E2(g.total)}</span>
                 </div>
               ))}
             </div>
             <div style={{ ...card(BLANCO), padding: '18px 20px' }}>
-              <div style={{ fontFamily: OSW, fontWeight: 600, fontSize: 12, letterSpacing: 2, textTransform: 'uppercase' }}>Cuenta Caixa …5042 · gastos variables</div>
-              <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 'clamp(26px,3vw,40px)', color: CELESTE, margin: '6px 0 4px' }}>{EUR(aportarVariables)}</div>
+              <div style={{ fontFamily: OSW, fontWeight: 600, fontSize: 12, letterSpacing: 2, textTransform: 'uppercase' }}>{ctaFamilia} · día a día</div>
+              <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 'clamp(26px,3vw,40px)', color: CELESTE, margin: '6px 0 4px' }}>{EUR(familiaSemanal)} <span style={{ fontSize: 16 }}>/semana</span></div>
               <div style={{ fontSize: 12, fontWeight: 600, color: GRIS, marginBottom: 10 }}>
-                Lo que tiene que poner David. Rebeca ya entra con su nómina.
+                Cada lunes. Alimentación, animales, tiendas, ocio, coche y salud. Rebeca ya entra con su nómina.
               </div>
               {[
-                [`Variables previstos (aprende de ${pronVar.nMeses} meses)`, varPrev],
-                ['− Nómina de Rebeca', -rebecaMedia3],
-                ['= A aportar por David', aportarVariables],
+                [`Variables previstos al ${uni}`, varPrev * k],
+                [`− Nómina de Rebeca al ${uni}`, -rebecaMedia3 * k],
+                [`= David al ${uni}`, aportarVariables * k],
               ].map(([t, v]) => (
                 <div key={String(t)} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 700, borderTop: `2px solid ${ARENA_CL}`, padding: '6px 0' }}>
                   <span>{t}</span><span style={{ fontFamily: OSW }}>{E2(Number(v))}</span>
@@ -557,22 +578,22 @@ export default function PortadaFamilia() {
               ))}
             </div>
             <div style={{ ...card(MARINO), padding: '18px 20px', color: ARENA }}>
-              <div style={{ fontFamily: OSW, fontWeight: 600, fontSize: 12, letterSpacing: 2, textTransform: 'uppercase' }}>David aporta cada mes</div>
-              <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 'clamp(30px,3.4vw,46px)', color: AMBAR, margin: '6px 0 4px' }}>{EUR(aportarTotal)}</div>
-              <div style={{ fontSize: 12, fontWeight: 600, opacity: 0.85, marginBottom: 10 }}>Fijos + variables menos la nómina de Rebeca.</div>
+              <div style={{ fontFamily: OSW, fontWeight: 600, fontSize: 12, letterSpacing: 2, textTransform: 'uppercase' }}>David aporta en total</div>
+              <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 'clamp(30px,3.4vw,46px)', color: AMBAR, margin: '6px 0 4px' }}>{EUR(aportarTotal * k)} <span style={{ fontSize: 16 }}>/{uni}</span></div>
+              <div style={{ fontSize: 12, fontWeight: 600, opacity: 0.85, marginBottom: 10 }}>{EUR(totalPlanFijos)} a Gastos el 28 + {EUR(familiaSemanal)} a Familia cada lunes.</div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 700, borderTop: `2px solid ${ARENA}`, padding: '6px 0' }}>
-                <span>Lo que ha aportado de media (3 meses)</span><span style={{ fontFamily: OSW }}>{E(davidReal3)}</span>
+                <span>Lo que ha aportado de media</span><span style={{ fontFamily: OSW }}>{E(davidReal3 * k)} /{uni}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 700, borderTop: `2px solid ${ARENA}`, padding: '6px 0' }}>
                 <span>{diferencia > 0 ? 'Le falta por aportar' : 'Le sobra'}</span>
-                <span style={{ fontFamily: OSW, color: diferencia > 0 ? '#FFB199' : '#C8D98B' }}>{E(Math.abs(diferencia))} al mes</span>
+                <span style={{ fontFamily: OSW, color: diferencia > 0 ? AMBAR : OLIVA }}>{E(Math.abs(diferencia) * k)} /{uni}</span>
               </div>
             </div>
           </div>
         </Banda>
       )}
 
-      {!cargando && provisiones.length > 0 && (
+      {ver('recibos') && !cargando && provisiones.length > 0 && (
         <Banda bg={BLANCO}>
           <div style={wrap}>Provisiones · lo que hay que ir apartando para los pagos anuales y semestrales</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 18, marginBottom: 16 }}>
@@ -615,7 +636,7 @@ export default function PortadaFamilia() {
         </Banda>
       )}
 
-      {!cargando && (
+      {ver('prevision') && !cargando && (
         <Banda bg={AMBAR}>
           <div style={wrap}>Punto de equilibrio familiar · cuánto hay que facturar para cubrir la casa</div>
           {!equil ? (
@@ -637,7 +658,7 @@ export default function PortadaFamilia() {
         </Banda>
       )}
 
-      {!cargando && pronVar.nMeses > 0 && (
+      {ver('prevision') && !cargando && pronVar.nMeses > 0 && (
         <Banda bg={ARENA_CL}>
           <div style={wrap}>Previsión de variables · se afina cada mes</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 18, marginBottom: 16 }}>
@@ -669,7 +690,7 @@ export default function PortadaFamilia() {
         </Banda>
       )}
 
-      {!cargando && detalleVar.length > 0 && (
+      {ver('resumen') && !cargando && detalleVar.length > 0 && (
         <Banda bg={BLANCO}>
           <div style={wrap}>Gastos variables al detalle · dónde se compra</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 18 }}>
@@ -710,7 +731,7 @@ export default function PortadaFamilia() {
         </Banda>
       )}
 
-      {!cargando && (
+      {ver('recibos') && !cargando && (
         <Banda bg={ARENA_CL}>
           <div style={wrap}>Plan de gastos fijos · prorrateado a mes</div>
           <TablaWrap>
