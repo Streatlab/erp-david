@@ -3,7 +3,7 @@ import { useCostesReales } from '@/hooks/useCostesReales'
 import { puntoEquilibrio } from '@/lib/equilibrio'
 import { fmtEur } from '@/lib/format'
 import { MARINO, ARENA, ARENA_CL, BLANCO, GRIS, OLIVA, TERRA, NARANJA, CELESTE, AMBAR, OSW, LEX, SHADOW, BORDER_CARD, card } from '@/styles/neobrutal'
-import { PageNeo, Banda, CabeceraNeo, KpiNeo, AvisoNeo, HeroNeo } from '@/components/neo/NeoUI'
+import { PageNeo, Banda, CabeceraNeo, KpiNeo, AvisoNeo, HeroNeo, TabsNeo, usePestana } from '@/components/neo/NeoUI'
 
 const fmtNum = (n: number | null) => n === null ? '—' : Math.round(n).toLocaleString('es-ES')
 
@@ -14,7 +14,10 @@ const fmtNum = (n: number | null) => n === null ? '—' : Math.round(n).toLocale
  * - € por entrega: total liquidado ÷ entregas de las liquidaciones de Cade.
  * PE (€/mes) = fijos ÷ (1 − variables/ingresos); entregas/mes = PE ÷ € por entrega.
  */
+const PESTANAS_PE = ['resumen', 'gastos'] as const
+
 export default function PuntoEquilibrio() {
+  const [pestana, setPestana] = usePestana('punto-equilibrio', PESTANAS_PE, 'resumen')
   const { datos, error: errMsg, cargando: loading } = useCostesReales()
 
   const calc = useMemo(() => {
@@ -68,6 +71,12 @@ export default function PuntoEquilibrio() {
       )}
 
       {!loading && !sinDatos && calc && datos && (<>
+        <TabsNeo value={pestana} onChange={setPestana} tabs={[
+          { id: 'resumen', label: 'Resumen' },
+          { id: 'gastos', label: 'Gastos y cálculo' },
+        ]} />
+
+        {pestana === 'resumen' && (<>
         {/* Las piezas del cálculo */}
         <Banda bg={ARENA_CL}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 18 }}>
@@ -98,6 +107,12 @@ export default function PuntoEquilibrio() {
               Ojo: {fmtEur(datos.costes.sinCategorizar)} al mes de gastos del banco siguen sin categorizar y no entran en el cálculo. Categorízalos en Conciliación.
             </div>
           )}
+        </Banda>
+        </>)}
+
+        {pestana === 'gastos' && (
+        <Banda bg={BLANCO}>
+          <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 13, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 6 }}>Gasto medio mensual por categoría</div>
           <div style={{ marginTop: 16 }}>
             {datos.costes.porCategoria.map(c => (
               <div key={c.categoria} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 600, padding: '5px 0', borderBottom: `1px solid ${ARENA_CL}` }}>
@@ -110,6 +125,7 @@ export default function PuntoEquilibrio() {
             Cálculo: costes fijos ÷ (1 − variables ÷ ingresos), y ese importe ÷ lo que cobras por entrega (liquidaciones Cade). Se recalcula solo con cada descarga del banco.
           </div>
         </Banda>
+        )}
       </>)}
     </PageNeo>
   )

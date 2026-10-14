@@ -18,7 +18,7 @@ import GastosCard from '@/components/finanzas/running/GastosCard';
 import TablaPyG from '@/components/finanzas/running/TablaPyG';
 import ModalAddGasto from '@/components/finanzas/running/ModalAddGasto';
 import { usePeriodo } from '@/lib/periodoGlobal';
-import { HeroNeo } from '@/components/neo/NeoUI';
+import { HeroNeo, TabsNeo, usePestana } from '@/components/neo/NeoUI';
 import { OLIVA, NARANJA as NARANJA_NEO, EUR } from '@/styles/neobrutal';
 import MarcasCard from '@/components/finanzas/running/MarcasCard';
 import AlertasPresupuestoCard from '@/components/finanzas/running/AlertasPresupuestoCard';
@@ -47,7 +47,10 @@ function calcularEstadoRatio(pct: number): { label: string; color: string } {
 
 interface MarcaOption { id: string; nombre: string }
 
+const PEST_IDS = ['resumen', 'ingresos', 'seguimiento', 'pyg'] as const;
+
 export default function Running() {
+  const [pestana, setPestana] = usePestana('running', PEST_IDS, 'resumen');
   const { T } = useTheme();
   const pg = usePeriodo();
   const periodo = useMemo<PeriodoRango>(
@@ -474,6 +477,14 @@ export default function Running() {
         />
       </div>
 
+      <TabsNeo value={pestana} onChange={setPestana} tabs={[
+        { id: 'resumen', label: 'Resumen' },
+        { id: 'ingresos', label: 'Ingresos y gastos' },
+        { id: 'seguimiento', label: 'Seguimiento' },
+        { id: 'pyg', label: 'PyG anual' },
+      ]} />
+
+      {pestana === 'resumen' && <>
       {/* Cashflow Real — fuera del toggle IVA, siempre con IVA (caja real) */}
       <div style={{ marginBottom: 16 }}>
         <CashflowRealCard periodoDesde={periodo.desde} periodoHasta={periodo.hasta} />
@@ -522,6 +533,9 @@ export default function Running() {
         />
       </div>
 
+      </>}
+
+      {pestana === 'ingresos' && <>
       {/* INGRESOS + GASTOS */}
       <div
         style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 32, alignItems: 'stretch' }}
@@ -546,7 +560,12 @@ export default function Running() {
         />
       </div>
 
-      {/* Cards inteligentes (3 medianas) */}
+      {/* Ingresos por marca */}
+      <MarcasCard periodoLabel={periodo.label} rows={marcasRows} />
+      </>}
+
+      {pestana === 'seguimiento' && (
+
       <div
         style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 16, marginBottom: 32, alignItems: 'stretch' }}
         className="rf-smart-row"
@@ -555,7 +574,9 @@ export default function Running() {
         <RitmoMesCard />
         <ComparativaMensualCard />
       </div>
+      )}
 
+      {pestana === 'pyg' && <>
       {/* Tabla PyG */}
       <div style={{
         fontFamily: FONT.heading, fontSize: 14, color: ROJO, fontWeight: 500,
@@ -567,8 +588,7 @@ export default function Running() {
         <TablaPyG anio={anio} gastosAnio={gastos} ingresosAnio={ingresosMes} rangos={rangos} />
       </div>
 
-      {/* Ingresos por marca */}
-      <MarcasCard periodoLabel={periodo.label} rows={marcasRows} />
+      </>}
 
       {loading && (
         <div style={{ textAlign: 'center', padding: 16, color: T.mut, fontFamily: FONT.body, fontSize: 12 }}>
