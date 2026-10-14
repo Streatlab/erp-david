@@ -12,7 +12,7 @@ import { INK, ARENA, ARENA_CL, BLANCO, GRIS, OLIVA, TERRA, NARANJA, MARINO, AMBA
    4. Avisos que solo existen cuando hay algo que hacer (documentación de Cade, facturas sin enviar,
       movimientos sin categorizar, tareas). Cuando se resuelven, desaparecen. */
 
-interface Cuenta { banco: string; alias: string | null; iban: string | null; iban_mask: string | null; saldo_actual: number | null; saldo_fecha: string | null; personal: boolean | null; activa: boolean | null }
+interface Cuenta { id: string; banco: string; alias: string | null; iban: string | null; iban_mask: string | null; saldo_actual: number | null; saldo_fecha: string | null; personal: boolean | null; activa: boolean | null }
 interface Mov { fecha: string; importe: number; categoria: string | null }
 interface Doc { emisor: string; documento: string; como_obtenerlo: string; estado: string }
 interface Tarea { titulo: string; fecha_limite: string | null; prioridad: string | null; estado: string | null }
@@ -56,7 +56,7 @@ export default function HoyTab() {
     const mesFact = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1)
     const ini6 = new Date(hoy.getFullYear(), hoy.getMonth() - 6, 1)
     Promise.all([
-      supabase.from('cuentas_bancarias').select('banco, alias, iban, iban_mask, saldo_actual, saldo_fecha, personal, activa'),
+      supabase.from('cuentas_bancarias').select('id, banco, alias, iban, iban_mask, saldo_actual, saldo_fecha, personal, activa'),
       supabase.from('v_documentacion_pendiente').select('emisor, documento, como_obtenerlo, estado'),
       supabase.from('tareas').select('titulo, fecha_limite, prioridad, estado').order('fecha_limite', { ascending: true }).limit(50),
       supabase.from('facturas_emitidas').select('periodo, base_imponible, emisor, id').eq('cliente', 'CADE').gte('periodo', iso(ini6)),
@@ -143,7 +143,7 @@ export default function HoyTab() {
                   return (
                     <div key={`${c.banco}-${ultimos4(c)}`} style={{ background: ARENA_CL, border: BORDER_CARD, boxShadow: SHADOW, padding: '12px 14px' }}>
                       <div style={{ fontFamily: OSW, fontWeight: 600, fontSize: 12, letterSpacing: 2, textTransform: 'uppercase' }}>{c.banco} · …{ultimos4(c)}</div>
-                      <div style={{ fontFamily: LEX, fontSize: 12, fontWeight: 600, color: GRIS, textTransform: 'capitalize', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{(c.alias ?? '').toLowerCase()}</div>
+                      <AliasEditable c={c} onGuardado={alias => setCuentas(cs => cs.map(x => x.id === c.id ? { ...x, alias } : x))} />
                       <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 26, color: sinSaldo ? GRIS : Number(c.saldo_actual ?? 0) >= 0 ? OLIVA : NARANJA }}>
                         {sinSaldo ? 'Sin saldo' : eur(Number(c.saldo_actual ?? 0))}
                       </div>
@@ -265,5 +265,34 @@ export default function HoyTab() {
         {hayAvisos ? 'Los avisos desaparecen solos cuando se resuelven.' : 'Nada pendiente hoy.'}
       </section>
     </>
+  )
+}
+
+/* Nombre de la cuenta editable en el sitio: se pulsa, se escribe y Enter guarda */
+function AliasEditable({ c, onGuardado }: { c: Cuenta; onGuardado: (alias: string) => void }) {
+  const [editando, setEditando] = useState(false)
+  const [valor, setValor] = useState(c.alias ?? '')
+  const [error, setError] = useState(false)
+  async function guardar() {
+    const nuevo = valor.trim()
+    setEditando(false)
+    if (!nuevo || nuevo === c.alias) return
+    const { error: e } = await supabase.from('cuentas_bancarias').update({ alias: nuevo }).eq('id', c.id)
+    if (e) { setError(true); return }
+    setError(false)
+    onGuardado(nuevo)
+  }
+  if (editando) {
+    return (
+      <input autoFocus value={valor} onChange={e => setValor(e.target.value)} onBlur={guardar}
+        onKeyDown={e => { if (e.key === 'Enter') guardar(); if (e.key === 'Escape') setEditando(false) }}
+        style={{ width: '100%', fontFamily: LEX, fontSize: 13, fontWeight: 700, border: `2px solid ${INK}`, padding: '2px 6px', margin: '2px 0' }} />
+    )
+  }
+  return (
+    <div onClick={() => { setValor(c.alias ?? ''); setEditando(true) }} title="Pulsa para cambiar el nombre"
+      style={{ fontFamily: LEX, fontSize: 13, fontWeight: 700, color: error ? TERRA : INK, cursor: 'pointer', borderBottom: `1px dashed ${GRIS}`, display: 'inline-block', margin: '2px 0' }}>
+      {c.alias || 'Ponle nombre'}{error ? ' · no se pudo guardar' : ''}
+    </div>
   )
 }

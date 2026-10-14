@@ -67,8 +67,11 @@ export default function CuentasBancoPanel() {
     setGuardando(null)
   }
 
+  const [editandoAlias, setEditandoAlias] = useState<string | null>(null)
+  const [aliasValor, setAliasValor] = useState('')
   async function renombrar(c: Cuenta) {
-    const nuevo = window.prompt('Nombre de la cuenta', c.alias)?.trim()
+    const nuevo = aliasValor.trim()
+    setEditandoAlias(null)
     if (!nuevo || nuevo === c.alias) return
     const { error: e } = await supabase.from('cuentas_bancarias').update({ alias: nuevo }).eq('id', c.id)
     if (e) setError(e.message)
@@ -149,10 +152,16 @@ export default function CuentasBancoPanel() {
               return (
                 <tr key={c.id}>
                   <td style={tdEstado(alt, c.descargar ? (c.personal ? CELESTE : MARINO) : GRIS)}>
-                    <button onClick={() => renombrar(c)} title="Cambiar nombre"
-                      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: LEX, fontWeight: 700, fontSize: 13, color: INK, textAlign: 'left' }}>
-                      {c.alias}
-                    </button>
+                    {editandoAlias === c.id ? (
+                      <input autoFocus value={aliasValor} onChange={e => setAliasValor(e.target.value)} onBlur={() => renombrar(c)}
+                        onKeyDown={e => { if (e.key === 'Enter') renombrar(c); if (e.key === 'Escape') setEditandoAlias(null) }}
+                        style={{ fontFamily: LEX, fontWeight: 700, fontSize: 13, color: INK, border: `2px solid ${INK}`, padding: '2px 6px', width: '100%' }} />
+                    ) : (
+                      <button onClick={() => { setAliasValor(c.alias ?? ''); setEditandoAlias(c.id) }} title="Pulsa para cambiar el nombre"
+                        style={{ background: 'none', border: 'none', borderBottom: `1px dashed ${GRIS}`, padding: 0, cursor: 'pointer', fontFamily: LEX, fontWeight: 700, fontSize: 13, color: INK, textAlign: 'left' }}>
+                        {c.alias}
+                      </button>
+                    )}
                   </td>
                   <td style={tdNeo(alt)}>{c.banco}</td>
                   <td style={{ ...tdNeo(alt), fontFamily: 'ui-monospace, monospace', whiteSpace: 'nowrap' }}>{enmascarar(c)}</td>
