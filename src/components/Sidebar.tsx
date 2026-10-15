@@ -156,6 +156,8 @@ const NOMBRE_RUTA: Record<string, string> = {
   ...Object.fromEntries(SECTIONS.flatMap(sec => sec.items.map(i => [i.path, i.label]))),
 }
 
+const nombreRuta = (p: string) => NOMBRE_RUTA[p] ?? (p.startsWith('/flota/') ? `Furgoneta ${decodeURIComponent(p.slice(7)).toUpperCase()}` : null)
+
 const OPEN_SECTIONS_LS_KEY = 'david.sidebar.openSections'
 const TEXTO_SUAVE = 'rgba(245,236,217,0.72)' // ARENA 72% sobre marino
 
@@ -173,7 +175,8 @@ function loadOpenSections(): string[] {
 export default function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { usuario, logout } = useAuth()
   const fav = useFavoritos()
-  const favoritos = (fav?.favoritos ?? []).filter(p => NOMBRE_RUTA[p])
+  const favoritos = (fav?.favoritos ?? []).filter(p => nombreRuta(p))
+  const masUsadas = (fav?.masUsadas ?? []).filter(r => nombreRuta(r.ruta) && !favoritos.includes(r.ruta)).slice(0, 6)
   const perfil = usuario?.perfil ?? ''
 
   // Detección de móvil (equivalente a useEsMovil de Binagre)
@@ -277,14 +280,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
               })}>
               {({ isActive }) => (<>
                 <LayoutDashboard size={20} strokeWidth={2.4} color={isActive ? INK : AMBAR} style={{ flexShrink: 0 }} />
-                <span style={{ flex: 1 }}>Panel Global</span>
-                {fav && (
-                  <button type="button" title={fav.esFavorito('/') ? 'Quitar de favoritos' : 'Añadir a favoritos'}
-                    onClick={e => { e.preventDefault(); e.stopPropagation(); fav.alternar('/') }}
-                    style={{ background: 'none', border: 'none', padding: 2, cursor: 'pointer', display: 'flex', opacity: fav.esFavorito('/') ? 1 : 0.35 }}>
-                    <Star size={16} strokeWidth={2.2} color={isActive ? INK : AMBAR} fill={fav.esFavorito('/') ? (isActive ? INK : AMBAR) : 'none'} />
-                  </button>
-                )}
+                <span>Panel Global</span>
               </>)}
             </NavLink>
           )}
@@ -309,14 +305,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
               })}>
               {({ isActive }) => (<>
                 <BellRing size={20} strokeWidth={2.4} color={isActive ? INK : AMBAR} style={{ flexShrink: 0 }} />
-                <span style={{ flex: 1 }}>Tareas</span>
-                {fav && (
-                  <button type="button" title={fav.esFavorito('/tareas') ? 'Quitar de favoritos' : 'Añadir a favoritos'}
-                    onClick={e => { e.preventDefault(); e.stopPropagation(); fav.alternar('/tareas') }}
-                    style={{ background: 'none', border: 'none', padding: 2, cursor: 'pointer', display: 'flex', opacity: fav.esFavorito('/tareas') ? 1 : 0.35 }}>
-                    <Star size={16} strokeWidth={2.2} color={isActive ? INK : AMBAR} fill={fav.esFavorito('/tareas') ? (isActive ? INK : AMBAR) : 'none'} />
-                  </button>
-                )}
+                <span>Tareas</span>
               </>)}
             </NavLink>
           )}
@@ -340,7 +329,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
               </div>
               <div style={{ background: BLANCO }}>
                 {favoritos.length === 0 && (
-                  <div style={{ padding: '8px 16px', fontFamily: OSW, fontSize: 13, color: INK, opacity: 0.7 }}>Pulsa la estrella de cualquier pantalla para tenerla aquí</div>
+                  <div style={{ padding: '8px 16px', fontFamily: OSW, fontSize: 13, color: INK, opacity: 0.7 }}>Pulsa ★ en cualquier pantalla para tenerla aquí.</div>
                 )}
                 {favoritos.map((path, idx) => {
                   const SubIcon = path === '/' ? LayoutDashboard : path === '/tareas' ? BellRing : (ICON_ROUTE[path] ?? FileText)
@@ -354,7 +343,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
                       })}>
                       {({ isActive }) => (<>
                         <SubIcon size={15} strokeWidth={2.2} color={isActive ? AMBAR : INK} style={{ flexShrink: 0 }} />
-                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{NOMBRE_RUTA[path]}</span>
+                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nombreRuta(path)}</span>
                         <button type="button" title="Quitar de favoritos" onClick={e => { e.preventDefault(); e.stopPropagation(); fav.alternar(path) }}
                           style={{ background: 'none', border: 'none', padding: 2, cursor: 'pointer', display: 'flex' }}>
                           <Star size={15} strokeWidth={2.2} color={isActive ? AMBAR : NARANJA} fill={isActive ? AMBAR : NARANJA} />
@@ -363,13 +352,31 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
                     </NavLink>
                   )
                 })}
+                <div style={{ padding: '8px 16px 4px', fontFamily: OSW, fontWeight: 800, fontSize: 13, letterSpacing: 2, textTransform: 'uppercase', color: INK, borderTop: `2px solid ${INK}` }}>
+                  Más usadas · 30 días
+                </div>
+                {masUsadas.length === 0 && (
+                  <div style={{ padding: '4px 16px 8px', fontFamily: OSW, fontSize: 13, color: INK, opacity: 0.7 }}>Aún no hay uso suficiente: se irá llenando solo.</div>
+                )}
+                {masUsadas.map(r => (
+                  <NavLink key={`u-${r.ruta}`} to={r.ruta} end onClick={onClose}
+                    style={({ isActive }) => ({
+                      fontFamily: OSW, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.01em', fontSize: 15,
+                      padding: '6px 16px 6px 18px', display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none',
+                      background: isActive ? INK : BLANCO, color: isActive ? AMBAR : INK,
+                    })}>
+                    <span aria-hidden="true">↻</span>
+                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nombreRuta(r.ruta)}</span>
+                    <small style={{ opacity: 0.6 }}>{r.veces}</small>
+                  </NavLink>
+                ))}
               </div>
             </div>
           )}
           {fav && perfil && collapsed && favoritos.map(path => {
             const SubIcon = path === '/' ? LayoutDashboard : path === '/tareas' ? BellRing : (ICON_ROUTE[path] ?? FileText)
             return (
-              <NavLink key={path} to={path} end onClick={() => { abrir20s(); onClose() }} title={`★ ${NOMBRE_RUTA[path]}`}
+              <NavLink key={path} to={path} end onClick={() => { abrir20s(); onClose() }} title={`★ ${nombreRuta(path)}`}
                 style={({ isActive }) => ({
                   width: '100%', height: 42, display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', borderBottom: `3px solid ${INK}`,
                   background: isActive ? AMBAR : NARANJA,
@@ -425,13 +432,6 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
                           {({ isActive }) => (<>
                             <SubIcon size={15} strokeWidth={2.2} color={isActive ? AMBAR : INK} style={{ flexShrink: 0 }} />
                             <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
-                            {fav && (
-                              <button type="button" title={fav.esFavorito(item.path) ? 'Quitar de favoritos' : 'Añadir a favoritos'}
-                                onClick={e => { e.preventDefault(); e.stopPropagation(); fav.alternar(item.path) }}
-                                style={{ background: 'none', border: 'none', padding: 2, cursor: 'pointer', display: 'flex', opacity: fav.esFavorito(item.path) ? 1 : 0.35 }}>
-                                <Star size={15} strokeWidth={2.2} color={isActive ? AMBAR : NARANJA} fill={fav.esFavorito(item.path) ? (isActive ? AMBAR : NARANJA) : 'none'} />
-                              </button>
-                            )}
                           </>)}
                         </NavLink>
                       )

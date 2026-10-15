@@ -4,6 +4,7 @@ import { Menu } from 'lucide-react'
 import Sidebar from '@/components/Sidebar'
 import MenuCuenta from '@/components/MenuCuenta'
 import SelectorPeriodoNeo from '@/components/neo/SelectorPeriodoNeo'
+import EstrellaPantalla from '@/components/neo/EstrellaPantalla'
 import { PeriodoProvider } from '@/lib/periodoGlobal'
 import { FavoritosProvider } from '@/lib/favoritos'
 import { ARENA, INK, MARINO, OSW } from '@/styles/neobrutal'
@@ -61,6 +62,7 @@ export default function Layout() {
             David Reparte
           </span>
           <div className="ml-auto flex items-center gap-3">
+            <EstrellaPantalla />
             <SelectorPeriodoNeo />
             <MenuCuenta />
           </div>
