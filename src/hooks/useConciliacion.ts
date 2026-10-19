@@ -49,6 +49,19 @@ export interface CategoriaRef {
   tipo_parent: 'ingreso' | 'gasto'
 }
 
+/* El servidor devuelve como máximo 1.000 filas por consulta: se pide por páginas para cargar TODOS los movimientos */
+async function cargarTodosMovimientos(): Promise<Movimiento[]> {
+  const out: Movimiento[] = []
+  for (let desde = 0; ; desde += 1000) {
+    const { data, error } = await supabase.from('conciliacion').select('*')
+      .order('fecha', { ascending: false }).order('id').range(desde, desde + 999)
+    if (error) throw error
+    out.push(...((data ?? []) as Movimiento[]))
+    if (!data || data.length < 1000) break
+  }
+  return out
+}
+
 export function useConciliacion() {
   const [movimientos, setMovimientos] = useState<Movimiento[]>([])
   const [reglas, setReglas] = useState<Regla[]>([])
@@ -64,20 +77,19 @@ export function useConciliacion() {
     ;(async () => {
       setLoading(true); setError(null)
       try {
-        const [mov, reg, cIng, cGas, fur] = await Promise.all([
-          supabase.from('conciliacion').select('*').order('fecha', { ascending: false }),
+        const [movs, reg, cIng, cGas, fur] = await Promise.all([
+          cargarTodosMovimientos(),
           supabase.from('reglas_conciliacion').select('id, patron, tipo_categoria, categoria_id, categoria_codigo, activa, prioridad').order('prioridad', { ascending: false }),
           supabase.from('categorias_contables_ingresos').select('id, codigo, nombre, ambito'),
           supabase.from('categorias_contables_gastos').select('id, codigo, nombre, grupo, ambito'),
           supabase.from('furgonetas').select('id, codigo, nombre_corto, conductor').eq('activa', true).order('codigo'),
         ])
         if (cancel) return
-        if (mov.error) throw mov.error
         if (reg.error) throw reg.error
         if (cIng.error) throw cIng.error
         if (cGas.error) throw cGas.error
         if (fur.error) throw fur.error
-        setMovimientos((mov.data ?? []) as Movimiento[])
+        setMovimientos(movs)
         setReglas((reg.data ?? []) as Regla[])
         setFurgonetas((fur.data ?? []) as Furgoneta[])
         const cats: CategoriaRef[] = [
@@ -182,8 +194,22 @@ export function useConciliacion() {
       }
     }
 
-    // Aplicar reglas activas a los recién insertados
+    // El servidor ya categoriza solo los movimientos nuevos con las reglas aprendidas:
+    // aquí solo hay que sincronizar su gasto en Running
     let autoCategorizados = 0
+    const yaCategorizados = insertedRows.filter(m => m.categoria && !m.categoria.startsWith('pendiente') && !m.gasto_id)
+    for (const m of yaCategorizados) {
+      autoCategorizados++
+      try {
+        const tipoM: 'ingreso' | 'gasto' = m.tipo ?? (Number(m.importe) >= 0 ? 'ingreso' : 'gasto')
+        const gid = await syncGasto(m, m.categoria, tipoM)
+        if (gid) await supabase.from('conciliacion').update({ gasto_id: gid }).eq('id', m.id)
+      } catch (e: any) {
+        console.error('syncGasto (auto-import) failed:', e?.message ?? e)
+      }
+    }
+
+    // Respaldo en el navegador para lo que el servidor no haya resuelto
     const candidatosRules = insertedRows.filter(m => !m.categoria)
     if (candidatosRules.length > 0 && reglas.length > 0) {
       const reglasOrdenadas = [...reglas].filter(r => r.activa).sort((a, b) => b.prioridad - a.prioridad)
@@ -267,11 +293,18 @@ export function useConciliacion() {
     return (data?.id as string) ?? null
   }
 
-  async function updateCategoria(id: string, codigo_categoria: string | null, tipo: 'ingreso' | 'gasto' | null) {
+  /**
+   * Categoriza un movimiento. El servidor, de una vez:
+   *  - actualiza TODOS los movimientos iguales (mismo concepto salvo números/referencias),
+   *    estuvieran categorizados o no;
+   *  - guarda la regla para que los movimientos futuros se categoricen solos.
+   * Aquí solo se sincroniza Running (tabla gastos) de los afectados. Devuelve cuántos iguales se actualizaron.
+   */
+  async function updateCategoria(id: string, codigo_categoria: string | null, tipo: 'ingreso' | 'gasto' | null): Promise<number> {
     const mov = movimientos.find(m => m.id === id)
-    if (!mov) return
+    if (!mov) return 0
 
-    // 1. Sync gasto (create/update/delete)
+    // 1. Running del movimiento pulsado
     let nuevoGastoId: string | null = null
     try {
       nuevoGastoId = await syncGasto(mov, codigo_categoria, tipo)
@@ -280,36 +313,29 @@ export function useConciliacion() {
       console.error('syncGasto failed:', e?.message ?? e)
     }
 
-    // 2. Guardar SIEMPRE el codigo en conciliacion.categoria para consistencia con reglas
-    const { error } = await supabase.from('conciliacion')
-      .update({ categoria: codigo_categoria, tipo, gasto_id: nuevoGastoId })
-      .eq('id', id)
+    // 2. Categoría + propagación a iguales + regla aprendida (todo en el servidor)
+    const { data, error } = await supabase.rpc('categorizar_movimiento', { p_id: id, p_categoria: codigo_categoria, p_tipo: tipo })
     if (error) throw error
+    if (nuevoGastoId !== (mov.gasto_id ?? null)) {
+      await supabase.from('conciliacion').update({ gasto_id: nuevoGastoId }).eq('id', id)
+    }
 
-    // 3. Aprender: upsert de regla por patrón normalizado
-    if (codigo_categoria && tipo) {
-      const patron = normalizarConcepto(mov.concepto ?? '')
-      if (patron) {
-        try {
-          const { error: rErr } = await supabase
-            .from('reglas_conciliacion')
-            .upsert({
-              patron,
-              tipo_categoria: tipo,
-              asigna_como: tipo,
-              categoria_codigo: codigo_categoria,
-              categoria_id: null,
-              activa: true,
-              prioridad: 0,
-            }, { onConflict: 'patron' })
-          if (rErr) console.error('upsert regla:', rErr.message)
-        } catch (e: any) {
-          console.error('upsert regla failed:', e?.message ?? e)
-        }
+    // 3. Running de los iguales que han cambiado
+    const ids: string[] = ((data as { ids?: string[] } | null)?.ids ?? [])
+    for (const pid of ids) {
+      const m = movimientos.find(x => x.id === pid)
+      if (!m) continue
+      const tProp: 'ingreso' | 'gasto' = tipo ?? (Number(m.importe) >= 0 ? 'ingreso' : 'gasto')
+      try {
+        const gid = await syncGasto(m, codigo_categoria, tProp)
+        if (gid !== (m.gasto_id ?? null)) await supabase.from('conciliacion').update({ gasto_id: gid }).eq('id', pid)
+      } catch (e: any) {
+        console.error('syncGasto (iguales) failed:', e?.message ?? e)
       }
     }
 
     refresh()
+    return ids.length
   }
 
   async function createRegla(r: Omit<Regla, 'id'>) {

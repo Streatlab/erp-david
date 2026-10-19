@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { marcarDocumentacionEnviada, desmarcarDocumentacionEnviada } from '@/lib/documentacionEnviada'
 import { OLIVA, NARANJA, TERRA, GRIS, ARENA_CL, BLANCO, ARENA, INK, OSW } from '@/styles/neobrutal'
 import { PageNeo, Banda, CabeceraNeo, AvisoNeo, HeroNeo, TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo, BotonNeo } from '@/components/neo/NeoUI'
 
-interface Pend { emisor: string; documento: string; como_obtenerlo: string | null; ultimo_expedido: string | null; estado: 'ok' | 'pedir' }
+interface Pend { emisor: string; documento: string; como_obtenerlo: string | null; mes_cade: string | null; ultimo_expedido: string | null; estado: 'ok' | 'pedir' }
 interface Doc { id: number; emisor: string; documento: string; expedido: string | null; caduca: string | null; importe: number | null; ruta: string | null; created_at: string }
 
 const NOMBRE: Record<string, string> = { DAVID: 'David Sanz Navarro', JUAN: 'Juan Rus Martínez' }
@@ -17,6 +18,7 @@ export default function DocumentacionCade() {
   const [msg, setMsg] = useState<string | null>(null)
   const [subiendo, setSubiendo] = useState<string | null>(null)
   const [fechas, setFechas] = useState<Record<string, string>>({})
+  const [enviada, setEnviada] = useState(false)
 
   async function cargar() {
     setLoading(true)
@@ -25,8 +27,16 @@ export default function DocumentacionCade() {
       supabase.from('documentos_emisor').select('*').order('created_at', { ascending: false }).limit(40),
     ])
     if (p.error) setMsg(p.error.message)
-    setPend((p.data ?? []) as Pend[])
+    const lista = (p.data ?? []) as Pend[]
+    setPend(lista)
     setDocs((d.data ?? []) as Doc[])
+    const mes = lista[0]?.mes_cade
+    if (mes) {
+      const { data } = await supabase.from('documentacion_enviada').select('mes').eq('mes', mes).maybeSingle()
+      setEnviada(!!data)
+    } else {
+      setEnviada(false)
+    }
     setLoading(false)
   }
   useEffect(() => { cargar() }, [])
@@ -39,8 +49,9 @@ export default function DocumentacionCade() {
     const ruta = `${p.emisor}/${expedido.slice(0, 7)}/${slug(p.documento)}-${Date.now()}.${file.name.split('.').pop() || 'pdf'}`
     const up = await supabase.storage.from('documentacion').upload(ruta, file, { upsert: true })
     if (up.error) { setMsg('No se pudo subir: ' + up.error.message); setSubiendo(null); return }
+    /* El documento cuenta para el mes de Cade que se está pidiendo (el mes anterior), no para el mes en que se saca */
     const ins = await supabase.from('documentos_emisor').insert([{
-      emisor: p.emisor, documento: p.documento, periodo: expedido.slice(0, 7) + '-01', expedido, ruta, subido_por: 'erp',
+      emisor: p.emisor, documento: p.documento, periodo: p.mes_cade ?? expedido.slice(0, 7) + '-01', expedido, ruta, subido_por: 'erp',
     }])
     if (ins.error) setMsg('Subido, pero no se registró: ' + ins.error.message)
     else setMsg(`${p.documento} de ${NOMBRE[p.emisor] ?? p.emisor} guardado.`)
@@ -51,6 +62,22 @@ export default function DocumentacionCade() {
   async function abrir(ruta: string) {
     const r = await supabase.storage.from('documentacion').createSignedUrl(ruta, 120)
     if (r.data?.signedUrl) window.open(r.data.signedUrl, '_blank')
+  }
+
+  const mesCade = pend[0]?.mes_cade ?? null
+
+  async function marcarEnviada() {
+    if (!mesCade) return
+    const err = await marcarDocumentacionEnviada(mesCade)
+    setMsg(err ? 'No se pudo marcar: ' + err : 'Hecho: documentación marcada como enviada. Se acaban los avisos de este mes.')
+    cargar()
+  }
+
+  async function deshacerEnviada() {
+    if (!mesCade) return
+    const err = await desmarcarDocumentacionEnviada(mesCade)
+    setMsg(err ? 'No se pudo deshacer: ' + err : 'Marca quitada: vuelven los avisos si falta algo.')
+    cargar()
   }
 
   const emisores = Array.from(new Set(pend.map(p => p.emisor)))
@@ -74,6 +101,25 @@ export default function DocumentacionCade() {
 
       {msg && <AvisoNeo>{msg}</AvisoNeo>}
       {!loading && faltan > 0 && <AvisoNeo>FALTAN {faltan} DOCUMENTO{faltan > 1 ? 'S' : ''}. Las facturas de ese emisor no salen a Cade hasta completarlo.</AvisoNeo>}
+
+      {!loading && faltan > 0 && mesCade && (
+        <Banda bg={ARENA_CL}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+            <BotonNeo bg={OLIVA} onClick={marcarEnviada}>Ya la tengo enviada</BotonNeo>
+            <span style={{ fontSize: 12, fontWeight: 600, color: GRIS }}>Pulsa si ya mandaste toda la documentación a Cade: paran los avisos de este mes.</span>
+          </div>
+        </Banda>
+      )}
+
+      {!loading && enviada && (
+        <Banda bg={ARENA_CL}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+            <BadgeNeo color={OLIVA}>Enviada a Cade</BadgeNeo>
+            <span style={{ fontSize: 13, fontWeight: 600 }}>Este mes está marcado como enviado: no habrá más avisos.</span>
+            <BotonNeo bg={ARENA} onClick={deshacerEnviada}>Deshacer</BotonNeo>
+          </div>
+        </Banda>
+      )}
 
       {emisores.map(em => (
         <Banda key={em} bg={BLANCO}>
