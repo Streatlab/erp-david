@@ -124,7 +124,8 @@ export default function Conciliacion() {
     [movimientosBD]
   )
 
-  /* — Categorización inline: el servidor actualiza TODOS los iguales y aprende la regla para siempre — */
+  /* — Categorización inline: el servidor actualiza TODOS los iguales y aprende la regla para siempre
+       (salvo conceptos genéricos con varias categorías: ahí solo cambia ese movimiento) — */
   const handleCategorizar = async (movId: string, catId: string, _concepto: string) => {
     const normalizedCat = catId === '' ? null : catId
     const mov = movimientos.find(m => m.id === movId)
@@ -135,9 +136,13 @@ export default function Conciliacion() {
     try {
       const iguales = await updateCategoria(movId, normalizedCat, tipo)
       if (normalizedCat) {
-        toast.success(iguales > 0
-          ? `Categorizado. Otros ${iguales} movimientos iguales actualizados y aprendido para los próximos.`
-          : 'Categorizado. Aprendido para los próximos movimientos iguales.')
+        if (iguales < 0) {
+          toast.success('Categorizado solo este: ese texto se usa con varias categorías (p. ej. transferencias), así que no se aprende.')
+        } else {
+          toast.success(iguales > 0
+            ? `Categorizado. Otros ${iguales} movimientos iguales actualizados y aprendido para los próximos.`
+            : 'Categorizado. Aprendido para los próximos movimientos iguales.')
+        }
       }
     } catch (err) {
       console.error('Error guardando categoría:', err)
