@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { usePeriodo } from '@/lib/periodoGlobal'
+import { marcarDocumentacionEnviada } from '@/lib/documentacionEnviada'
 import { HeroNeo } from '@/components/neo/NeoUI'
 import { INK, ARENA, ARENA_CL, BLANCO, GRIS, OLIVA, TERRA, NARANJA, MARINO, AMBAR, CELESTE, OSW, LEX, BORDER, BORDER_CARD, SHADOW, PAD, eyebrow, d } from '@/styles/neobrutal'
 
@@ -14,7 +15,7 @@ import { INK, ARENA, ARENA_CL, BLANCO, GRIS, OLIVA, TERRA, NARANJA, MARINO, AMBA
 
 interface Cuenta { id: string; banco: string; alias: string | null; iban: string | null; iban_mask: string | null; saldo_actual: number | null; saldo_fecha: string | null; personal: boolean | null; activa: boolean | null }
 interface Mov { fecha: string; importe: number; categoria: string | null }
-interface Doc { emisor: string; documento: string; como_obtenerlo: string; estado: string }
+interface Doc { emisor: string; documento: string; como_obtenerlo: string; estado: string; mes_cade: string | null }
 interface Tarea { titulo: string; fecha_limite: string | null; prioridad: string | null; estado: string | null }
 
 const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
@@ -50,6 +51,7 @@ export default function HoyTab() {
   const [historico, setHistorico] = useState<{ mes: string; total: number }[]>([])
   const [sinEnviar, setSinEnviar] = useState(0)
   const [cargando, setCargando] = useState(true)
+  const [errEnviada, setErrEnviada] = useState<string | null>(null)
 
   /* Cade del mes en curso: lo facturado el mes pasado se cobra entre el 10 y el 15 */
   useEffect(() => {
@@ -57,7 +59,7 @@ export default function HoyTab() {
     const ini6 = new Date(hoy.getFullYear(), hoy.getMonth() - 6, 1)
     Promise.all([
       supabase.from('cuentas_bancarias').select('id, banco, alias, iban, iban_mask, saldo_actual, saldo_fecha, personal, activa'),
-      supabase.from('v_documentacion_pendiente').select('emisor, documento, como_obtenerlo, estado'),
+      supabase.from('v_documentacion_pendiente').select('emisor, documento, como_obtenerlo, estado, mes_cade'),
       supabase.from('tareas').select('titulo, fecha_limite, prioridad, estado').order('fecha_limite', { ascending: true }).limit(50),
       supabase.from('facturas_emitidas').select('periodo, base_imponible, emisor, id').eq('cliente', 'CADE').gte('periodo', iso(ini6)),
       supabase.from('facturas_historico').select('fecha_factura, base_imponible').eq('cliente', 'CADE').gte('fecha_factura', iso(ini6)),
@@ -95,6 +97,16 @@ export default function HoyTab() {
       .then(({ data }) => setMovs(((data ?? []) as Mov[]).filter(m => !(m.categoria ?? '').startsWith('pendiente-personal'))))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [per.desdeIso, per.hastaIso])
+
+  /* "Ya la tengo enviada": marca el mes de Cade como enviado y el aviso desaparece */
+  async function marcarEnviada() {
+    const mes = docs[0]?.mes_cade
+    if (!mes) return
+    const err = await marcarDocumentacionEnviada(mes)
+    if (err) { setErrEnviada(err); return }
+    setErrEnviada(null)
+    setDocs([])
+  }
 
   const propias = cuentas.filter(c => c.activa !== false && !c.personal)
   const saldo = propias.reduce((s, c) => s + Number(c.saldo_actual ?? 0), 0)
@@ -239,8 +251,10 @@ export default function HoyTab() {
                     </div>
                   ))}
                 </div>
-                <div style={{ marginTop: 10 }}>
+                <div style={{ marginTop: 10, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
                   <Link to="/finanzas/documentacion" style={{ fontFamily: OSW, fontWeight: 700, fontSize: 13, textTransform: 'uppercase', color: ARENA, background: NARANJA, border: `2px solid ${INK}`, padding: '5px 12px', textDecoration: 'none' }}>Subir documentos →</Link>
+                  <button onClick={marcarEnviada} style={{ fontFamily: OSW, fontWeight: 700, fontSize: 13, textTransform: 'uppercase', color: ARENA, background: OLIVA, border: `2px solid ${INK}`, padding: '5px 12px', cursor: 'pointer' }}>Ya la tengo enviada</button>
+                  {errEnviada && <span style={{ fontSize: 12, fontWeight: 700, color: TERRA }}>No se pudo marcar: {errEnviada}</span>}
                 </div>
               </div>
             )}
