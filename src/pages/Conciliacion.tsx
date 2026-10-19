@@ -26,17 +26,6 @@ const COLOR_AMBITO: Record<string, string> = { actividad: MARINO, personal: CELE
    HELPERS (lógica intacta)
    ═══════════════════════════════════════════════════════════ */
 
-const STOP_WORDS = new Set([
-  'liquidacion', 'pedido', 'nomina', 'del', 'de', 'la', 'el', 'por', 'para',
-  'con', 'sin', 'abril', 'marzo', 'febrero', 'enero', 'mayo', 'junio',
-  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre', 'semana',
-])
-
-function extraerPatron(concepto: string): string {
-  const w = concepto.toLowerCase().split(/\s+/).find(x => x.length > 3 && !STOP_WORDS.has(x))
-  return w ?? concepto.slice(0, 10).toLowerCase()
-}
-
 function matchPatron(concepto: string, patron: string): boolean {
   if (!patron) return false
   const c = concepto.toLowerCase()
@@ -135,8 +124,8 @@ export default function Conciliacion() {
     [movimientosBD]
   )
 
-  /* — Categorización inline con aprendizaje (persiste en BD) — */
-  const handleCategorizar = async (movId: string, catId: string, concepto: string) => {
+  /* — Categorización inline: el servidor actualiza TODOS los iguales y aprende la regla para siempre — */
+  const handleCategorizar = async (movId: string, catId: string, _concepto: string) => {
     const normalizedCat = catId === '' ? null : catId
     const mov = movimientos.find(m => m.id === movId)
     const tipo: 'ingreso' | 'gasto' | null =
@@ -144,25 +133,15 @@ export default function Conciliacion() {
       : (tipoPorCodigo[normalizedCat] ?? (mov && mov.importe >= 0 ? 'ingreso' : 'gasto'))
 
     try {
-      await updateCategoria(movId, normalizedCat, tipo)
+      const iguales = await updateCategoria(movId, normalizedCat, tipo)
+      if (normalizedCat) {
+        toast.success(iguales > 0
+          ? `Categorizado. Otros ${iguales} movimientos iguales actualizados y aprendido para los próximos.`
+          : 'Categorizado. Aprendido para los próximos movimientos iguales.')
+      }
     } catch (err) {
       console.error('Error guardando categoría:', err)
-      return
-    }
-
-    if (normalizedCat) {
-      const patron = extraerPatron(concepto)
-      const similares = movimientos.filter(m =>
-        m.id !== movId && !m.categoria_id && matchPatron(m.concepto, patron)
-      )
-      for (const s of similares) {
-        const sTipo: 'ingreso' | 'gasto' = s.importe >= 0 ? 'ingreso' : 'gasto'
-        try {
-          await updateCategoria(s.id, normalizedCat, sTipo)
-        } catch (err) {
-          console.error('Error auto-categorizando:', err)
-        }
-      }
+      toast.error('No se pudo guardar la categoría. Inténtalo otra vez.')
     }
   }
 
