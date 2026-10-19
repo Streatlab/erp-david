@@ -10,7 +10,7 @@ import {
 import FurgonetaCard from '../components/flota/FurgonetaCard'
 import { fmtEur } from '@/lib/format'
 import { NARANJA, AMBAR, MARINO, OLIVA, TERRA, GRIS, ARENA, ARENA_CL, BLANCO, OSW } from '@/styles/neobrutal'
-import { PageNeo, Banda, CabeceraNeo, KpiNeo } from '@/components/neo/NeoUI'
+import { PageNeo, Banda, CabeceraNeo, KpiNeo, HeroNeo } from '@/components/neo/NeoUI'
 
 export default function Flota() {
   const navigate = useNavigate()
@@ -47,6 +47,17 @@ export default function Flota() {
           Clic en una furgoneta para ver su ficha completa.
         </div>
       </CabeceraNeo>
+
+      <HeroNeo
+        eyebrowTxt="Coste de la flota este mes"
+        cifra={loading || !costes || !furgos.length ? '—' : fmtEur(costes.costeTotal)}
+        frase={loading || !costes || !furgos.length ? 'Sin datos todavía' : 'Lo que te cuesta mover las furgonetas este mes, todo incluido'}
+        color={AMBAR}
+        apoyo={furgos.length ? [
+          { label: 'Operativas', valor: `${operativas} / ${furgos.length}` },
+          ...(masCara ? [{ label: 'La más cara', valor: masCara.f.matricula }] : []),
+        ] : undefined}
+      />
 
       {loading && (
         <Banda bg={ARENA}>

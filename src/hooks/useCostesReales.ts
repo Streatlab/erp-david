@@ -10,6 +10,7 @@ export interface DatosReales {
   codigos: number           // códigos Cade activos
   eurEntrega: number        // total liquidado ÷ entregas (liquidaciones Cade)
   entregasLiquidadas: number
+  sueldoDavid: number       // media mensual de lo que David envía a la familia (su sueldo), últimos 3 meses cerrados
   nombres: Record<string, string>
 }
 
@@ -22,14 +23,15 @@ export function useCostesReales() {
     (async () => {
       const meses = ultimosMesesCerrados(new Date())
       const desde = `${meses[0]}-01`
-      const [mov, cg, ci, liq, fac] = await Promise.all([
+      const [mov, cg, ci, liq, fac, sue] = await Promise.all([
         supabase.from('conciliacion').select('fecha, importe, categoria').gte('fecha', desde).lt('importe', 0),
         supabase.from('categorias_contables_gastos').select('codigo, nombre, ambito'),
         supabase.from('categorias_contables_ingresos').select('codigo, nombre, ambito'),
         supabase.from('liquidaciones_cade').select('entregas, total'),
         supabase.from('v_facturacion_consolidada').select('mes, transportista, base'),
+        supabase.from('v_familia_mov').select('mes, importe').eq('categoria', 'aportacion-david').in('mes', meses),
       ])
-      const err = mov.error ?? cg.error ?? ci.error ?? liq.error ?? fac.error
+      const err = mov.error ?? cg.error ?? ci.error ?? liq.error ?? fac.error ?? sue.error
       if (err) { setError(err.message); return }
       const ambito: Record<string, string> = {}
       const nombres: Record<string, string> = {}
@@ -45,7 +47,8 @@ export function useCostesReales() {
       const ls = (liq.data ?? []) as { entregas: number | null; total: number | null }[]
       const entregas = ls.reduce((s, l) => s + Number(l.entregas ?? 0), 0)
       const total = ls.reduce((s, l) => s + Number(l.total ?? 0), 0)
-      setDatos({ costes, ingresos, mesesIngreso: mesesFac, codigos, eurEntrega: entregas ? total / entregas : 0, entregasLiquidadas: entregas, nombres })
+      const sueldoDavid = ((sue.data ?? []) as { importe: number }[]).reduce((a, r) => a + Number(r.importe), 0) / meses.length
+      setDatos({ costes, ingresos, mesesIngreso: mesesFac, codigos, eurEntrega: entregas ? total / entregas : 0, entregasLiquidadas: entregas, sueldoDavid, nombres })
     })()
   }, [])
 

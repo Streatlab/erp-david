@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { fmtEur } from '@/lib/format'
-import { OLIVA, TERRA, CELESTE, GRIS, ARENA_CL, BLANCO, ARENA, INK, OSW } from '@/styles/neobrutal'
+import { OLIVA, NARANJA, TERRA, CELESTE, GRIS, ARENA_CL, BLANCO, ARENA, INK, OSW } from '@/styles/neobrutal'
 import {
-  PageNeo, Banda, CabeceraNeo, KpiNeo, AvisoNeo,
+  PageNeo, Banda, CabeceraNeo, HeroNeo, KpiNeo, AvisoNeo,
   TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo,
 } from '@/components/neo/NeoUI'
 
@@ -66,6 +66,18 @@ export default function Liquidaciones() {
           Una liquidación mensual por transportista. Cade paga el 10–15 del mes siguiente.
         </div>
       </CabeceraNeo>
+
+      <HeroNeo
+        eyebrowTxt="Total liquidado por Cade"
+        cifra={loading || liqs.length === 0 ? '—' : fmtEur(kpis.total)}
+        frase={loading || liqs.length === 0 ? 'Sin datos todavía'
+          : kpis.recortes !== 0 ? `Cade te ha recortado ${fmtEur(Math.abs(kpis.recortes))}. Revisa el detalle y reclama.` : 'Sin recortes. Lo liquidado cuadra.'}
+        color={loading || liqs.length === 0 ? undefined : kpis.recortes !== 0 ? NARANJA : OLIVA}
+        apoyo={liqs.length === 0 ? undefined : [
+          { label: 'Entregas', valor: fmtNum(kpis.entregas) },
+          { label: 'Recortes', valor: fmtEur(kpis.recortes) },
+        ]}
+      />
 
       {errMsg && <AvisoNeo>ERROR: {errMsg}</AvisoNeo>}
 

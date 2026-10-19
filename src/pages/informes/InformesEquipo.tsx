@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { fmtEur } from '@/lib/format'
-import { INK, ARENA, GRIS, MARINO, AMBAR, OSW } from '@/styles/neobrutal'
-import { PageNeo, CabeceraNeo, Banda, TablaWrap, thNeo, tdNeo, tdEstado, AvisoNeo, BadgeNeo } from '@/components/neo/NeoUI'
+import { usePeriodo } from '@/lib/periodoGlobal'
+import { INK, ARENA, GRIS, OLIVA, MARINO, AMBAR, OSW } from '@/styles/neobrutal'
+import { PageNeo, CabeceraNeo, Banda, TablaWrap, thNeo, tdNeo, tdEstado, AvisoNeo, BadgeNeo, HeroNeo } from '@/components/neo/NeoUI'
 
 /* Informes de equipo: facturación por repartidor (v_facturacion_consolidada) y, cuando existan,
    entregas y penalizaciones por repartidor (v_liquidacion_repartidor). */
@@ -13,8 +14,9 @@ interface Liq { mes: string; repartidor: string; transportista: string; dias_tra
 const mesCorto = (iso: string) => new Date(iso + 'T00:00:00').toLocaleDateString('es-ES', { month: 'short', year: '2-digit' })
 
 export default function InformesEquipo() {
-  const [fac, setFac] = useState<Fac[]>([])
-  const [liq, setLiq] = useState<Liq[]>([])
+  const per = usePeriodo()
+  const [facTodo, setFac] = useState<Fac[]>([])
+  const [liqTodo, setLiq] = useState<Liq[]>([])
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -28,7 +30,11 @@ export default function InformesEquipo() {
     })
   }, [])
 
-  const meses = useMemo(() => [...new Set(fac.map(f => f.mes))].sort().reverse().slice(0, 6), [fac])
+  const enPeriodo = (mes: string) => per.meses.includes(String(mes).slice(0, 7))
+  const fac = useMemo(() => facTodo.filter(f => enPeriodo(f.mes)), [facTodo, per.meses]) // eslint-disable-line react-hooks/exhaustive-deps
+  const liq = useMemo(() => liqTodo.filter(l => enPeriodo(l.mes)), [liqTodo, per.meses]) // eslint-disable-line react-hooks/exhaustive-deps
+  const totalFac = fac.reduce((s, f) => s + f.total, 0)
+  const meses = useMemo(() => [...new Set(fac.map(f => f.mes))].sort().reverse().slice(0, 12), [fac])
   const reps = useMemo(() => [...new Set(fac.map(f => f.repartidor ?? f.transportista ?? '—'))].sort(), [fac])
   const celda = (rep: string, mes: string) => fac.filter(f => (f.repartidor ?? f.transportista) === rep && f.mes === mes)
 
@@ -36,6 +42,9 @@ export default function InformesEquipo() {
     <PageNeo>
       <CabeceraNeo eyebrowTxt="Informes" titulo="Informes de equipo" />
       {error && <AvisoNeo>ERROR: {error}</AvisoNeo>}
+      <HeroNeo eyebrowTxt={`Facturado · ${per.etiqueta}`} cifra={fac.length === 0 ? '—' : fmtEur(totalFac)}
+        frase={fac.length === 0 ? 'Sin datos todavía' : `facturados con IVA por ${reps.length} ${reps.length === 1 ? 'repartidor' : 'repartidores'}`}
+        color={fac.length === 0 ? AMBAR : OLIVA} />
 
       <Banda bg={ARENA}>
         <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 13, letterSpacing: 2, textTransform: 'uppercase', color: INK, marginBottom: 14 }}>Facturación por repartidor (con IVA)</div>

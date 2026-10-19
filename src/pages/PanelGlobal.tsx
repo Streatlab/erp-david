@@ -1,9 +1,11 @@
 import { useEffect, useState, useCallback, type CSSProperties, type ReactNode } from 'react'
 import { supabase } from '@/lib/supabase'
 import {
-  cargarPanel, getBarrasSemanas, NOMBRE_MES, setObjetivoMensual,
-  type PanelBundle, type PeriodoKey, type BarraSemana,
+  cargarPanel, getBarrasSemanas, setObjetivoMensual,
+  type PanelBundle, type BarraSemana,
 } from '@/lib/panel/queries'
+import { usePeriodo } from '@/lib/periodoGlobal'
+import { HeroNeo } from '@/components/neo/NeoUI'
 import {
   INK, MARINO, ARENA, ARENA_CL, BLANCO, GRIS,
   OLIVA, TERRA, NARANJA, CELESTE, AMBAR,
@@ -11,14 +13,6 @@ import {
   d, eyebrow, card, EUR, E, ES, P0, DELTA,
 } from '@/styles/neobrutal'
 import HoyTab from '@/components/panel/HoyTab'
-
-const PERIODOS: { key: PeriodoKey; label: string }[] = [
-  { key: 'mes-actual',   label: 'Este mes' },
-  { key: 'mes-anterior', label: 'Mes anterior' },
-  { key: 'ultimos-30',   label: 'Últimos 30 días' },
-  { key: 'trimestre',    label: 'Trimestre' },
-  { key: 'anio',         label: 'Año' },
-]
 
 /* ── Pestañas del panel: overview (Operaciones y Finanzas viven ahora como
    secciones propias en el menú lateral) ── */
@@ -37,7 +31,7 @@ const TAB_LS_KEY = 'david_panel_main_tab_v2'
 /* Origen de los ingresos. Cade llega agrupado en el banco (no se desglosa por
    supermercado), Prior factura cada quince días y Portes son trabajos sueltos. */
 const COLOR_OP_NEO: Record<string, string> = {
-  cade: '#F26B1F', prior: '#0B1524', portes: '#7A8C3E', sinClasificar: '#A89472',
+  cade: NARANJA, prior: INK, portes: OLIVA, sinClasificar: GRIS,
 }
 const COLOR_GASTO_NEO: Record<string, string> = {
   rrhh: MARINO, vehiculos: NARANJA, recargas: AMBAR, controlables: TERRA, sinCategorizar: GRIS,
@@ -116,7 +110,7 @@ function BandaProximamente({ acento, pregunta, detalle }: { acento: string; preg
 /* ── Página ──────────────────────────────────────── */
 
 export default function PanelGlobal() {
-  const [periodo, setPeriodo] = useState<PeriodoKey>('mes-actual')
+  const per = usePeriodo()
   const [bundle, setBundle] = useState<PanelBundle | null>(null)
   const [loading, setLoading] = useState(true)
   const [errMsg, setErrMsg] = useState<string | null>(null)
@@ -136,10 +130,10 @@ export default function PanelGlobal() {
   const cargar = useCallback(async () => {
     setLoading(true)
     setErrMsg(null)
-    try { setBundle(await cargarPanel(periodo)) }
+    try { setBundle(await cargarPanel('personalizado', { start: per.desdeIso, end: per.hastaIso })) }
     catch (e) { setErrMsg(e instanceof Error ? e.message : String(e)) }
     finally { setLoading(false) }
-  }, [periodo])
+  }, [per.desdeIso, per.hastaIso])
 
   useEffect(() => { cargar() }, [cargar])
 
@@ -154,7 +148,6 @@ export default function PanelGlobal() {
   }, [])
 
   const hoy = new Date()
-  const tituloMes = NOMBRE_MES[hoy.getMonth()].toUpperCase()
 
   const subtitulo = (() => {
     if (!bundle) return ''
@@ -222,25 +215,8 @@ export default function PanelGlobal() {
           <div style={{ ...card(MARINO), padding: '12px 20px' }}>
             <div style={d('clamp(20px,2.2vw,28px)', ARENA)}>Panel global</div>
             <div style={{ fontFamily: LEX, fontSize: 12, fontWeight: 600, color: AMBAR, marginTop: 5 }}>
-              {tituloMes} {hoy.getFullYear()} · {subtitulo || '—'}
+              {per.etiqueta} · {subtitulo || '—'}
             </div>
-          </div>
-          <div style={{ display: mainTab === 'hoy' ? 'none' : 'flex', gap: 0, flexWrap: 'wrap', border: BORDER_CARD, boxShadow: SHADOW, background: BLANCO }}>
-            {PERIODOS.map((p, i) => {
-              const active = periodo === p.key
-              return (
-                <button key={p.key} onClick={() => setPeriodo(p.key)}
-                  style={{
-                    padding: '9px 14px', border: 'none',
-                    borderRight: i < PERIODOS.length - 1 ? `3px solid ${INK}` : 'none',
-                    background: active ? NARANJA : BLANCO, color: active ? ARENA : INK,
-                    fontFamily: OSW, fontSize: 12, fontWeight: 600, letterSpacing: 1,
-                    textTransform: 'uppercase', cursor: 'pointer',
-                  }}>
-                  {p.label}
-                </button>
-              )
-            })}
           </div>
         </div>
 
@@ -261,6 +237,17 @@ export default function PanelGlobal() {
           })}
         </div>
       </Banda>
+
+      {/* HERO: resultado del periodo (en Hoy el hero es el saldo, dentro de HoyTab) */}
+      {mainTab !== 'hoy' && (
+        <HeroNeo
+          eyebrowTxt={`Resultado · ${per.etiqueta}`}
+          cifra={bundle ? ES(balance) : '—'}
+          color={!bundle || (ing === 0 && gas === 0) ? AMBAR : balance >= 0 ? OLIVA : NARANJA}
+          frase={!bundle || (ing === 0 && gas === 0) ? 'Sin datos todavía' : balance >= 0 ? 'Lo que te ha quedado tras los gastos del periodo.' : 'Has gastado más de lo que ha entrado: revisa los gastos grandes.'}
+          apoyo={bundle ? [{ label: 'Ingresos', valor: EUR(ing) }, { label: 'Gastos', valor: EUR(gas) }, { label: 'Margen', valor: margenPct == null ? '—' : `${margenPct.toFixed(1).replace('.', ',')}%` }] : undefined}
+        />
+      )}
 
       {/* HOY: lo que hay que mirar hoy de Cade */}
       {mainTab === 'hoy' && <HoyTab />}
@@ -532,7 +519,7 @@ export default function PanelGlobal() {
 
           {bundle.presupuestos.length > 0 && (
             <Banda bg={BLANCO}>
-              <span style={eyebrow(NARANJA, ARENA)}>Presupuestos · {tituloMes.toLowerCase()}</span>
+              <span style={eyebrow(NARANJA, ARENA)}>Presupuestos · {per.etiqueta.toLowerCase()}</span>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 18, marginTop: 16 }}>
                 {bundle.presupuestos.map(p => {
                   const c = p.estado === 'SUPERADO' ? TERRA : p.estado === 'AL_LIMITE' ? NARANJA : OLIVA

@@ -7,18 +7,17 @@ import {
   OSW, LEX, SHADOW, BORDER_CARD, OPERADOR, card,
 } from '@/styles/neobrutal'
 import {
-  PageNeo, Banda, CabeceraNeo, AvisoNeo,
+  PageNeo, Banda, CabeceraNeo, AvisoNeo, HeroNeo, TabsNeo, usePestana,
   TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo, BotonNeo,
 } from '@/components/neo/NeoUI'
 import { ResumenDashboard } from '@/components/conciliacion/ResumenDashboard'
 import ImportDropzone, { type ParsedRow } from '@/components/conciliacion/ImportDropzone'
-import SelectorPeriodoDropdown, { type PeriodoKey } from '@/components/finanzas/running/SelectorPeriodoDropdown'
-import { useAniosDisponibles } from '@/hooks/useAniosDisponibles'
+import { usePeriodo } from '@/lib/periodoGlobal'
 import { toast } from '@/lib/toastStore'
 import type { Movimiento } from '@/types/conciliacion'
 import { useConciliacion } from '@/hooks/useConciliacion'
 import { supabase } from '@/lib/supabase'
-import { rangoSemana, etiquetaSemana, isoLocal } from '@/lib/periodo'
+import { isoLocal } from '@/lib/periodo'
 import { DESTINOS_EFECTIVO, efectivoPorJustificar } from '@/lib/efectivo'
 
 const COLOR_AMBITO: Record<string, string> = { actividad: MARINO, personal: CELESTE, interno: GRIS, pendiente: AMBAR }
@@ -64,36 +63,17 @@ function detectarOperador(nombre: string): OperadorKey | null {
   return null
 }
 
-function calcularLabelPeriodo(periodo: string, customDesde?: string, customHasta?: string): string {
-  const now = new Date()
-  const mes = now.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })
-  if (periodo === 'semana') return etiquetaSemana(rangoSemana(now).inicio)
-  if (periodo === 'semana_anterior') return etiquetaSemana(rangoSemana(now, -1).inicio)
-  if (periodo === 'mes') return mes.toUpperCase()
-  if (periodo === 'mes_anterior') {
-    const ma = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-    return ma.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }).toUpperCase()
-  }
-  if (periodo === 'trimestre') return 'ÚLTIMOS 3 MESES'
-  if (periodo.startsWith('anio_')) return `AÑO ${periodo.slice(5)}`
-  if (periodo === 'personalizado' && customDesde && customHasta) {
-    return `${customDesde} — ${customHasta}`
-  }
-  return 'ÚLTIMOS 31 DÍAS'
-}
-
 /* ═══════════════════════════════════════════════════════════
    COMPONENT
    ═══════════════════════════════════════════════════════════ */
 
-type Tab = 'resumen' | 'movimientos'
+type Tab = 'resumen' | 'movimientos' | 'importar'
+const TAB_IDS = ['resumen', 'movimientos', 'importar'] as const
 
 export default function Conciliacion() {
-  const [tab, setTab] = useState<Tab>('resumen')
-  const [periodo, setPeriodo] = useState<PeriodoKey>('mes')
-  const [customDesde, setCustomDesde] = useState<string>('')
-  const [customHasta, setCustomHasta] = useState<string>('')
-  const aniosDisponibles = useAniosDisponibles()
+  const [tab, setTab] = usePestana<Tab>('conciliacion', TAB_IDS, 'movimientos')
+  const pg = usePeriodo()
+  const periodo = pg.key as string
   const [catFiltro, setCatFiltro] = useState<string>('todas')
   const [busqueda, setBusqueda] = useState('')
   const [filtroCard, setFiltroCard] = useState<'pendientes' | 'ingreso' | 'gasto' | 'efectivo' | null>(null)
@@ -187,52 +167,10 @@ export default function Conciliacion() {
   }
 
   /* — Cálculo rangos actual / anterior — */
-  const { rangoActual, rangoAnterior, rangoFechasLegible } = useMemo(() => {
-    const hoy = new Date()
-    hoy.setHours(23, 59, 59, 999)
-    let inicio: Date
-    let fin: Date = new Date(hoy)
+  const rangoActual = pg.rango
+  const rangoAnterior = pg.anterior
+  const rangoFechasLegible = pg.etiqueta
 
-    if (periodo === 'semana' || periodo === 'semana_anterior') {
-      const r = rangoSemana(new Date(), periodo === 'semana' ? 0 : -1)
-      inicio = r.inicio
-      fin = r.fin
-    } else if (periodo === 'mes') {
-      inicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1)
-    } else if (periodo === 'mes_anterior') {
-      inicio = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1)
-      fin = new Date(hoy.getFullYear(), hoy.getMonth(), 0, 23, 59, 59)
-    } else if (periodo === 'trimestre') {
-      inicio = new Date(hoy)
-      inicio.setDate(inicio.getDate() - 89)
-    } else if (periodo.startsWith('anio_')) {
-      const year = Number(periodo.slice(5))
-      inicio = new Date(year, 0, 1)
-      fin = new Date(year, 11, 31, 23, 59, 59)
-    } else if (periodo === 'personalizado' && customDesde && customHasta) {
-      inicio = new Date(customDesde + 'T00:00:00')
-      fin = new Date(customHasta + 'T23:59:59')
-    } else {
-      inicio = new Date(hoy)
-      inicio.setDate(inicio.getDate() - 30)
-    }
-    inicio.setHours(0, 0, 0, 0)
-
-    const duracionMs = fin.getTime() - inicio.getTime()
-    const finAnt = new Date(inicio.getTime() - 24 * 60 * 60 * 1000)
-    finAnt.setHours(23, 59, 59, 999)
-    const inicioAnt = new Date(finAnt.getTime() - duracionMs)
-    inicioAnt.setHours(0, 0, 0, 0)
-
-    const fmt = (d: Date) => d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
-    const legible = `${fmt(inicio)} — ${fmt(fin)} ${fin.getFullYear()}`
-
-    return {
-      rangoActual: { inicio, fin },
-      rangoAnterior: { inicio: inicioAnt, fin: finAnt },
-      rangoFechasLegible: legible,
-    }
-  }, [periodo, customDesde, customHasta])
 
   const movimientosFiltrados = useMemo(() => {
     return movimientos
@@ -291,7 +229,7 @@ export default function Conciliacion() {
     handleCategorizar(m.id, codigo, m.concepto)
   }
 
-  const periodoLabel = calcularLabelPeriodo(periodo, customDesde, customHasta)
+  const periodoLabel = pg.etiqueta.toUpperCase()
 
   /* — Mes/año/días restantes (presupuestos) — */
   const hoyDate = new Date()
@@ -320,17 +258,18 @@ export default function Conciliacion() {
       <CabeceraNeo eyebrowTxt="Conciliación" titulo="Banco · BBVA">
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
           <span style={{ fontSize: 12, fontWeight: 600, color: ARENA, opacity: 0.85, fontFamily: LEX }}>{rangoFechasLegible}</span>
-          <SelectorPeriodoDropdown
-            value={periodo}
-            onChange={setPeriodo}
-            conSemana
-            anios={aniosDisponibles}
-            desde={customDesde}
-            hasta={customHasta}
-            onRangoChange={(d, h) => { setCustomDesde(d); setCustomHasta(h); }}
-          />
         </div>
       </CabeceraNeo>
+
+      <Banda bg={ARENA} style={{ padding: '18px 40px' }}>
+        <HeroNeo
+          eyebrowTxt={`Balance banco · ${pg.etiqueta}`}
+          cifra={movimientosFiltrados.length > 0 ? fmtEur(datos.balance) : '—'}
+          frase={movimientosFiltrados.length > 0 ? (datos.balance >= 0 ? 'Entra más dinero del que sale en el periodo' : 'Sale más dinero del que entra en el periodo') : 'Sin datos todavía'}
+          color={movimientosFiltrados.length > 0 ? (datos.balance >= 0 ? OLIVA : NARANJA) : undefined}
+          apoyo={movimientosFiltrados.length > 0 ? [{ label: 'Ingresos', valor: fmtEur(datos.sumIng) }, { label: 'Gastos', valor: fmtEur(datos.sumGst) }, { label: 'Sin categorizar', valor: String(datos.pendientes) }] : undefined}
+        />
+      </Banda>
 
       {loadingBD && (
         <Banda bg={ARENA}>
@@ -338,22 +277,11 @@ export default function Conciliacion() {
         </Banda>
       )}
 
-      {/* TABS neobrutal */}
-      <Banda bg={ARENA} style={{ padding: '18px 40px' }}>
-        <div style={{ display: 'flex', border: BORDER_CARD, boxShadow: SHADOW, width: 'fit-content' }}>
-          {(['resumen', 'movimientos'] as Tab[]).map(k => (
-            <button key={k} onClick={() => setTab(k)}
-              style={{
-                padding: '9px 20px', border: 'none', borderRight: `3px solid ${INK}`,
-                background: tab === k ? NARANJA : BLANCO, color: tab === k ? ARENA : INK,
-                fontFamily: OSW, fontSize: 13, fontWeight: 700, letterSpacing: 1.5,
-                textTransform: 'uppercase', cursor: 'pointer',
-              }}>
-              {k === 'resumen' ? 'Resumen' : 'Movimientos'}
-            </button>
-          ))}
-        </div>
-      </Banda>
+      <TabsNeo value={tab} onChange={setTab} tabs={[
+        { id: 'resumen', label: 'Resumen' },
+        { id: 'movimientos', label: 'Movimientos', badge: datos.pendientes || undefined },
+        { id: 'importar', label: 'Importar extracto' },
+      ]} />
 
       {/* Pestaña Resumen */}
       {tab === 'resumen' && (
@@ -369,49 +297,55 @@ export default function Conciliacion() {
         </Banda>
       )}
 
+      {/* Pestaña Importar */}
+      {tab === 'importar' && (
+        <Banda bg={ARENA_CL}>
+          <ImportDropzone onFileLoaded={(rows: ParsedRow[], { fileName }) => {
+            const toInsert = rows.map(r => ({
+              fecha: r.fecha,
+              concepto: r.concepto,
+              importe: r.importe,
+              tipo: (r.importe >= 0 ? 'ingreso' : 'gasto') as 'ingreso' | 'gasto',
+              categoria: null,
+              proveedor: r.contraparte ?? null,
+              factura: null,
+              mes: r.fecha?.slice(0, 7) ?? null,
+              link_factura: null,
+              notas: r.notas ?? null,
+            }))
+            const toastId = toast.loading(`📥 Procesando ${fileName}...\n   Parseadas ${rows.length} filas`)
+            insertMovimientos(toInsert, (stage, current, total) => {
+              if (stage === 'saving') {
+                toast.loading(`📥 Procesando ${fileName}...\n   Guardando ${current} / ${total} en BD`, { id: toastId })
+              } else {
+                toast.loading(`⚙️ Aplicando reglas automáticas...\n   ${current} / ${total}`, { id: toastId })
+              }
+            })
+              .then(({ insertados, autoCategorizados, ignorados }) => {
+                const pendientes = Math.max(0, insertados - autoCategorizados)
+                const partes = [
+                  `✓ Importación completada`,
+                  `   ${rows.length} movimientos leídos`,
+                ]
+                if (autoCategorizados > 0) partes.push(`   ${autoCategorizados} categorizados automáticamente`)
+                if (ignorados > 0)        partes.push(`   ${ignorados} ignorados (duplicados)`)
+                if (pendientes > 0)       partes.push(`   ${pendientes} pendientes de categorizar`)
+                toast.success(partes.join('\n'), { id: toastId })
+              })
+              .catch(err => {
+                console.error('Error importando:', err)
+                toast.error(`✗ Error al importar\n   ${err?.message ?? err}`, { id: toastId })
+              })
+          }} />
+        </Banda>
+      )}
+
       {/* Pestaña Movimientos */}
       {tab === 'movimientos' && (
         <>
-          {/* Importar + filtros */}
+          {/* Filtros */}
           <Banda bg={ARENA_CL}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
-              <ImportDropzone onFileLoaded={(rows: ParsedRow[], { fileName }) => {
-                const toInsert = rows.map(r => ({
-                  fecha: r.fecha,
-                  concepto: r.concepto,
-                  importe: r.importe,
-                  tipo: (r.importe >= 0 ? 'ingreso' : 'gasto') as 'ingreso' | 'gasto',
-                  categoria: null,
-                  proveedor: r.contraparte ?? null,
-                  factura: null,
-                  mes: r.fecha?.slice(0, 7) ?? null,
-                  link_factura: null,
-                  notas: r.notas ?? null,
-                }))
-                const toastId = toast.loading(`📥 Procesando ${fileName}...\n   Parseadas ${rows.length} filas`)
-                insertMovimientos(toInsert, (stage, current, total) => {
-                  if (stage === 'saving') {
-                    toast.loading(`📥 Procesando ${fileName}...\n   Guardando ${current} / ${total} en BD`, { id: toastId })
-                  } else {
-                    toast.loading(`⚙️ Aplicando reglas automáticas...\n   ${current} / ${total}`, { id: toastId })
-                  }
-                })
-                  .then(({ insertados, autoCategorizados, ignorados }) => {
-                    const pendientes = Math.max(0, insertados - autoCategorizados)
-                    const partes = [
-                      `✓ Importación completada`,
-                      `   ${rows.length} movimientos leídos`,
-                    ]
-                    if (autoCategorizados > 0) partes.push(`   ${autoCategorizados} categorizados automáticamente`)
-                    if (ignorados > 0)        partes.push(`   ${ignorados} ignorados (duplicados)`)
-                    if (pendientes > 0)       partes.push(`   ${pendientes} pendientes de categorizar`)
-                    toast.success(partes.join('\n'), { id: toastId })
-                  })
-                  .catch(err => {
-                    console.error('Error importando:', err)
-                    toast.error(`✗ Error al importar\n   ${err?.message ?? err}`, { id: toastId })
-                  })
-              }} />
               <div>
                 <label style={labelStyle}>Categoría</label>
                 <select

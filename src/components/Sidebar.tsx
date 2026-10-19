@@ -32,9 +32,11 @@ import {
   CheckCheck,
   ChevronRight,
   CalendarDays,
+  Star,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
+import { useFavoritos } from '@/lib/favoritos'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import {
   OSW, INK, MARINO, ARENA, BLANCO, AMBAR, NARANJA,
@@ -148,6 +150,14 @@ const ICON_ROUTE: Record<string, LucideIcon> = {
   '/configuracion/usuarios': UserCog,
 }
 
+/* Nombre de cada pantalla para la sección Favoritos */
+const NOMBRE_RUTA: Record<string, string> = {
+  '/': 'Panel Global', '/tareas': 'Tareas',
+  ...Object.fromEntries(SECTIONS.flatMap(sec => sec.items.map(i => [i.path, i.label]))),
+}
+
+const nombreRuta = (p: string) => NOMBRE_RUTA[p] ?? (p.startsWith('/flota/') ? `Furgoneta ${decodeURIComponent(p.slice(7)).toUpperCase()}` : null)
+
 const OPEN_SECTIONS_LS_KEY = 'david.sidebar.openSections'
 const TEXTO_SUAVE = 'rgba(245,236,217,0.72)' // ARENA 72% sobre marino
 
@@ -164,6 +174,9 @@ function loadOpenSections(): string[] {
 
 export default function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { usuario, logout } = useAuth()
+  const fav = useFavoritos()
+  const favoritos = (fav?.favoritos ?? []).filter(p => nombreRuta(p))
+  const masUsadas = (fav?.masUsadas ?? []).filter(r => nombreRuta(r.ruta) && !favoritos.includes(r.ruta)).slice(0, 6)
   const perfil = usuario?.perfil ?? ''
 
   // Detección de móvil (equivalente a useEsMovil de Binagre)
@@ -305,6 +318,73 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
               {({ isActive }) => <BellRing size={22} strokeWidth={2.4} color={isActive ? INK : AMBAR} />}
             </NavLink>
           )}
+
+          {/* Favoritos: arriba del todo, se gestionan con la estrella de cada pantalla del menú */}
+          {fav && perfil && !collapsed && (
+            <div style={{ borderBottom: `3px solid ${INK}` }}>
+              <div style={{ background: NARANJA, color: ARENA, display: 'flex', alignItems: 'center', gap: 11, padding: '11px 16px', borderBottom: `3px solid ${INK}`,
+                fontFamily: OSW, fontWeight: 800, fontSize: 19, textTransform: 'uppercase', letterSpacing: '0.02em' }}>
+                <Star size={20} strokeWidth={2.4} color={ARENA} fill={ARENA} style={{ flexShrink: 0 }} />
+                <span>Favoritos</span>
+              </div>
+              <div style={{ background: BLANCO }}>
+                {favoritos.length === 0 && (
+                  <div style={{ padding: '8px 16px', fontFamily: OSW, fontSize: 13, color: INK, opacity: 0.7 }}>Pulsa ★ en cualquier pantalla para tenerla aquí.</div>
+                )}
+                {favoritos.map((path, idx) => {
+                  const SubIcon = path === '/' ? LayoutDashboard : path === '/tareas' ? BellRing : (ICON_ROUTE[path] ?? FileText)
+                  return (
+                    <NavLink key={path} to={path} end onClick={onClose}
+                      style={({ isActive }) => ({
+                        fontFamily: OSW, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.01em', fontSize: 16,
+                        padding: '8px 16px 8px 18px', display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none',
+                        borderTop: idx > 0 ? '1.5px solid rgba(11,21,36,.14)' : 'none',
+                        background: isActive ? INK : BLANCO, color: isActive ? AMBAR : INK,
+                      })}>
+                      {({ isActive }) => (<>
+                        <SubIcon size={15} strokeWidth={2.2} color={isActive ? AMBAR : INK} style={{ flexShrink: 0 }} />
+                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nombreRuta(path)}</span>
+                        <button type="button" title="Quitar de favoritos" onClick={e => { e.preventDefault(); e.stopPropagation(); fav.alternar(path) }}
+                          style={{ background: 'none', border: 'none', padding: 2, cursor: 'pointer', display: 'flex' }}>
+                          <Star size={15} strokeWidth={2.2} color={isActive ? AMBAR : NARANJA} fill={isActive ? AMBAR : NARANJA} />
+                        </button>
+                      </>)}
+                    </NavLink>
+                  )
+                })}
+                <div style={{ padding: '8px 16px 4px', fontFamily: OSW, fontWeight: 800, fontSize: 13, letterSpacing: 2, textTransform: 'uppercase', color: INK, borderTop: `2px solid ${INK}` }}>
+                  Más usadas · 30 días
+                </div>
+                {masUsadas.length === 0 && (
+                  <div style={{ padding: '4px 16px 8px', fontFamily: OSW, fontSize: 13, color: INK, opacity: 0.7 }}>Aún no hay uso suficiente: se irá llenando solo.</div>
+                )}
+                {masUsadas.map(r => (
+                  <NavLink key={`u-${r.ruta}`} to={r.ruta} end onClick={onClose}
+                    style={({ isActive }) => ({
+                      fontFamily: OSW, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.01em', fontSize: 15,
+                      padding: '6px 16px 6px 18px', display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none',
+                      background: isActive ? INK : BLANCO, color: isActive ? AMBAR : INK,
+                    })}>
+                    <span aria-hidden="true">↻</span>
+                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nombreRuta(r.ruta)}</span>
+                    <small style={{ opacity: 0.6 }}>{r.veces}</small>
+                  </NavLink>
+                ))}
+              </div>
+            </div>
+          )}
+          {fav && perfil && collapsed && favoritos.map(path => {
+            const SubIcon = path === '/' ? LayoutDashboard : path === '/tareas' ? BellRing : (ICON_ROUTE[path] ?? FileText)
+            return (
+              <NavLink key={path} to={path} end onClick={() => { abrir20s(); onClose() }} title={`★ ${nombreRuta(path)}`}
+                style={({ isActive }) => ({
+                  width: '100%', height: 42, display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', borderBottom: `3px solid ${INK}`,
+                  background: isActive ? AMBAR : NARANJA,
+                })}>
+                {({ isActive }) => <SubIcon size={20} strokeWidth={2.4} color={isActive ? INK : ARENA} />}
+              </NavLink>
+            )
+          })}
 
           {/* Secciones de color sólido */}
           {SECTIONS.map((section) => {

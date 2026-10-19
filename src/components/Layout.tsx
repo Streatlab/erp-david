@@ -3,6 +3,10 @@ import { Outlet } from 'react-router-dom'
 import { Menu } from 'lucide-react'
 import Sidebar from '@/components/Sidebar'
 import MenuCuenta from '@/components/MenuCuenta'
+import SelectorPeriodoNeo from '@/components/neo/SelectorPeriodoNeo'
+import EstrellaPantalla from '@/components/neo/EstrellaPantalla'
+import { PeriodoProvider } from '@/lib/periodoGlobal'
+import { FavoritosProvider } from '@/lib/favoritos'
 import { ARENA, INK, MARINO, OSW } from '@/styles/neobrutal'
 
 /* Papel mediterráneo: arena cálida con trama de puntos celeste + terracota.
@@ -19,6 +23,8 @@ export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
+    <PeriodoProvider>
+    <FavoritosProvider>
     <div
       className="flex h-screen"
       style={{ ...PAPEL_MEDITERRANEO, color: INK, fontFamily: "'Lexend', sans-serif" }}
@@ -55,7 +61,9 @@ export default function Layout() {
           >
             David Reparte
           </span>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-3">
+            <EstrellaPantalla />
+            <SelectorPeriodoNeo />
             <MenuCuenta />
           </div>
         </header>
@@ -65,5 +73,7 @@ export default function Layout() {
         </main>
       </div>
     </div>
+    </FavoritosProvider>
+    </PeriodoProvider>
   )
 }

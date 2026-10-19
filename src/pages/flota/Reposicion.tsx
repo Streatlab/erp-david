@@ -19,7 +19,8 @@ import {
   OSW, LEX, SHADOW, BORDER_CARD, EUR, E, N, P0,
 } from '@/styles/neobrutal'
 import {
-  PageNeo, Banda, CabeceraNeo, KpiNeo, TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo, BotonNeo,
+  PageNeo, Banda, CabeceraNeo, KpiNeo, HeroNeo, TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo, BotonNeo,
+  TabsNeo, usePestana,
 } from '@/components/neo/NeoUI'
 
 /* ── Input neobrutal ────────────────────────────────────────── */
@@ -78,7 +79,10 @@ function EtiquetaGuardado({ estado }: { estado?: EstadoGuardado }) {
 }
 
 /* ── Página ─────────────────────────────────────────────────── */
+const IDS_PESTANA = ['furgonetas', 'resumen', 'calendario'] as const
+
 export default function Reposicion() {
+  const [pestana, setPestana] = usePestana('reposicion', IDS_PESTANA, 'furgonetas')
   const [furgos, setFurgos] = useState<Furgoneta[]>([])
   const [params, setParams] = useState<Record<string, ParamsReposicion>>({})
   const [prestamos, setPrestamos] = useState<Record<string, PrestamoVivo>>({})
@@ -158,6 +162,17 @@ export default function Reposicion() {
         </div>
       </CabeceraNeo>
 
+      <HeroNeo
+        eyebrowTxt="Ahorro necesario al mes"
+        cifra={loading || resumen.cuotaMensualTotal <= 0 ? '—' : EUR(resumen.cuotaMensualTotal)}
+        frase={loading || resumen.cuotaMensualTotal <= 0 ? 'Sin datos todavía' : 'Lo que tienes que apartar cada mes para cambiar las furgonetas sin otro préstamo'}
+        color={AMBAR}
+        apoyo={!loading && resumen.cuotaMensualTotal > 0 ? [
+          { label: 'Falta por reunir', valor: EUR(resumen.necesidadTotal) },
+          { label: 'Próximo cambio', valor: resumen.proxima ? resumen.proxima.fechaReposicion : '—' },
+        ] : undefined}
+      />
+
       {loading && (
         <Banda bg={ARENA}>
           <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 22, textTransform: 'uppercase', color: GRIS }}>
@@ -167,7 +182,14 @@ export default function Reposicion() {
       )}
 
       {!loading && (<>
+        <TabsNeo value={pestana} onChange={setPestana} tabs={[
+          { id: 'furgonetas', label: 'Furgonetas' },
+          { id: 'resumen', label: 'Resumen', badge: resumen.conSolape + resumen.incompletas },
+          { id: 'calendario', label: 'Calendario' },
+        ]} />
+
         {/* ── Resumen ── */}
+        {pestana === 'resumen' && (
         <Banda bg={ARENA_CL}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 18 }}>
             <KpiNeo
@@ -219,8 +241,10 @@ export default function Reposicion() {
             </div>
           )}
         </Banda>
+        )}
 
         {/* ── Tabla por furgoneta ── */}
+        {pestana === 'furgonetas' && (
         <Banda bg={BLANCO}>
           <div style={{
             fontFamily: OSW, fontWeight: 700, fontSize: 'clamp(18px,2.2vw,26px)',
@@ -357,9 +381,10 @@ export default function Reposicion() {
             Los km al año salen de los partes semanales. Los datos que tú metes se guardan en la base de datos y se ven desde cualquier dispositivo.
           </div>
         </Banda>
+        )}
 
         {/* ── Calendario de caja ── */}
-        {porAnio.length > 0 && (
+        {pestana === 'calendario' && porAnio.length > 0 && (
           <Banda bg={ARENA}>
             <div style={{
               fontFamily: OSW, fontWeight: 700, fontSize: 'clamp(18px,2.2vw,26px)',

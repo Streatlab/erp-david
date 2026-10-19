@@ -3,7 +3,7 @@ import { UserPlus } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { fmtDate } from '@/lib/format'
 import { INK, ARENA, BLANCO, GRIS, OLIVA, TERRA, NARANJA, CELESTE, AMBAR, OSW, LEX, BORDER_CARD } from '@/styles/neobrutal'
-import { PageNeo, CabeceraNeo, Banda, TablaWrap, thNeo, tdNeo, tdEstado, BotonNeo, BadgeNeo, AvisoNeo } from '@/components/neo/NeoUI'
+import { PageNeo, CabeceraNeo, Banda, TablaWrap, thNeo, tdNeo, tdEstado, BotonNeo, BadgeNeo, AvisoNeo, HeroNeo } from '@/components/neo/NeoUI'
 import { campo, Etiqueta } from '@/components/flota/FormFlota'
 
 /* Usuarios reales: lista blanca de correos que pueden entrar al ERP (Google, enlace o PIN por dispositivo). */
@@ -55,6 +55,9 @@ export default function Usuarios() {
         <BotonNeo onClick={() => setForm({ id: null, nombre: '', email: '', perfil: 'admin' })}><UserPlus size={14} style={{ marginRight: 6 }} /> Dar de alta un correo</BotonNeo>
       </CabeceraNeo>
       {error && <AvisoNeo>{error}</AvisoNeo>}
+      <HeroNeo eyebrowTxt="Acceso al ERP" cifra={usuarios.length === 0 ? '—' : String(usuarios.filter(u => u.activo).length)}
+        frase={usuarios.length === 0 ? 'Sin datos todavía' : `${usuarios.filter(u => u.activo).length === 1 ? 'usuario activo puede' : 'usuarios activos pueden'} entrar, de ${usuarios.length} dados de alta`}
+        color={usuarios.length === 0 ? AMBAR : OLIVA} />
 
       {form && (
         <Banda bg={BLANCO}>

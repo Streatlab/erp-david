@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase'
 import { fmtEur, fmtDate } from '@/lib/format'
 import { CELESTE, OLIVA, TERRA, NARANJA, GRIS, ARENA_CL, BLANCO, OSW } from '@/styles/neobrutal'
 import {
-  PageNeo, Banda, CabeceraNeo, PillsNeo, KpiNeo, AvisoNeo,
+  PageNeo, Banda, CabeceraNeo, HeroNeo, PillsNeo, KpiNeo, AvisoNeo, TabsNeo, usePestana,
   TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo, BotonNeo,
 } from '@/components/neo/NeoUI'
 import DocumentacionYTope from '@/components/facturacion/DocumentacionYTope'
@@ -37,7 +37,10 @@ function fechaEsperadaCobro(f: FacturaEmitida): Date | null {
   return new Date(p.getFullYear(), p.getMonth() + 1, 15)
 }
 
+const PESTANAS_FE = ['cobros', 'liquidaciones', 'documentacion'] as const
+
 export default function FacturacionEmitida() {
+  const [pestana, setPestana] = usePestana('facturacion-emitida', PESTANAS_FE, 'cobros')
   const [facturas, setFacturas] = useState<FacturaEmitida[]>([])
   const [loading, setLoading] = useState(true)
   const [errMsg, setErrMsg] = useState<string | null>(null)
@@ -104,18 +107,37 @@ export default function FacturacionEmitida() {
         </div>
       </CabeceraNeo>
 
-      {/* Cade: liquidaciones del mes, facturas, documentación y tope */}
-      <LiquidacionesMes />
-      <DocumentacionYTope />
+      <HeroNeo
+        eyebrowTxt="Lo que te debe Cade"
+        cifra={loading || kpis.n === 0 ? '—' : fmtEur(kpis.pendiente)}
+        frase={loading || kpis.n === 0 ? 'Sin datos todavía'
+          : kpis.nVencidas > 0 ? `${kpis.nVencidas} factura${kpis.nVencidas > 1 ? 's' : ''} fuera de plazo (${fmtEur(kpis.vencido)}). Reclama ya.`
+          : kpis.pendiente > 0 ? 'Pendiente de cobro y dentro de plazo. Nada que reclamar aún.' : 'Todo cobrado. Sin pendientes.'}
+        color={loading || kpis.n === 0 ? undefined : kpis.nVencidas > 0 ? NARANJA : kpis.pendiente > 0 ? undefined : OLIVA}
+        apoyo={kpis.n === 0 ? undefined : [
+          { label: 'Cobrado', valor: fmtEur(kpis.total - kpis.pendiente) },
+          { label: 'Facturado', valor: fmtEur(kpis.total) },
+        ]}
+      />
+
+      <TabsNeo value={pestana} onChange={setPestana} tabs={[
+        { id: 'cobros', label: 'Cobros', badge: kpis.nVencidas || undefined },
+        { id: 'liquidaciones', label: 'Liquidaciones del mes' },
+        { id: 'documentacion', label: 'Documentación y tope' },
+      ]} />
+
+      {pestana === 'liquidaciones' && <LiquidacionesMes />}
+      {pestana === 'documentacion' && <DocumentacionYTope />}
 
       {errMsg && <AvisoNeo>ERROR: {errMsg}</AvisoNeo>}
 
-      {kpis.nVencidas > 0 && (
+      {pestana === 'cobros' && kpis.nVencidas > 0 && (
         <AvisoNeo>
           CADE TE DEBE {fmtEur(kpis.vencido)} FUERA DE PLAZO · {kpis.nVencidas} factura{kpis.nVencidas > 1 ? 's' : ''} sin cobrar pasado el día 15. Reclamar ya.
         </AvisoNeo>
       )}
 
+      {pestana === 'cobros' && (<>
       {/* KPIs: ¿cuándo cobro de Cade? */}
       <Banda bg={ARENA_CL}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 18 }}>
@@ -178,6 +200,7 @@ export default function FacturacionEmitida() {
           </tbody>
         </TablaWrap>
       </Banda>
+      </>)}
     </PageNeo>
   )
 }

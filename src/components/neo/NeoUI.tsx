@@ -3,7 +3,7 @@
  * Usadas por las páginas recompuestas (Panel, Finanzas, Conciliación…).
  * Fuente de tokens: src/styles/neobrutal.ts. NO improvisar hex.
  */
-import type { CSSProperties, ReactNode } from 'react'
+import { useState, type CSSProperties, type ReactNode } from 'react'
 import {
   INK, MARINO, ARENA, ARENA_CL, BLANCO, GRIS, OLIVA, TERRA, NARANJA, AMBAR,
   OSW, LEX, SHADOW, BORDER, BORDER_CARD, PAD, d, eyebrow, card,
@@ -48,6 +48,36 @@ export function CabeceraNeo({ eyebrowTxt, titulo, children }: { eyebrowTxt: stri
           <h1 style={{ ...d('clamp(24px,3vw,38px)', ARENA), margin: '10px 0 0' }}>{titulo}</h1>
         </div>
         {children}
+      </div>
+    </Banda>
+  )
+}
+
+
+/* Hero de pantalla: una cifra grande que resume lo importante, con frase de contexto y hasta 3 datos de apoyo.
+   color = tono de la cifra (OLIVA bien, NARANJA aviso, AMBAR neutro). Sin rojos. */
+export function HeroNeo({ eyebrowTxt, cifra, frase, apoyo, color = AMBAR, children }: {
+  eyebrowTxt: string; cifra: string; frase: string; apoyo?: { label: string; valor: string }[]; color?: string; children?: ReactNode
+}) {
+  return (
+    <Banda bg={MARINO}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 24 }}>
+        <div style={{ minWidth: 0, flex: '1 1 320px' }}>
+          <span style={eyebrow(AMBAR)}>{eyebrowTxt}</span>
+          <div style={{ ...d('clamp(44px,8vw,96px)', color), lineHeight: 0.95, margin: '14px 0 10px' }}>{cifra}</div>
+          <div style={{ fontFamily: LEX, fontSize: 15, fontWeight: 600, color: ARENA, maxWidth: 560 }}>{frase}</div>
+          {children}
+        </div>
+        {apoyo && apoyo.length > 0 && (
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+            {apoyo.slice(0, 3).map(a => (
+              <div key={a.label} style={{ border: `3px solid ${ARENA}`, padding: '10px 14px', minWidth: 120 }}>
+                <div style={{ fontFamily: OSW, fontWeight: 600, fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: ARENA, opacity: 0.85 }}>{a.label}</div>
+                <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 24, color: ARENA }}>{a.valor}</div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </Banda>
   )
@@ -152,3 +182,32 @@ export function TablaWrap({ children }: { children: ReactNode }) {
 }
 
 export const COLORES = { INK, MARINO, ARENA, ARENA_CL, BLANCO, GRIS, OLIVA, TERRA, NARANJA, AMBAR }
+
+/* Pestañas de pantalla: barra fija arriba (sticky) para no hacer scroll infinito.
+   usePestana recuerda la última pestaña de cada pantalla en este navegador. */
+export function usePestana<T extends string>(clave: string, ids: readonly T[], inicial: T): [T, (t: T) => void] {
+  const [p, setP] = useState<T>(() => {
+    try { const v = localStorage.getItem(`david.pestana.${clave}`) as T | null; return v && ids.includes(v) ? v : inicial } catch { return inicial }
+  })
+  const set = (t: T) => { setP(t); try { localStorage.setItem(`david.pestana.${clave}`, t) } catch { /* sin almacenamiento */ } }
+  return [p, set]
+}
+
+export function TabsNeo<T extends string>({ value, onChange, tabs }: { value: T; onChange: (t: T) => void; tabs: { id: T; label: string; badge?: number }[] }) {
+  return (
+    <div style={{ position: 'sticky', top: 0, zIndex: 20, background: INK, display: 'flex', overflowX: 'auto', borderBottom: `3px solid ${INK}` }}>
+      {tabs.map(t => {
+        const on = value === t.id
+        return (
+          <button key={t.id} onClick={() => onChange(t.id)}
+            style={{
+              fontFamily: OSW, fontWeight: 700, fontSize: 14, letterSpacing: 2, textTransform: 'uppercase', whiteSpace: 'nowrap',
+              padding: '12px 18px', border: 0, cursor: 'pointer', background: on ? AMBAR : INK, color: on ? INK : ARENA,
+            }}>
+            {t.label}{t.badge ? <span style={{ marginLeft: 6, background: NARANJA, color: BLANCO, padding: '0 6px', fontSize: 12 }}>{t.badge}</span> : null}
+          </button>
+        )
+      })}
+    </div>
+  )
+}

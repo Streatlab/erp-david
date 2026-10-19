@@ -3,10 +3,12 @@ import { supabase } from '@/lib/supabase'
 import { fmtEur, fmtPct } from '@/lib/format'
 import { OLIVA, TERRA, AMBAR, CELESTE, GRIS, ARENA_CL, BLANCO, ARENA, INK, OSW } from '@/styles/neobrutal'
 import {
-  PageNeo, Banda, CabeceraNeo, KpiNeo, AvisoNeo,
+  PageNeo, Banda, CabeceraNeo, KpiNeo, AvisoNeo, TabsNeo,
   TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo, BotonNeo,
 } from '@/components/neo/NeoUI'
-import PortadaFamilia from '@/components/familia/PortadaFamilia'
+import PortadaFamilia, { type SeccionFamilia } from '@/components/familia/PortadaFamilia'
+import PresupuestoFamilia from '@/components/familia/PresupuestoFamilia'
+import { usePeriodo } from '@/lib/periodoGlobal'
 
 type Vista = 'semana' | 'mes'
 
@@ -53,13 +55,23 @@ const labelEstado: Record<FilaHogar['estado'], string> = {
 }
 
 export default function RunningFamilia() {
-  const [vista, setVista] = useState<Vista>('mes')
+  const per = usePeriodo()
+  const vista: Vista = per.esSemana ? 'semana' : 'mes'
   const [hogar, setHogar] = useState<FilaHogar[]>([])
   const [global, setGlobal] = useState<FilaGlobal[]>([])
   const [loading, setLoading] = useState(true)
   const [errMsg, setErrMsg] = useState<string | null>(null)
   const [editando, setEditando] = useState<string | null>(null)
   const [valorEdit, setValorEdit] = useState('')
+  type Pestana = SeccionFamilia | 'presupuesto'
+  const PESTANAS: { id: Pestana; t: string }[] = [
+    { id: 'hoy', t: 'Hoy' }, { id: 'resumen', t: 'Resumen' }, { id: 'presupuesto', t: 'Presupuesto' }, { id: 'prevision', t: 'Previsión' }, { id: 'recibos', t: 'Recibos' },
+  ]
+  const [pestana, setPestanaState] = useState<Pestana>(() => {
+    try { const v = localStorage.getItem('david.familia.pestana') as Pestana | null; return v && PESTANAS.some(p => p.id === v) ? v : 'hoy' } catch { return 'hoy' }
+  })
+  const setPestana = (p: Pestana) => { setPestanaState(p); try { localStorage.setItem('david.familia.pestana', p) } catch { /* sin almacenamiento */ } }
+  const escala: 'mes' | 'semana' = per.esSemana ? 'semana' : 'mes'
 
   async function cargar(v: Vista) {
     setLoading(true)
@@ -89,17 +101,35 @@ export default function RunningFamilia() {
   }
   useEffect(() => { cargar(vista) }, [vista])
 
-  const periodoActual = useMemo(() => (hogar[0]?.periodo ?? global[0]?.periodo ?? null), [hogar, global])
-  const etiquetaActual = useMemo(() => (hogar[0]?.etiqueta ?? global[0]?.etiqueta ?? ''), [hogar, global])
-  const filasActuales = useMemo(() => hogar.filter(f => f.periodo === periodoActual), [hogar, periodoActual])
+  const etiquetaActual = per.etiqueta
+  const filasActuales = useMemo(() => {
+    const delPeriodo = hogar.filter(f => (vista === 'semana' ? f.periodo === per.desdeIso : per.meses.includes(String(f.periodo).slice(0, 7))))
+    if (vista === 'semana' || per.meses.length <= 1) return delPeriodo
+    /* varios meses: se suma por partida y se recalcula el estado */
+    const mapa = new Map<string, FilaHogar>()
+    for (const f of delPeriodo) {
+      const x = mapa.get(f.categoria)
+      if (!x) { mapa.set(f.categoria, { ...f }); continue }
+      x.gastado = Number(x.gastado) + Number(f.gastado)
+      x.presupuesto = x.presupuesto != null || f.presupuesto != null ? Number(x.presupuesto ?? 0) + Number(f.presupuesto ?? 0) : null
+    }
+    return Array.from(mapa.values()).map(f => {
+      const pres = f.presupuesto
+      const desv = pres != null ? Math.round((f.gastado - pres) * 100) / 100 : 0
+      const pct = pres != null && pres > 0 ? Math.round((f.gastado / pres) * 100) : null
+      const estado: FilaHogar['estado'] = pres == null ? 'sin presupuesto' : f.gastado <= pres * 0.9 ? 'holgado' : f.gastado <= pres ? 'ajustado' : 'desviado'
+      return { ...f, desviacion: desv, pct_consumido: pct, estado }
+    }).sort((a, b) => b.gastado - a.gastado)
+  }, [hogar, vista, per.desdeIso, per.meses])
 
   const kpis = useMemo(() => {
     const gastado = filasActuales.reduce((s, f) => s + Number(f.gastado || 0), 0)
     const presupuesto = filasActuales.reduce((s, f) => s + Number(f.presupuesto || 0), 0)
     const desviadas = filasActuales.filter(f => f.estado === 'desviado').length
-    const ahorro = global[0]?.ahorro_real ?? null
+    const filasG = global.filter(g => (vista === 'semana' ? g.periodo === per.desdeIso : per.meses.includes(String(g.periodo).slice(0, 7))))
+    const ahorro = filasG.length ? filasG.reduce((s, g) => s + Number(g.ahorro_real || 0), 0) : null
     return { gastado, presupuesto, desviadas, ahorro }
-  }, [filasActuales, global])
+  }, [filasActuales, global, vista, per.desdeIso, per.meses])
 
   /* El presupuesto se fija siempre en importe MENSUAL (es como piensa la gente los fijos:
      hipoteca, colegio, seguro). La vista semanal lo reparte sola: mensual × 12 / 52. */
@@ -116,113 +146,32 @@ export default function RunningFamilia() {
   }
 
   const unidad = vista === 'semana' ? 'semana' : 'mes'
+  const delUnidad = vista === 'semana' ? 'de la semana' : 'del mes'
+  const estaUnidad = vista === 'semana' ? 'esta semana' : 'este mes'
   const hayGlobal = global.length > 0
 
   return (
     <PageNeo>
       <CabeceraNeo eyebrowTxt="Finanzas · Hogar" titulo="Running Familia">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'flex-end' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
           <div style={{ display: 'flex', gap: 6 }}>
-            <BotonNeo bg={vista === 'semana' ? AMBAR : ARENA} onClick={() => setVista('semana')}>Por semanas</BotonNeo>
-            <BotonNeo bg={vista === 'mes' ? AMBAR : ARENA} onClick={() => setVista('mes')}>Por meses</BotonNeo>
+            <BotonNeo bg={escala === 'mes' ? AMBAR : ARENA} onClick={() => per.setKey('mes')}>Por meses</BotonNeo>
+            <BotonNeo bg={escala === 'semana' ? AMBAR : ARENA} onClick={() => per.setKey('semana')}>Por semanas</BotonNeo>
           </div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: ARENA, opacity: 0.85, maxWidth: 420, textAlign: 'right' }}>
-            Economía doméstica de David y Rebeca: lo que entra, los gastos fijos, los variables
-            y cuánto hay que meter cada mes en cada cuenta.
-          </div>
+          <div style={{ fontFamily: OSW, fontWeight: 600, fontSize: 13, letterSpacing: 2, textTransform: 'uppercase', color: ARENA }}>{per.etiqueta}</div>
         </div>
       </CabeceraNeo>
 
+      {/* Pestañas: una pantalla por tema, sin scroll infinito */}
+      <TabsNeo value={pestana} onChange={setPestana} tabs={PESTANAS.map(p => ({ id: p.id, label: p.t }))} />
+
       {errMsg && <AvisoNeo>ERROR: {errMsg}</AvisoNeo>}
 
-      <PortadaFamilia />
+      {pestana !== 'presupuesto' && <PortadaFamilia seccion={pestana} escala={escala} />}
 
-      {kpis.desviadas > 0 && (
-        <AvisoNeo>
-          {kpis.desviadas} PARTIDA{kpis.desviadas > 1 ? 'S' : ''} POR ENCIMA DE PRESUPUESTO en {etiquetaActual || `esta ${unidad}`}.
-        </AvisoNeo>
-      )}
+      {pestana === 'presupuesto' && <PresupuestoFamilia escala={escala} />}
 
-      <Banda bg={ARENA_CL}>
-        <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 16, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 14, color: INK }}>
-          Presupuesto por partidas · {etiquetaActual || 'sin datos'}
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 18 }}>
-          <KpiNeo label={`Gasto familiar de la ${unidad}`} valor={fmtEur(kpis.gastado)} color={CELESTE} sub={etiquetaActual || undefined} />
-          <KpiNeo label={`Presupuesto de la ${unidad}`} valor={kpis.presupuesto > 0 ? fmtEur(kpis.presupuesto) : '— sin definir'} />
-          <KpiNeo label="Partidas desviadas" valor={String(kpis.desviadas)} color={kpis.desviadas > 0 ? TERRA : OLIVA} />
-          <KpiNeo label="Ahorro real (empresa − casa)" valor={kpis.ahorro != null ? fmtEur(kpis.ahorro) : '—'}
-            color={kpis.ahorro != null && kpis.ahorro >= 0 ? OLIVA : TERRA}
-            sub={`Resultado de la actividad menos el gasto del hogar en la ${unidad}`} />
-        </div>
-      </Banda>
-
-      <Banda bg={BLANCO}>
-        <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 16, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6, color: INK }}>
-          Partidas del hogar {etiquetaActual ? `· ${etiquetaActual}` : ''}
-        </div>
-        <div style={{ fontSize: 12, color: GRIS, marginBottom: 12 }}>
-          El presupuesto se fija en importe mensual. En la vista por semanas se reparte automáticamente (mensual × 12 ÷ 52).
-        </div>
-        <TablaWrap>
-          <thead>
-            <tr>
-              {['Partida', 'Gastado', `Presupuesto ${unidad}`, 'Desviación', '% consumido', 'Estado', ''].map(h => (
-                <th key={h} style={thNeo}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {loading && (
-              <tr><td colSpan={7} style={{ ...tdNeo(false), textAlign: 'center', color: GRIS, padding: 32 }}>Cargando…</td></tr>
-            )}
-            {!loading && filasActuales.length === 0 && (
-              <tr><td colSpan={7} style={{ ...tdNeo(false), textAlign: 'center', color: GRIS, padding: 32 }}>Sin gasto doméstico registrado todavía.</td></tr>
-            )}
-            {filasActuales.map((f, i) => {
-              const alt = i % 2 === 1
-              const color = colorEstado(f.estado)
-              const enEdicion = editando === f.categoria
-              return (
-                <tr key={f.categoria}>
-                  <td style={tdEstado(alt, color)}>{f.partida}</td>
-                  <td style={{ ...tdNeo(alt), textAlign: 'right' }}>{fmtEur(f.gastado)}</td>
-                  <td style={{ ...tdNeo(alt), textAlign: 'right' }}>
-                    {enEdicion ? (
-                      <input
-                        autoFocus type="text" value={valorEdit} placeholder="€/mes"
-                        onChange={e => setValorEdit(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter') guardarPresupuesto(f.categoria); if (e.key === 'Escape') setEditando(null) }}
-                        onBlur={() => guardarPresupuesto(f.categoria)}
-                        style={{ width: 90, textAlign: 'right', border: `2px solid ${INK}`, padding: '3px 6px', fontFamily: OSW, fontSize: 13 }}
-                      />
-                    ) : (
-                      <span
-                        onClick={() => { setEditando(f.categoria); setValorEdit('') }}
-                        style={{ cursor: 'pointer', borderBottom: `1px dashed ${GRIS}` }}
-                        title="Clic para fijar el presupuesto mensual de esta partida"
-                      >
-                        {f.presupuesto != null ? fmtEur(f.presupuesto) : 'Fijar →'}
-                      </span>
-                    )}
-                  </td>
-                  <td style={{ ...tdNeo(alt), textAlign: 'right', color: f.desviacion > 0 ? TERRA : OLIVA, fontFamily: OSW, fontWeight: 700 }}>
-                    {f.presupuesto != null ? (f.desviacion > 0 ? `+${fmtEur(f.desviacion)}` : fmtEur(f.desviacion)) : '—'}
-                  </td>
-                  <td style={{ ...tdNeo(alt), textAlign: 'right' }}>{f.pct_consumido != null ? fmtPct(f.pct_consumido) : '—'}</td>
-                  <td style={tdNeo(alt)}><BadgeNeo color={color}>{labelEstado[f.estado]}</BadgeNeo></td>
-                  <td style={tdNeo(alt)}>
-                    {!enEdicion && (
-                      <BotonNeo bg={ARENA} onClick={() => { setEditando(f.categoria); setValorEdit('') }}>Editar</BotonNeo>
-                    )}
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </TablaWrap>
-      </Banda>
-
+      {pestana === 'presupuesto' && (
       <Banda bg={ARENA_CL}>
         <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 16, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 14, color: INK }}>
           Empresa + Hogar · {vista === 'semana' ? 'últimas 12 semanas' : 'últimos 6 meses'}
@@ -244,7 +193,7 @@ export default function RunningFamilia() {
               const okAhorro = g.ahorro_real >= 0
               return (
                 <tr key={g.periodo}>
-                  <td style={{ ...tdEstado(alt, okAhorro ? OLIVA : TERRA), fontFamily: OSW, fontWeight: 700 }}>{g.etiqueta}</td>
+                  <td style={{ ...tdEstado(alt, okAhorro ? OLIVA : TERRA), fontFamily: OSW, fontWeight: 700 }}>{g.etiqueta}{vista === 'mes' && g.periodo?.startsWith(new Date().toISOString().slice(0, 7)) ? ' · en curso' : ''}</td>
                   <td style={{ ...tdNeo(alt), textAlign: 'right' }}>{fmtEur(g.resultado_actividad)}</td>
                   <td style={{ ...tdNeo(alt), textAlign: 'right' }}>{fmtEur(g.gasto_hogar)}</td>
                   <td style={{ ...tdNeo(alt), textAlign: 'right', fontFamily: OSW, fontWeight: 700, color: okAhorro ? OLIVA : TERRA }}>{fmtEur(g.ahorro_real)}</td>
@@ -259,6 +208,7 @@ export default function RunningFamilia() {
           </tbody>
         </TablaWrap>
       </Banda>
+      )}
     </PageNeo>
   )
 }

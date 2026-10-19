@@ -5,8 +5,9 @@ import { fmtEur, fmtDate } from '@/lib/format'
 import { OLIVA, TERRA, NARANJA, MARINO, AMBAR, GRIS, ARENA, ARENA_CL, BLANCO, INK, OSW, LEX } from '@/styles/neobrutal'
 import {
   PageNeo, Banda, CabeceraNeo, KpiNeo, AvisoNeo,
-  TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo,
+  TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo, HeroNeo, TabsNeo, usePestana,
 } from '@/components/neo/NeoUI'
+import { usePeriodo } from '@/lib/periodoGlobal'
 
 interface Reclamacion {
   id: string
@@ -64,12 +65,12 @@ function HistoricoAnterior() {
   }
 
   return (
-    <PageNeo>
-      <CabeceraNeo eyebrowTxt="Cade" titulo="Histórico anterior">
-        <div style={{ fontSize: 13, fontWeight: 600, color: ARENA, opacity: 0.85, maxWidth: 380 }}>
-          Incidencias registradas a mano antes de leer las liquidaciones automáticamente.
+    <>
+      <Banda bg={ARENA}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: INK }}>
+          Histórico anterior: incidencias registradas a mano antes de leer las liquidaciones automáticamente.
         </div>
-      </CabeceraNeo>
+      </Banda>
 
       {errMsg && <AvisoNeo>ERROR: {errMsg}</AvisoNeo>}
 
@@ -138,7 +139,7 @@ function HistoricoAnterior() {
           </tbody>
         </TablaWrap>
       </Banda>
-    </PageNeo>
+    </>
   )
 }
 
@@ -166,8 +167,12 @@ function textoReclamacion(items: Incidencia[]): string {
   return `Buenos días,\n\nRevisando las liquidaciones vemos los siguientes cargos que no son habituales y que solicitamos revisar:\n\n${lineas.join('\n')}\n\nTotal: ${fmtEur(total)}\n\nQuedamos a la espera de su respuesta.\n\nUn saludo`
 }
 
+const IDS_PESTANA = ['incidencias', 'historico'] as const
+
 export default function ReclamacionesCade() {
-  const [incs, setIncs] = useState<Incidencia[]>([])
+  const periodo = usePeriodo()
+  const [pestana, setPestana] = usePestana('reclamaciones-cade', IDS_PESTANA, 'incidencias')
+  const [incsTodas, setIncsTodas] = useState<Incidencia[]>([])
   const [loading, setLoading] = useState(true)
   const [errMsg, setErrMsg] = useState<string | null>(null)
   const [saving, setSaving] = useState<number | null>(null)
@@ -180,10 +185,15 @@ export default function ReclamacionesCade() {
       .select('id, transportista, fecha, codigo, importe, descripcion, estado')
       .order('fecha', { ascending: false })
     if (error) setErrMsg(error.message)
-    setIncs((data ?? []) as Incidencia[])
+    setIncsTodas((data ?? []) as Incidencia[])
     setLoading(false)
   }
   useEffect(() => { cargar() }, [])
+
+  const incs = useMemo(
+    () => incsTodas.filter(i => !!i.fecha && i.fecha.slice(0, 10) >= periodo.desdeIso && i.fecha.slice(0, 10) <= periodo.hastaIso),
+    [incsTodas, periodo.desdeIso, periodo.hastaIso],
+  )
 
   const totales = useMemo(() => {
     const t: Record<EstadoInc, { n: number; eur: number }> = {
@@ -233,6 +243,26 @@ export default function ReclamacionesCade() {
         </CabeceraNeo>
 
         {errMsg && <AvisoNeo>ERROR: {errMsg}</AvisoNeo>}
+
+        <HeroNeo
+          eyebrowTxt={`Por decidir · ${periodo.etiqueta}`}
+          cifra={loading || incs.length === 0 ? '—' : fmtEur(totales.propuesta.eur)}
+          frase={loading || incs.length === 0 ? 'Sin datos todavía' : totales.propuesta.n > 0 ? `${totales.propuesta.n} cargos no habituales de Cade pendientes de decidir si se reclaman` : 'No tienes cargos pendientes de decidir en este periodo'}
+          color={totales.propuesta.eur > 0 ? NARANJA : OLIVA}
+          apoyo={incs.length ? [
+            { label: 'Reclamadas', valor: fmtEur(totales.reclamada.eur) },
+            { label: 'Recuperadas', valor: fmtEur(totales.recuperada.eur) },
+          ] : undefined}
+        />
+
+        <TabsNeo value={pestana} onChange={setPestana} tabs={[
+          { id: 'incidencias', label: 'Cargos de liquidaciones', badge: totales.propuesta.n },
+          { id: 'historico', label: 'Histórico anterior' },
+        ]} />
+
+        {pestana === 'historico' && <HistoricoAnterior />}
+
+        {pestana === 'incidencias' && (<>
         {totales.propuesta.eur > 0 && (
           <AvisoNeo>HAY {fmtEur(totales.propuesta.eur)} POR DECIDIR · {totales.propuesta.n} cargos.</AvisoNeo>
         )}
@@ -307,8 +337,8 @@ export default function ReclamacionesCade() {
             </div>
           ))}
         </Banda>
+        </>)}
       </PageNeo>
-      <HistoricoAnterior />
     </>
   )
 }
