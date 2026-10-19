@@ -298,6 +298,8 @@ export function useConciliacion() {
    *  - actualiza TODOS los movimientos iguales (mismo concepto salvo números/referencias),
    *    estuvieran categorizados o no;
    *  - guarda la regla para que los movimientos futuros se categoricen solos.
+   * Si el concepto es genérico (el mismo texto con varias categorías, p. ej. "Transferencia recibida"),
+   * solo cambia ese movimiento y no se aprende: devuelve -1.
    * Aquí solo se sincroniza Running (tabla gastos) de los afectados. Devuelve cuántos iguales se actualizaron.
    */
   async function updateCategoria(id: string, codigo_categoria: string | null, tipo: 'ingreso' | 'gasto' | null): Promise<number> {
@@ -321,7 +323,8 @@ export function useConciliacion() {
     }
 
     // 3. Running de los iguales que han cambiado
-    const ids: string[] = ((data as { ids?: string[] } | null)?.ids ?? [])
+    const res = (data as { ids?: string[]; ambiguo?: boolean } | null) ?? {}
+    const ids: string[] = res.ids ?? []
     for (const pid of ids) {
       const m = movimientos.find(x => x.id === pid)
       if (!m) continue
@@ -335,7 +338,7 @@ export function useConciliacion() {
     }
 
     refresh()
-    return ids.length
+    return res.ambiguo ? -1 : ids.length
   }
 
   async function createRegla(r: Omit<Regla, 'id'>) {
