@@ -6,6 +6,7 @@ import {
   PageNeo, Banda, CabeceraNeo, HeroNeo, KpiNeo, AvisoNeo,
   TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo,
 } from '@/components/neo/NeoUI'
+import CicloPagoCade from '@/components/facturacion/CicloPagoCade'
 
 interface Liquidacion {
   id: string
@@ -62,9 +63,7 @@ export default function Liquidaciones() {
   return (
     <PageNeo>
       <CabeceraNeo eyebrowTxt="Finanzas" titulo="Liquidaciones Cade">
-        <div style={{ fontSize: 13, fontWeight: 600, color: ARENA, opacity: 0.85, maxWidth: 380 }}>
-          Una liquidación mensual por transportista. Cade paga el 10–15 del mes siguiente.
-        </div>
+        <CicloPagoCade prefijo="Una liquidación mensual por transportista. " />
       </CabeceraNeo>
 
       <HeroNeo

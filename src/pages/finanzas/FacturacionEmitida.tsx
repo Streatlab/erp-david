@@ -8,6 +8,7 @@ import {
 } from '@/components/neo/NeoUI'
 import DocumentacionYTope from '@/components/facturacion/DocumentacionYTope'
 import LiquidacionesMes from '@/components/facturacion/LiquidacionesMes'
+import { useCicloPagoCade, fechaLimiteCobro } from '@/lib/configCade'
 
 interface FacturaEmitida {
   id: string
@@ -29,13 +30,7 @@ interface FacturaEmitida {
 type EmisorFilter = 'TODOS' | 'DAVID' | 'JUAN'
 type EstadoFilter = 'TODAS' | 'PENDIENTE' | 'COBRADA'
 
-/** Cade paga el 10 o el 15 del mes siguiente al mes trabajado → tope: día 15 mes+1 */
-function fechaEsperadaCobro(f: FacturaEmitida): Date | null {
-  if (!f.cliente?.toUpperCase().includes('CADE') || !f.periodo) return null
-  const p = new Date(f.periodo + 'T00:00:00')
-  if (isNaN(p.getTime())) return null
-  return new Date(p.getFullYear(), p.getMonth() + 1, 15)
-}
+/* El plazo de cobro de Cade sale de configuración (Liquidaciones Cade ▸ Confirmar ciclo). Sin plazo confirmado, nada se marca vencido. */
 
 const PESTANAS_FE = ['cobros', 'liquidaciones', 'documentacion'] as const
 
@@ -47,6 +42,7 @@ export default function FacturacionEmitida() {
   const [emisor, setEmisor] = useState<EmisorFilter>('TODOS')
   const [estado, setEstado] = useState<EstadoFilter>('TODAS')
   const [saving, setSaving] = useState<string | null>(null)
+  const ciclo = useCicloPagoCade()
 
   async function cargar() {
     setLoading(true)
@@ -77,12 +73,12 @@ export default function FacturacionEmitida() {
     const pendientes = base.filter(f => f.estado === 'PENDIENTE')
     const pendiente = pendientes.reduce((s, f) => s + (f.total ?? 0), 0)
     const vencidas = pendientes.filter(f => {
-      const fe = fechaEsperadaCobro(f)
+      const fe = f.cliente?.toUpperCase().includes('CADE') ? fechaLimiteCobro(f.periodo, ciclo.diaLimite) : null
       return fe !== null && hoy > fe
     })
     const vencido = vencidas.reduce((s, f) => s + (f.total ?? 0), 0)
     return { total, pendiente, vencido, nVencidas: vencidas.length, n: base.length }
-  }, [facturas, emisor]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [facturas, emisor, ciclo.diaLimite]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function toggleCobro(f: FacturaEmitida) {
     setSaving(f.id)
@@ -133,7 +129,7 @@ export default function FacturacionEmitida() {
 
       {pestana === 'cobros' && kpis.nVencidas > 0 && (
         <AvisoNeo>
-          CADE TE DEBE {fmtEur(kpis.vencido)} FUERA DE PLAZO · {kpis.nVencidas} factura{kpis.nVencidas > 1 ? 's' : ''} sin cobrar pasado el día 15. Reclamar ya.
+          CADE TE DEBE {fmtEur(kpis.vencido)} FUERA DE PLAZO · {kpis.nVencidas} factura{kpis.nVencidas > 1 ? 's' : ''} sin cobrar pasado el día {ciclo.diaLimite}. Reclamar ya.
         </AvisoNeo>
       )}
 
@@ -142,7 +138,9 @@ export default function FacturacionEmitida() {
       <Banda bg={ARENA_CL}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 18 }}>
           <KpiNeo label="Pendiente de cobro" valor={fmtEur(kpis.pendiente)} color={CELESTE} sub="Lo que te debe Cade hoy" />
-          <KpiNeo label="Vencido · pasado día 15" valor={fmtEur(kpis.vencido)} color={kpis.vencido > 0 ? TERRA : OLIVA} sub={`${kpis.nVencidas} facturas`} />
+          {ciclo.diaLimite
+            ? <KpiNeo label={`Vencido · pasado día ${ciclo.diaLimite}`} valor={fmtEur(kpis.vencido)} color={kpis.vencido > 0 ? TERRA : OLIVA} sub={`${kpis.nVencidas} facturas`} />
+            : <KpiNeo label="Plazo de cobro" valor="Sin confirmar" color={GRIS} sub="Confírmalo en Liquidaciones Cade" />}
           <KpiNeo label="Cobrado" valor={fmtEur(kpis.total - kpis.pendiente)} color={OLIVA} />
           <KpiNeo label="Facturado total" valor={fmtEur(kpis.total)} sub={`${kpis.n} facturas`} />
         </div>
@@ -166,7 +164,7 @@ export default function FacturacionEmitida() {
               <tr><td colSpan={12} style={{ ...tdNeo(false), textAlign: 'center', color: GRIS, padding: 32 }}>Sin facturas para este filtro.</td></tr>
             )}
             {visibles.map((f, i) => {
-              const fe = fechaEsperadaCobro(f)
+              const fe = f.cliente?.toUpperCase().includes('CADE') ? fechaLimiteCobro(f.periodo, ciclo.diaLimite) : null
               const vencida = f.estado === 'PENDIENTE' && fe !== null && hoy > fe
               const alt = i % 2 === 1
               const estadoColor = f.estado === 'COBRADA' ? OLIVA : vencida ? TERRA : NARANJA

@@ -38,6 +38,9 @@
 - 6 módulos mapeados desde Binagre pendientes de adaptar: facturas+OCR · liquidación Cade · rentabilidad por supermercado/ruta · conciliación bancaria · dashboard KPI · importación extractos. Orden de arranque: pendiente de decisión del usuario.
 - Documentación contaminada de Binagre en este repo: pendiente de limpieza.
 - Drive David: carpeta "00 CORRECAMINOS" (subcarpetas: pólizas seguros, ITV, empleados, fotos furgonetas). IDs en Notion 99 Claude.
+- Ciclo de pago de Cade: NO está escrito en código. Vive en la tabla `configuracion` (claves `cade_ciclo_pago_texto`, `cade_dia_cobro_limite`), se edita desde Liquidaciones Cade y lo leen Panel, Liquidaciones y Facturación (`src/lib/configCade.ts`).
+- Robots nocturnos (banco, cartero, saldos): salud en `robot_salud`/`robot_log`; la pestaña Hoy avisa si uno lleva ≥2 días parado o una conexión bancaria caduca en ≤15 días; función `aviso_robots()` manda WhatsApp a las 09:15 (cron `aviso-robots-diario`).
+- Carga por pantallas: `App.tsx` usa `lazy()` por ruta (solo Login y Panel global van en el bloque inicial).
 - Mantener este mapa actualizado.
 
 ## Errores ya cometidos — PROHIBIDO repetir

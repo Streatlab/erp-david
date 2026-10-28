@@ -1,39 +1,45 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from '@/context/AuthContext'
 import Layout from '@/components/Layout'
 import Login from '@/pages/Login'
 import PanelGlobal from '@/pages/PanelGlobal'
-import Entregas from '@/pages/Entregas'
-import Conciliacion from '@/pages/Conciliacion'
-import Flota from '@/pages/Flota'
-import FurgonetaDetalle from '@/pages/FurgonetaDetalle'
-import Reposicion from '@/pages/flota/Reposicion'
-import BancosPage from '@/pages/configuracion/bancos/BancosPage'
-import Running from '@/pages/finanzas/Running'
-import RunningFamilia from '@/pages/finanzas/RunningFamilia'
-import DocumentacionCade from '@/pages/finanzas/DocumentacionCade'
-import FacturacionEmitida from '@/pages/finanzas/FacturacionEmitida'
-import Liquidaciones from '@/pages/finanzas/Liquidaciones'
-import PagosCobros from '@/pages/finanzas/PagosCobros'
-import PuntoEquilibrio from '@/pages/finanzas/PuntoEquilibrio'
-import Ventas from '@/pages/finanzas/Ventas'
-import Escenarios from '@/pages/finanzas/Escenarios'
-import ReclamacionesCade from '@/pages/ReclamacionesCade'
-import Papeleo from '@/pages/Papeleo'
-import Tareas from '@/pages/Tareas'
-import Personas from '@/pages/equipo/Personas'
-import Organigrama from '@/pages/equipo/Organigrama'
-import Presencia from '@/pages/equipo/Presencia'
-import CalendarioLaboral from '@/pages/equipo/CalendarioLaboral'
-import Checklists from '@/pages/operaciones/Checklists'
-import Manuales from '@/pages/operaciones/Manuales'
-import LibroEquipos from '@/pages/operaciones/LibroEquipos'
-import DanosVehiculos from '@/pages/operaciones/DanosVehiculos'
-import Mantenimiento from '@/pages/operaciones/Mantenimiento'
-import Informes from '@/pages/informes/Informes'
-import InformesEquipo from '@/pages/informes/InformesEquipo'
-import Usuarios from '@/pages/configuracion/Usuarios'
-import Placeholder from '@/pages/Placeholder'
+const Entregas = lazy(() => import('@/pages/Entregas'))
+const Conciliacion = lazy(() => import('@/pages/Conciliacion'))
+const Flota = lazy(() => import('@/pages/Flota'))
+const FurgonetaDetalle = lazy(() => import('@/pages/FurgonetaDetalle'))
+const Reposicion = lazy(() => import('@/pages/flota/Reposicion'))
+const BancosPage = lazy(() => import('@/pages/configuracion/bancos/BancosPage'))
+const Running = lazy(() => import('@/pages/finanzas/Running'))
+const RunningFamilia = lazy(() => import('@/pages/finanzas/RunningFamilia'))
+const DocumentacionCade = lazy(() => import('@/pages/finanzas/DocumentacionCade'))
+const FacturacionEmitida = lazy(() => import('@/pages/finanzas/FacturacionEmitida'))
+const Liquidaciones = lazy(() => import('@/pages/finanzas/Liquidaciones'))
+const PagosCobros = lazy(() => import('@/pages/finanzas/PagosCobros'))
+const PuntoEquilibrio = lazy(() => import('@/pages/finanzas/PuntoEquilibrio'))
+const Ventas = lazy(() => import('@/pages/finanzas/Ventas'))
+const Escenarios = lazy(() => import('@/pages/finanzas/Escenarios'))
+const ReclamacionesCade = lazy(() => import('@/pages/ReclamacionesCade'))
+const Papeleo = lazy(() => import('@/pages/Papeleo'))
+const Tareas = lazy(() => import('@/pages/Tareas'))
+const Personas = lazy(() => import('@/pages/equipo/Personas'))
+const Organigrama = lazy(() => import('@/pages/equipo/Organigrama'))
+const Presencia = lazy(() => import('@/pages/equipo/Presencia'))
+const CalendarioLaboral = lazy(() => import('@/pages/equipo/CalendarioLaboral'))
+const Checklists = lazy(() => import('@/pages/operaciones/Checklists'))
+const Manuales = lazy(() => import('@/pages/operaciones/Manuales'))
+const LibroEquipos = lazy(() => import('@/pages/operaciones/LibroEquipos'))
+const DanosVehiculos = lazy(() => import('@/pages/operaciones/DanosVehiculos'))
+const Mantenimiento = lazy(() => import('@/pages/operaciones/Mantenimiento'))
+const Informes = lazy(() => import('@/pages/informes/Informes'))
+const InformesEquipo = lazy(() => import('@/pages/informes/InformesEquipo'))
+const Usuarios = lazy(() => import('@/pages/configuracion/Usuarios'))
+const Placeholder = lazy(() => import('@/pages/Placeholder'))
+
+/* Cada pantalla se descarga la primera vez que se abre (antes iba toda la app en un bloque de 1,7 MB) */
+function Cargando() {
+  return <div style={{ padding: 24, fontFamily: "'Oswald', sans-serif", fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', fontSize: 13 }}>Cargando…</div>
+}
 
 function ProtectedRoute({ children, solo }: { children: React.ReactNode; solo?: string[] }) {
   const { usuario, estado } = useAuth()
@@ -53,6 +59,7 @@ function AppRoutes() {
   const { usuario } = useAuth()
 
   return (
+    <Suspense fallback={<Cargando />}>
     <Routes>
       <Route path="/login" element={usuario ? <Navigate to="/" replace /> : <Login />} />
       <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
@@ -111,6 +118,7 @@ function AppRoutes() {
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </Suspense>
   )
 }
 

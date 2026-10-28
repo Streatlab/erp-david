@@ -1,6 +1,7 @@
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend } from 'recharts'
 import { useThemeMode, getTokens, FONT, FS } from '@/styles/tokens'
 import { CardBase, Label, fmtMoney } from './shared'
+import { TERRA } from '@/styles/neobrutal'
 import type { BarraSemana } from '@/lib/panel/queries'
 
 interface Props { data: BarraSemana[] }
@@ -32,7 +33,7 @@ export default function GraficoIngresosVsGastos({ data }: Props) {
             />
             <Legend wrapperStyle={{ fontFamily: FONT.body, fontSize: FS.xs }} />
             <Bar dataKey="ingresos" name="Ingresos" fill="#2D7A4F" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="gastos"   name="Gastos"   fill="#A32D2D" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="gastos"   name="Gastos"   fill={TERRA} radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
