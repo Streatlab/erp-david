@@ -62,6 +62,7 @@ const SECTIONS: NavSection[] = [
     items: [
       { path: '/finanzas/facturacion',  label: 'Facturación',         perfiles: ['admin'] },
       { path: '/finanzas/liquidaciones',label: 'Liquidaciones Cade',  perfiles: ['admin'] },
+      { path: '/entregas',              label: 'Rutas y margen',      perfiles: ['admin'] },
       { path: '/conciliacion',          label: 'Conciliación',        perfiles: ['admin'] },
       { path: '/finanzas/documentacion', label: 'Documentación Cade', perfiles: ['admin'] },
       { path: '/reclamaciones',         label: 'Reclamaciones Cade',  perfiles: ['admin'] },
@@ -79,7 +80,6 @@ const SECTIONS: NavSection[] = [
     key: 'furgonetas', label: 'Furgonetas', icon: Truck, iconColor: NARANJA, perfiles: ['admin'],
     items: [
       { path: '/flota',             label: 'Flota',             perfiles: ['admin'] },
-      { path: '/entregas',          label: 'Entregas',          perfiles: ['admin'] },
       { path: '/flota/reposicion',  label: 'Fondo reposición',  perfiles: ['admin'] },
       { path: '/danos-vehiculos',   label: 'Daños vehículos',   perfiles: ['admin'] },
       { path: '/mantenimiento',     label: 'Mantenimiento',     perfiles: ['admin'] },
