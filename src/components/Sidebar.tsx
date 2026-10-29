@@ -60,6 +60,8 @@ const SECTIONS: NavSection[] = [
   {
     key: 'dinero', label: 'Dinero', icon: Wallet, iconColor: CELESTE, perfiles: ['admin'],
     items: [
+      { path: '/finanzas/cierre',       label: 'Cierre de mes',       perfiles: ['admin'] },
+      { path: '/finanzas/caja',         label: 'Previsión de caja',   perfiles: ['admin'] },
       { path: '/finanzas/facturacion',  label: 'Facturación',         perfiles: ['admin'] },
       { path: '/finanzas/liquidaciones',label: 'Liquidaciones Cade',  perfiles: ['admin'] },
       { path: '/entregas',              label: 'Rutas y margen',      perfiles: ['admin'] },
@@ -110,6 +112,8 @@ const SECTIONS: NavSection[] = [
 /* Icono propio para CADA módulo (como en Binagre). */
 const ICON_ROUTE: Record<string, LucideIcon> = {
   '/papeleo': FileText,
+  '/finanzas/cierre': CheckCheck,
+  '/finanzas/caja': TrendingUp,
   '/finanzas/facturacion': Receipt,
   '/finanzas/ventas': TrendingUp,
   '/finanzas/liquidaciones': Wallet,

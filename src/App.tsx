@@ -15,6 +15,8 @@ const RunningFamilia = lazy(() => import('@/pages/finanzas/RunningFamilia'))
 const DocumentacionCade = lazy(() => import('@/pages/finanzas/DocumentacionCade'))
 const FacturacionEmitida = lazy(() => import('@/pages/finanzas/FacturacionEmitida'))
 const Liquidaciones = lazy(() => import('@/pages/finanzas/Liquidaciones'))
+const CierreMes = lazy(() => import('@/pages/finanzas/CierreMes'))
+const PrevisionCaja = lazy(() => import('@/pages/finanzas/PrevisionCaja'))
 const PagosCobros = lazy(() => import('@/pages/finanzas/PagosCobros'))
 const PuntoEquilibrio = lazy(() => import('@/pages/finanzas/PuntoEquilibrio'))
 const Ventas = lazy(() => import('@/pages/finanzas/Ventas'))
@@ -65,6 +67,8 @@ function AppRoutes() {
         <Route path="finanzas/facturacion"   element={<ProtectedRoute solo={['admin']}><FacturacionEmitida /></ProtectedRoute>} />
         <Route path="finanzas/ventas"        element={<ProtectedRoute solo={['admin']}><Ventas /></ProtectedRoute>} />
         <Route path="finanzas/liquidaciones" element={<ProtectedRoute solo={['admin']}><Liquidaciones /></ProtectedRoute>} />
+        <Route path="finanzas/cierre"        element={<ProtectedRoute solo={['admin']}><CierreMes /></ProtectedRoute>} />
+        <Route path="finanzas/caja"          element={<ProtectedRoute solo={['admin']}><PrevisionCaja /></ProtectedRoute>} />
         <Route path="finanzas/pagos-cobros"  element={<ProtectedRoute solo={['admin']}><PagosCobros /></ProtectedRoute>} />
         <Route path="punto-equilibrio"       element={<ProtectedRoute solo={['admin']}><PuntoEquilibrio /></ProtectedRoute>} />
         <Route path="running"                element={<ProtectedRoute solo={['admin']}><Running /></ProtectedRoute>} />
