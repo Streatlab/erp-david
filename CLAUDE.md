@@ -45,7 +45,7 @@
 - Dinero: Cierre de mes (`/finanzas/cierre`, 5 pasos), Previsión de caja (`/finanzas/caja`, lib `previsionCaja.ts`), Rutas y margen (`/entregas`, lib `margenRutas.ts`: repartidores, rutas, furgonetas, precio mínimo y simulador), Liquidaciones con estado/alertas/cuadre (lib `liquidacionCade.ts`), Reclamaciones con "Reclamar a Cade en un clic" (envios_cade tipo reclamacion + mailto).
 - Portal del repartidor (`/portal`, `src/pages/portal/Portal.tsx`): perfil `repartidor` solo ve su portal (Layout sin menú); admin lo ve "como" cualquier conductor; pantallas por persona en Configuración ▸ Usuarios. RLS por rol en la base (migración 20261029_s6). Los repartidores necesitan correo en `usuarios` para poder entrar.
 - Hoy avisa de desviaciones por repartidor (lib `desviaciones.ts`: última semana vs 8 anteriores).
-- Robots ya desplegados en Supabase pero NO en el repo: liquidacion-parser, facturas-paquete, aviso-documentacion, banco-saldos, banco-auth, correo-auth, correo-imap.
+- Robots (Supabase Edge Functions): copia en `supabase/functions/` con README de qué hace cada uno y su cron. Fuente de verdad: lo desplegado. Fuera del repo a propósito: plantillas-montar/cargar/prior (cargas únicas con datos fiscales embebidos) y banco-diag.
 - Mantener este mapa actualizado.
 
 ## Errores ya cometidos — PROHIBIDO repetir

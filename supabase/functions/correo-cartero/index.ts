@@ -2,10 +2,10 @@
 // Lee el buzón de David (permiso guardado por correo-auth), clasifica con correo_reglas,
 // guarda en correo_entrante y los adjuntos en Storage (bucket privado "correo").
 // liquidacion → queda lista para liquidacion-parser (T6) · penalizacion → abre reclamación Cade.
-// ?llave=david-correo-2026[&dias=N]
+// ?llave=<llave>[&dias=N]
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
-const LLAVE = 'david-correo-2026';
+const LLAVE = Deno.env.get('LLAVE_CORREO') ?? ''; // la llave no se guarda en el repo (ver README)
 const GMAIL = 'https://gmail.googleapis.com/gmail/v1/users/me';
 const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 const log = (estado: string, detalle: string) => sb.from('robot_log').insert([{ fuente: 'cartero', estado, detalle: detalle.slice(0, 500) }]);
@@ -57,7 +57,7 @@ const cabecera = (m: any, n: string) => (m.payload?.headers ?? []).find((h: any)
 
 Deno.serve(async (req: Request) => {
   const url = new URL(req.url);
-  if (url.searchParams.get('llave') !== LLAVE) return new Response('no', { status: 401 });
+  if (!LLAVE || url.searchParams.get('llave') !== LLAVE) return new Response('no', { status: 401 });
   const res = { leidos: 0, guardados: 0, adjuntos: 0, reclamaciones: 0, liquidaciones: 0, avisos: [] as string[] };
   try {
     const { token, buzon } = await accessToken();
