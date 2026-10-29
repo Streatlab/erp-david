@@ -3,9 +3,8 @@ import { supabase } from '@/lib/supabase'
 
 /* Ciclo de pago de Cade. Vive en la tabla de configuración y nunca se escribe a mano en pantalla.
    Mientras Rubén no lo confirme, las claves están vacías y el ERP dice "pendiente de confirmar". */
-export const CLAVE_TEXTO = 'cade_ciclo_pago_texto'
-export const CLAVE_DIA = 'cade_dia_cobro_limite'
-export const TEXTO_SIN_CONFIRMAR = 'Ciclo de pago de Cade pendiente de confirmar.'
+import { CLAVE_TEXTO, CLAVE_DIA } from '@/lib/cicloPagoCade'
+export { CLAVE_TEXTO, CLAVE_DIA, TEXTO_SIN_CONFIRMAR, fechaLimiteCobro } from '@/lib/cicloPagoCade'
 
 export interface CicloPagoCade { texto: string | null; diaLimite: number | null; cargando: boolean }
 
@@ -37,13 +36,4 @@ export async function guardarCicloPagoCade(texto: string, diaLimite: number | nu
   ]
   const { error } = await supabase.from('configuracion').upsert(filas, { onConflict: 'clave' })
   return error ? error.message : null
-}
-
-/* Fecha límite de cobro de una factura de Cade a partir del mes trabajado: el día límite del mes siguiente.
-   Sin día confirmado no hay fecha límite y nada se marca como vencido. */
-export function fechaLimiteCobro(periodo: string | null | undefined, diaLimite: number | null): Date | null {
-  if (!periodo || !diaLimite) return null
-  const p = new Date(periodo + 'T00:00:00')
-  if (isNaN(p.getTime())) return null
-  return new Date(p.getFullYear(), p.getMonth() + 1, diaLimite)
 }
