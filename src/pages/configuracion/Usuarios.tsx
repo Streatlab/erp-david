@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { fmtDate } from '@/lib/format'
 import { INK, ARENA, BLANCO, GRIS, OLIVA, TERRA, NARANJA, CELESTE, AMBAR, OSW, LEX, BORDER_CARD } from '@/styles/neobrutal'
 import { PageNeo, CabeceraNeo, Banda, TablaWrap, thNeo, tdNeo, tdEstado, BotonNeo, BadgeNeo, AvisoNeo, HeroNeo } from '@/components/neo/NeoUI'
+import PermisosPortal from '@/components/configuracion/PermisosPortal'
 import { campo, Etiqueta } from '@/components/flota/FormFlota'
 
 /* Usuarios reales: lista blanca de correos que pueden entrar al ERP (Google, enlace o PIN por dispositivo). */
@@ -140,6 +141,8 @@ export default function Usuarios() {
           )}
         </Banda>
       )}
+      <PermisosPortal repartidores={usuarios.filter(u => u.perfil === 'repartidor' && u.activo).map(u => ({ id: u.id, nombre: u.nombre }))} />
+
     </PageNeo>
   )
 }

@@ -8,26 +8,32 @@ import EstrellaPantalla from '@/components/neo/EstrellaPantalla'
 import { PeriodoProvider } from '@/lib/periodoGlobal'
 import { FavoritosProvider } from '@/lib/favoritos'
 import { ARENA, INK, MARINO, OSW } from '@/styles/neobrutal'
-
-/* Papel mediterráneo: arena cálida con trama de puntos celeste + terracota.
-   Da vida al fondo sin restar legibilidad (los bloques la tapan en contenido). */
-const PAPEL_MEDITERRANEO = {
-  backgroundColor: '#F3E4C6',
-  backgroundImage:
-    'radial-gradient(rgba(45,125,210,0.13) 1.6px, transparent 1.7px), radial-gradient(rgba(201,74,44,0.10) 1.6px, transparent 1.7px)',
-  backgroundSize: '26px 26px, 26px 26px',
-  backgroundPosition: '0 0, 13px 13px',
-}
+import { useAuth } from '@/context/AuthContext'
 
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const { usuario, logout } = useAuth()
+
+  /* Repartidor: solo su portal, sin menú de administración ni selector de periodo */
+  if (usuario?.perfil === 'repartidor') {
+    return (
+      <div className="min-h-screen" style={{ backgroundColor: ARENA, color: INK, fontFamily: "'Lexend', sans-serif" }}>
+        <header className="h-12 flex items-center px-4" style={{ background: MARINO, borderBottom: `4px solid ${INK}` }}>
+          <img src="/logo-davidreparte.svg" alt="David Reparte" style={{ height: 28, width: 'auto' }} />
+          <span className="ml-3" style={{ color: ARENA, fontFamily: OSW, fontSize: 13, letterSpacing: '2px', textTransform: 'uppercase', fontWeight: 600 }}>David Reparte</span>
+          <button onClick={logout} className="ml-auto" style={{ color: ARENA, background: 'none', border: 'none', cursor: 'pointer', fontFamily: OSW, fontSize: 12, letterSpacing: 1, textTransform: 'uppercase', fontWeight: 700 }}>Salir</button>
+        </header>
+        <main><Outlet /></main>
+      </div>
+    )
+  }
 
   return (
     <PeriodoProvider>
     <FavoritosProvider>
     <div
       className="flex h-screen"
-      style={{ ...PAPEL_MEDITERRANEO, color: INK, fontFamily: "'Lexend', sans-serif" }}
+      style={{ backgroundColor: ARENA, color: INK, fontFamily: "'Lexend', sans-serif" }}
     >
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
@@ -68,7 +74,7 @@ export default function Layout() {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-6" style={PAPEL_MEDITERRANEO}>
+        <main className="flex-1 overflow-y-auto p-4 md:p-6" style={{ backgroundColor: ARENA }}>
           <Outlet />
         </main>
       </div>

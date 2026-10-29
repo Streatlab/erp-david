@@ -1,0 +1,14 @@
+-- S6 · Portal del repartidor (29-oct-2026). Aplicado en producción vía conector Supabase.
+-- 1) mi_perfil(): id, nombre, perfil, email y conductor_id del usuario identificado (el cliente la usa al entrar).
+-- 2) mi_usuario_id(), mi_conductor_id(), mi_nombre_repartidor(): helpers security definer para las políticas.
+-- 3) RLS por rol en todas las tablas con política para authenticated:
+--    · admin (es_admin()): todo.
+--    · repartidor: solo lo suyo → kilometros, furgonetas_partes_km, solicitudes_permisos, acuerdos_empleado,
+--      empleado_documentos, furgonetas_incidencias, furgonetas_revisiones_visuales (conductor_id = mi_conductor_id());
+--      incentivos_reglas y avisos_portal (generales o suyos); permisos_portal/favoritos/uso_pantallas (su usuario);
+--      conductores (su ficha), furgonetas y sus itv/seguros/mantenimientos/fotos/documentos (su furgoneta);
+--      emisores_transportistas, liquidaciones_cade_entregas y _lineas (sus códigos). Lectura libre: festivos, checklists, manuales.
+--    · escritura del repartidor solo en: kilometros, partes_km, solicitudes, incidencias, revisiones, fotos, favoritos, uso, ejecuciones de checklist y aceptar sus acuerdos.
+-- 4) accesos_pin / accesos_huella: lectura para admin (pantalla Usuarios).
+-- Verificado: con el correo de Rubén se ven 2.984 movimientos, 38 liquidaciones, 4 furgonetas; con un correo desconocido, 0 filas.
+select 1;

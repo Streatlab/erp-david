@@ -1,11 +1,20 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { fmtEur } from '@/lib/format'
-import { OLIVA, NARANJA, TERRA, CELESTE, GRIS, ARENA_CL, BLANCO, ARENA, INK, OSW } from '@/styles/neobrutal'
+import { OLIVA, NARANJA, TERRA, GRIS, BLANCO, INK, OSW, AMBAR, CELESTE, ARENA_CL } from '@/styles/neobrutal'
 import {
-  PageNeo, Banda, CabeceraNeo, HeroNeo, KpiNeo, AvisoNeo,
+  PageNeo, Banda, CabeceraNeo, HeroNeo, AvisoNeo,
   TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo,
 } from '@/components/neo/NeoUI'
+import CicloPagoCade from '@/components/facturacion/CicloPagoCade'
+import { cuadrar } from '@/lib/liquidacionCade'
+
+/* Estado que escribe el robot lector: qué significa para David y de qué color va */
+const ESTADO_LIQ: Record<string, { txt: string; color: string }> = {
+  recibida: { txt: 'Recibida', color: AMBAR }, leida: { txt: 'Leída', color: AMBAR }, cuadrada: { txt: 'Cuadrada', color: OLIVA },
+  facturada: { txt: 'Facturada', color: CELESTE }, facturada_fuera_erp: { txt: 'Facturada fuera', color: GRIS },
+  enviada: { txt: 'Enviada', color: CELESTE }, cobrada: { txt: 'Cobrada', color: OLIVA }, error_cuadre: { txt: 'No cuadra', color: TERRA },
+}
 
 interface Liquidacion {
   id: string
@@ -18,6 +27,9 @@ interface Liquidacion {
   recortes: number | null
   recortes_detalle: string | null
   total: number | null
+  total_pdf: number | null
+  estado: string | null
+  alertas: string[] | null
   factura_id: string | null
 }
 
@@ -62,9 +74,7 @@ export default function Liquidaciones() {
   return (
     <PageNeo>
       <CabeceraNeo eyebrowTxt="Finanzas" titulo="Liquidaciones Cade">
-        <div style={{ fontSize: 13, fontWeight: 600, color: ARENA, opacity: 0.85, maxWidth: 380 }}>
-          Una liquidación mensual por transportista. Cade paga el 10–15 del mes siguiente.
-        </div>
+        <CicloPagoCade prefijo="Una liquidación mensual por transportista. " />
       </CabeceraNeo>
 
       <HeroNeo
@@ -75,6 +85,7 @@ export default function Liquidaciones() {
         color={loading || liqs.length === 0 ? undefined : kpis.recortes !== 0 ? NARANJA : OLIVA}
         apoyo={liqs.length === 0 ? undefined : [
           { label: 'Entregas', valor: fmtNum(kpis.entregas) },
+          { label: 'Complementos mínimo', valor: fmtEur(kpis.complementos) },
           { label: 'Recortes', valor: fmtEur(kpis.recortes) },
         ]}
       />
@@ -87,58 +98,57 @@ export default function Liquidaciones() {
         </AvisoNeo>
       )}
 
-      {/* KPIs: ¿qué me paga y qué me recorta Cade? */}
-      <Banda bg={ARENA_CL}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 18 }}>
-          <KpiNeo label="Total liquidado" valor={fmtEur(kpis.total)} color={OLIVA} />
-          <KpiNeo label="Entregas" valor={fmtNum(kpis.entregas)} />
-          <KpiNeo label="Complementos mínimo" valor={fmtEur(kpis.complementos)} color={CELESTE} />
-          <KpiNeo label="Recortes detectados" valor={fmtEur(kpis.recortes)} color={kpis.recortes !== 0 ? TERRA : OLIVA} sub={kpis.recortes !== 0 ? 'Dinero que te quitan' : 'Sin recortes'} />
-        </div>
-      </Banda>
-
       <Banda bg={BLANCO}>
         <TablaWrap>
           <thead>
             <tr>
-              {['Mes', 'Transportista', 'Emisor', 'Entregas', 'Importe entregas', 'Complemento', 'Recortes', 'Total', 'Factura'].map(h => (
+              {['Mes', 'Transportista', 'Emisor', 'Entregas', 'Importe entregas', 'Complemento', 'Recortes', 'Total', 'Estado', 'Alertas', 'Factura'].map(h => (
                 <th key={h} style={thNeo}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={9} style={{ ...tdNeo(false), textAlign: 'center', color: GRIS, padding: 32 }}>Cargando…</td></tr>
+              <tr><td colSpan={11} style={{ ...tdNeo(false), textAlign: 'center', color: GRIS, padding: 32 }}>Cargando…</td></tr>
             )}
             {!loading && liqs.length === 0 && (
-              <tr><td colSpan={9} style={{ ...tdNeo(false), textAlign: 'center', color: GRIS, padding: 32 }}>Sin liquidaciones cargadas todavía.</td></tr>
+              <tr><td colSpan={11} style={{ ...tdNeo(false), textAlign: 'center', color: GRIS, padding: 32 }}>Sin liquidaciones cargadas todavía.</td></tr>
             )}
             {liqs.map((l, i) => {
               const alt = i % 2 === 1
               const hayRecortes = (l.recortes ?? 0) !== 0
-              const estadoColor = hayRecortes ? TERRA : OLIVA
+              const alertas = Array.isArray(l.alertas) ? l.alertas : []
+              const cuadre = cuadrar([{ fecha: '', entregas: 0, importe_entregas: 0, garantia_aplicada: 0, penalizacion: 0, penalizacion_motivo: null, extra: 0, total_linea: Number(l.total ?? 0) }], l.total_pdf)
+              const noCuadra = l.total_pdf != null && !cuadre.cuadra
+              const est = ESTADO_LIQ[l.estado ?? ''] ?? (l.estado ? { txt: l.estado, color: GRIS } : null)
+              const estadoColor = noCuadra ? TERRA : hayRecortes ? NARANJA : alertas.length ? AMBAR : OLIVA
+              const abrible = hayRecortes || alertas.length > 0 || noCuadra
               const open = abierta === l.id
               return (
                 <FragmentRow key={l.id}>
-                  <tr onClick={hayRecortes ? () => setAbierta(open ? null : l.id) : undefined} style={{ cursor: hayRecortes ? 'pointer' : 'default' }}>
+                  <tr onClick={abrible ? () => setAbierta(open ? null : l.id) : undefined} style={{ cursor: abrible ? 'pointer' : 'default' }}>
                     <td style={{ ...tdEstado(alt, estadoColor), fontFamily: OSW, fontWeight: 700, textTransform: 'capitalize' }}>{fmtMes(l.mes)}</td>
                     <td style={tdNeo(alt)}>{l.transportista ?? '—'}</td>
                     <td style={tdNeo(alt)}>
-                      <BadgeNeo color={(l.emisor ?? '').toUpperCase() === 'JUAN' ? '#F5B84A' : '#16355C'}>{l.emisor ?? '—'}</BadgeNeo>
+                      <BadgeNeo color={(l.emisor ?? '').toUpperCase() === 'JUAN' ? AMBAR : '#16355C'}>{l.emisor ?? '—'}</BadgeNeo>
                     </td>
                     <td style={{ ...tdNeo(alt), textAlign: 'right' }}>{fmtNum(l.entregas)}</td>
                     <td style={{ ...tdNeo(alt), textAlign: 'right' }}>{fmtEur(l.importe_entregas)}</td>
                     <td style={{ ...tdNeo(alt), textAlign: 'right' }}>{fmtEur(l.complemento_minimo)}</td>
                     <td style={{ ...tdNeo(alt), textAlign: 'right', color: hayRecortes ? TERRA : GRIS, fontFamily: OSW, fontWeight: hayRecortes ? 700 : 600 }}>
-                      {hayRecortes ? `${fmtEur(l.recortes)} ${open ? '▾' : '▸'}` : '—'}
+                      {hayRecortes ? fmtEur(l.recortes) : '—'}
                     </td>
-                    <td style={{ ...tdNeo(alt), textAlign: 'right', fontFamily: OSW, fontWeight: 700, fontSize: 15 }}>{fmtEur(l.total)}</td>
-                    <td style={tdNeo(alt)}>{l.factura_id ? <BadgeNeo color={OLIVA}>VINCULADA</BadgeNeo> : <span style={{ color: GRIS }}>—</span>}</td>
+                    <td style={{ ...tdNeo(alt), textAlign: 'right', fontFamily: OSW, fontWeight: 700, fontSize: 15, color: noCuadra ? TERRA : INK }}>{fmtEur(l.total)}</td>
+                    <td style={tdNeo(alt)}>{noCuadra ? <BadgeNeo color={TERRA}>No cuadra</BadgeNeo> : est ? <BadgeNeo color={est.color}>{est.txt}</BadgeNeo> : <span style={{ color: GRIS }}>—</span>}</td>
+                    <td style={tdNeo(alt)}>{alertas.length ? <BadgeNeo color={AMBAR}>{alertas.length} {open ? '▾' : '▸'}</BadgeNeo> : <span style={{ color: GRIS }}>—</span>}</td>
+                    <td style={tdNeo(alt)}>{l.factura_id ? <BadgeNeo color={OLIVA}>Vinculada</BadgeNeo> : <span style={{ color: GRIS }}>—</span>}</td>
                   </tr>
-                  {open && l.recortes_detalle && (
+                  {open && (
                     <tr>
-                      <td colSpan={9} style={{ padding: '12px 16px', background: TERRA, color: ARENA, fontSize: 12, fontWeight: 600, whiteSpace: 'pre-wrap', borderBottom: `3px solid ${INK}` }}>
-                        {l.recortes_detalle}
+                      <td colSpan={11} style={{ padding: '12px 16px', background: ARENA_CL, color: INK, fontSize: 12, fontWeight: 600, whiteSpace: 'pre-wrap', borderBottom: `3px solid ${INK}` }}>
+                        {noCuadra && <div style={{ color: TERRA, marginBottom: 6 }}>No cuadra: el ERP suma {fmtEur(cuadre.sumaLineas)} y el PDF de Cade dice {fmtEur(l.total_pdf)} (diferencia {fmtEur(cuadre.diferencia)}). No facturar hasta aclararlo.</div>}
+                        {alertas.map((a, k) => <div key={k}>• {a}</div>)}
+                        {l.recortes_detalle && <div style={{ marginTop: alertas.length ? 8 : 0, color: TERRA }}>{l.recortes_detalle}</div>}
                       </td>
                     </tr>
                   )}

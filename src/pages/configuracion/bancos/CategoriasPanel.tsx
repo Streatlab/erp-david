@@ -420,7 +420,7 @@ export default function CategoriasPanel() {
                 <input
                   value={form.canal_abv}
                   onChange={e => setForm(f => ({ ...f, canal_abv: e.target.value }))}
-                  placeholder="UBER / GLOVO / ..."
+                  placeholder="CADE / PRIOR / PORTES"
                   style={inputStyle(T)}
                 />
               </Field>

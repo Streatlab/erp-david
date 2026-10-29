@@ -4,12 +4,14 @@
 //     subcuenta sin historico), se repite la descarga acotada a 89 dias en vez de fallar.
 // v4 (T2): respeta el interruptor Descargar de cada cuenta (las cuentas nuevas se dan de alta solas),
 //     cuentas Personales sin regla van a "Pendiente revisar (personal)" y se guarda la cuenta de origen.
+// v5 (05-oct-2026): cada regla puede fijar subcategoria y comercio (Running Familia), y las reglas de INGRESO
+//     solo se aplican a importes positivos.
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 const API = 'https://api.enablebanking.com';
-const LLAVE = 'david-banco-2026';
+const LLAVE = Deno.env.get('LLAVE_BANCO') ?? ''; // la llave no se guarda en el repo (ver README)
 const INICIO = '2026-04-28';
-const ENLACE = 'https://rribmludsuirmyprfkop.supabase.co/functions/v1/banco-auth?llave=david-banco-2026&accion=iniciar&banco=';
+const ENLACE = `https://rribmludsuirmyprfkop.supabase.co/functions/v1/banco-auth?llave=${LLAVE}&accion=iniciar&banco=`;
 const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
 const b64url = (b: ArrayBuffer | Uint8Array) => {
@@ -119,9 +121,9 @@ async function cuentasConocidas(): Promise<Map<string, Cuenta>> {
 }
 
 async function volcar(cuentas: Map<string, Cuenta>) {
-  const { data: reglas } = await sb.from('reglas_conciliacion').select('patron, categoria_codigo, prioridad').eq('activa', true);
+  const { data: reglas } = await sb.from('reglas_conciliacion').select('patron, categoria_codigo, prioridad, tipo_categoria, subcategoria, comercio').eq('activa', true);
   const rs = (reglas ?? []).filter((r: any) => r.patron && r.categoria_codigo)
-    .map((r: any) => ({ p: norm(r.patron), c: r.categoria_codigo, pr: r.prioridad ?? 0 }))
+    .map((r: any) => ({ p: norm(r.patron), c: r.categoria_codigo, pr: r.prioridad ?? 0, t: r.tipo_categoria ?? null, s: r.subcategoria ?? null, co: r.comercio ?? null }))
     .sort((a: any, b: any) => b.pr - a.pr || b.p.length - a.p.length);
   const { data: filas } = await sb.from('banco_movimientos_raw').select('*').eq('volcado', false).gte('fecha', INICIO).order('fecha').limit(2000);
   let n = 0;
@@ -130,7 +132,8 @@ async function volcar(cuentas: Map<string, Cuenta>) {
     const cn = norm(m.concepto);
     const base = `${m.fecha}|${imp.toFixed(2)}|${(m.concepto ?? '').toLowerCase()}|`;
     const { count } = await sb.from('conciliacion').select('id', { count: 'exact', head: true }).like('dedup_key', `${base.replace(/[%_]/g, '\\$&')}%`);
-    const regla = rs.find((r: any) => r.p && cn.includes(r.p));
+    // v5: las reglas de INGRESO solo valen para importes positivos (las de gasto valen siempre: abonos y devoluciones)
+    const regla = rs.find((r: any) => r.p && cn.includes(r.p) && !(r.t === 'ingreso' && imp < 0));
     const personal = !!cuentas.get(m.cuenta_uid)?.personal;
     const sinRegla = personal
       ? (imp < 0 ? 'pendiente-personal-gasto' : 'pendiente-personal-ingreso')
@@ -138,6 +141,7 @@ async function volcar(cuentas: Map<string, Cuenta>) {
     const { error } = await sb.from('conciliacion').insert([{
       fecha: m.fecha, concepto: m.concepto, importe: imp, tipo: imp < 0 ? 'gasto' : 'ingreso',
       categoria: regla?.c ?? sinRegla,
+      subcategoria: regla?.s ?? null, comercio: regla?.co ?? null,
       mes: String(m.fecha).slice(0, 7), dedup_key: `${base}${count ?? 0}`,
       origen_efectivo: cn.startsWith('ret. efectivo') || cn.startsWith('retirada efectivo'),
       cuenta_origen: m.iban ?? m.cuenta_uid ?? null,
@@ -151,7 +155,7 @@ async function volcar(cuentas: Map<string, Cuenta>) {
 
 Deno.serve(async (req: Request) => {
   const url = new URL(req.url);
-  if (url.searchParams.get('llave') !== LLAVE) return new Response('no', { status: 401 });
+  if (!LLAVE || url.searchParams.get('llave') !== LLAVE) return new Response('no', { status: 401 });
   if (url.searchParams.get('prueba_whatsapp') === '1') {
     const r = await avisarWhatsapp('✅ ERP David · Prueba de avisos. Te llegará un mensaje así 15 días antes de que caduque la conexión de cada banco.');
     return new Response(JSON.stringify({ whatsapp: r }), { headers: { 'Content-Type': 'application/json' } });
