@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { fmtEur } from '@/lib/format'
-import { OLIVA, NARANJA, TERRA, CELESTE, GRIS, ARENA_CL, BLANCO, ARENA, INK, OSW } from '@/styles/neobrutal'
+import { OLIVA, NARANJA, TERRA, GRIS, BLANCO, ARENA, INK, OSW } from '@/styles/neobrutal'
 import {
-  PageNeo, Banda, CabeceraNeo, HeroNeo, KpiNeo, AvisoNeo,
+  PageNeo, Banda, CabeceraNeo, HeroNeo, AvisoNeo,
   TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo,
 } from '@/components/neo/NeoUI'
 import CicloPagoCade from '@/components/facturacion/CicloPagoCade'
@@ -74,6 +74,7 @@ export default function Liquidaciones() {
         color={loading || liqs.length === 0 ? undefined : kpis.recortes !== 0 ? NARANJA : OLIVA}
         apoyo={liqs.length === 0 ? undefined : [
           { label: 'Entregas', valor: fmtNum(kpis.entregas) },
+          { label: 'Complementos mínimo', valor: fmtEur(kpis.complementos) },
           { label: 'Recortes', valor: fmtEur(kpis.recortes) },
         ]}
       />
@@ -85,16 +86,6 @@ export default function Liquidaciones() {
           CADE TE HA RECORTADO {fmtEur(Math.abs(kpis.recortes))}. Clic en cada fila con recorte para ver el detalle y reclamar.
         </AvisoNeo>
       )}
-
-      {/* KPIs: ¿qué me paga y qué me recorta Cade? */}
-      <Banda bg={ARENA_CL}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 18 }}>
-          <KpiNeo label="Total liquidado" valor={fmtEur(kpis.total)} color={OLIVA} />
-          <KpiNeo label="Entregas" valor={fmtNum(kpis.entregas)} />
-          <KpiNeo label="Complementos mínimo" valor={fmtEur(kpis.complementos)} color={CELESTE} />
-          <KpiNeo label="Recortes detectados" valor={fmtEur(kpis.recortes)} color={kpis.recortes !== 0 ? TERRA : OLIVA} sub={kpis.recortes !== 0 ? 'Dinero que te quitan' : 'Sin recortes'} />
-        </div>
-      </Banda>
 
       <Banda bg={BLANCO}>
         <TablaWrap>

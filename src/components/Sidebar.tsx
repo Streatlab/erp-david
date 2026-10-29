@@ -40,7 +40,7 @@ import { useFavoritos } from '@/lib/favoritos'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import {
   OSW, INK, MARINO, ARENA, BLANCO, AMBAR, NARANJA,
-  CELESTE, OLIVA, BERENJENA, VERDEMAR,
+  CELESTE, OLIVA,
 } from '@/styles/neobrutal'
 
 interface NavItem { path: string; label: string; perfiles: string[] }
@@ -48,39 +48,38 @@ interface NavSection {
   key: string
   label: string
   icon: LucideIcon
-  headBg: string
-  headColor: string
+  iconColor: string
   perfiles: string[]
   items: NavItem[]
 }
 
-/* Estructura espejo de Binagre, adaptada a David. Bloques de color sólido sobre
-   sidebar marino. Comportamiento: hover-abre + auto-colapsa 20s + acordeón máx 2. */
+/* Menú por tareas, no por módulos: Hoy · Dinero · Furgonetas · Gente · Ajustes.
+   Bloques marino con icono de color por destino; el activo va en naranja (regla 60/30/10).
+   Comportamiento: hover-abre + auto-colapsa 20s + acordeón máx 2. */
 const SECTIONS: NavSection[] = [
   {
-    key: 'finanzas', label: 'Finanzas', icon: Wallet,
-    headBg: CELESTE, headColor: ARENA, perfiles: ['admin'],
+    key: 'dinero', label: 'Dinero', icon: Wallet, iconColor: CELESTE, perfiles: ['admin'],
     items: [
-      { path: '/papeleo',               label: 'Papeleo',             perfiles: ['admin'] },
       { path: '/finanzas/facturacion',  label: 'Facturación',         perfiles: ['admin'] },
-      { path: '/finanzas/ventas',       label: 'Ventas',              perfiles: ['admin'] },
-      { path: '/finanzas/liquidaciones',label: 'Liquidaciones',       perfiles: ['admin'] },
+      { path: '/finanzas/liquidaciones',label: 'Liquidaciones Cade',  perfiles: ['admin'] },
+      { path: '/conciliacion',          label: 'Conciliación',        perfiles: ['admin'] },
       { path: '/finanzas/documentacion', label: 'Documentación Cade', perfiles: ['admin'] },
+      { path: '/reclamaciones',         label: 'Reclamaciones Cade',  perfiles: ['admin'] },
       { path: '/finanzas/pagos-cobros', label: 'Pagos y Cobros',      perfiles: ['admin'] },
-      { path: '/punto-equilibrio',      label: 'Punto equilibrio',    perfiles: ['admin'] },
+      { path: '/papeleo',               label: 'Papeleo',             perfiles: ['admin'] },
       { path: '/running',               label: 'Running',             perfiles: ['admin'] },
       { path: '/finanzas/running-familia', label: 'Running Familia',  perfiles: ['admin'] },
+      { path: '/finanzas/ventas',       label: 'Ventas',              perfiles: ['admin'] },
+      { path: '/punto-equilibrio',      label: 'Punto equilibrio',    perfiles: ['admin'] },
       { path: '/finanzas/escenarios',   label: 'Escenarios',          perfiles: ['admin'] },
-      { path: '/conciliacion',          label: 'Conciliación',        perfiles: ['admin'] },
-      { path: '/reclamaciones',         label: 'Reclamaciones Cade',  perfiles: ['admin'] },
+      { path: '/informes',              label: 'Panel informes',      perfiles: ['admin'] },
     ],
   },
   {
-    key: 'operaciones', label: 'Operaciones', icon: Truck,
-    headBg: NARANJA, headColor: ARENA, perfiles: ['admin'],
+    key: 'furgonetas', label: 'Furgonetas', icon: Truck, iconColor: NARANJA, perfiles: ['admin'],
     items: [
-      { path: '/entregas',          label: 'Entregas',          perfiles: ['admin'] },
       { path: '/flota',             label: 'Flota',             perfiles: ['admin'] },
+      { path: '/entregas',          label: 'Entregas',          perfiles: ['admin'] },
       { path: '/flota/reposicion',  label: 'Fondo reposición',  perfiles: ['admin'] },
       { path: '/danos-vehiculos',   label: 'Daños vehículos',   perfiles: ['admin'] },
       { path: '/mantenimiento',     label: 'Mantenimiento',     perfiles: ['admin'] },
@@ -90,26 +89,17 @@ const SECTIONS: NavSection[] = [
     ],
   },
   {
-    key: 'equipo', label: 'Equipo', icon: Users,
-    headBg: OLIVA, headColor: ARENA, perfiles: ['admin'],
+    key: 'gente', label: 'Gente', icon: Users, iconColor: OLIVA, perfiles: ['admin'],
     items: [
       { path: '/personal',    label: 'Personas',    perfiles: ['admin'] },
       { path: '/organigrama', label: 'Organigrama', perfiles: ['admin'] },
       { path: '/presencia',   label: 'Presencia',   perfiles: ['admin'] },
       { path: '/calendario-laboral', label: 'Calendario laboral', perfiles: ['admin'] },
-    ],
-  },
-  {
-    key: 'informes', label: 'Informes', icon: BarChart3,
-    headBg: BERENJENA, headColor: ARENA, perfiles: ['admin'],
-    items: [
-      { path: '/informes',         label: 'Panel informes',  perfiles: ['admin'] },
       { path: '/informes-equipo',  label: 'Informes equipo', perfiles: ['admin'] },
     ],
   },
   {
-    key: 'configuracion', label: 'Configuración', icon: Settings,
-    headBg: VERDEMAR, headColor: ARENA, perfiles: ['admin'],
+    key: 'ajustes', label: 'Ajustes', icon: Settings, iconColor: AMBAR, perfiles: ['admin'],
     items: [
       { path: '/configuracion/bancos',   label: 'Bancos y Cuentas', perfiles: ['admin'] },
       { path: '/configuracion/usuarios', label: 'Usuarios',         perfiles: ['admin'] },
@@ -152,7 +142,7 @@ const ICON_ROUTE: Record<string, LucideIcon> = {
 
 /* Nombre de cada pantalla para la sección Favoritos */
 const NOMBRE_RUTA: Record<string, string> = {
-  '/': 'Panel Global', '/tareas': 'Tareas',
+  '/': 'Hoy · Panel', '/tareas': 'Tareas',
   ...Object.fromEntries(SECTIONS.flatMap(sec => sec.items.map(i => [i.path, i.label]))),
 }
 
@@ -276,21 +266,21 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
                 fontFamily: OSW, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: 18,
                 padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 11,
                 borderBottom: `3px solid ${INK}`, cursor: 'pointer', textDecoration: 'none',
-                color: isActive ? INK : ARENA, background: isActive ? AMBAR : MARINO,
+                color: ARENA, background: isActive ? NARANJA : MARINO,
               })}>
               {({ isActive }) => (<>
-                <LayoutDashboard size={20} strokeWidth={2.4} color={isActive ? INK : AMBAR} style={{ flexShrink: 0 }} />
-                <span>Panel Global</span>
+                <LayoutDashboard size={20} strokeWidth={2.4} color={isActive ? ARENA : AMBAR} style={{ flexShrink: 0 }} />
+                <span>Hoy · Panel</span>
               </>)}
             </NavLink>
           )}
           {collapsed && perfil && (
-            <NavLink to="/" end onClick={() => { abrir20s(); onClose() }} title="Panel Global"
+            <NavLink to="/" end onClick={() => { abrir20s(); onClose() }} title="Hoy · Panel"
               style={({ isActive }) => ({
                 width: '100%', height: 46, display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', borderBottom: `3px solid ${INK}`,
-                background: isActive ? AMBAR : MARINO,
+                background: isActive ? NARANJA : MARINO,
               })}>
-              {({ isActive }) => <LayoutDashboard size={22} strokeWidth={2.4} color={isActive ? INK : AMBAR} />}
+              {({ isActive }) => <LayoutDashboard size={22} strokeWidth={2.4} color={isActive ? ARENA : AMBAR} />}
             </NavLink>
           )}
 
@@ -301,10 +291,10 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
                 fontFamily: OSW, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: 18,
                 padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 11,
                 borderBottom: `3px solid ${INK}`, cursor: 'pointer', textDecoration: 'none',
-                color: isActive ? INK : ARENA, background: isActive ? AMBAR : MARINO,
+                color: ARENA, background: isActive ? NARANJA : MARINO,
               })}>
               {({ isActive }) => (<>
-                <BellRing size={20} strokeWidth={2.4} color={isActive ? INK : AMBAR} style={{ flexShrink: 0 }} />
+                <BellRing size={20} strokeWidth={2.4} color={isActive ? ARENA : AMBAR} style={{ flexShrink: 0 }} />
                 <span>Tareas</span>
               </>)}
             </NavLink>
@@ -313,18 +303,18 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
             <NavLink to="/tareas" onClick={() => { abrir20s(); onClose() }} title="Tareas"
               style={({ isActive }) => ({
                 width: '100%', height: 46, display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', borderBottom: `3px solid ${INK}`,
-                background: isActive ? AMBAR : MARINO,
+                background: isActive ? NARANJA : MARINO,
               })}>
-              {({ isActive }) => <BellRing size={22} strokeWidth={2.4} color={isActive ? INK : AMBAR} />}
+              {({ isActive }) => <BellRing size={22} strokeWidth={2.4} color={isActive ? ARENA : AMBAR} />}
             </NavLink>
           )}
 
           {/* Favoritos: arriba del todo, se gestionan con la estrella de cada pantalla del menú */}
-          {fav && perfil && !collapsed && (
+          {fav && perfil && !collapsed && (favoritos.length > 0 || masUsadas.length > 0) && (
             <div style={{ borderBottom: `3px solid ${INK}` }}>
-              <div style={{ background: NARANJA, color: ARENA, display: 'flex', alignItems: 'center', gap: 11, padding: '11px 16px', borderBottom: `3px solid ${INK}`,
+              <div style={{ background: MARINO, color: ARENA, display: 'flex', alignItems: 'center', gap: 11, padding: '11px 16px', borderBottom: `3px solid ${INK}`,
                 fontFamily: OSW, fontWeight: 800, fontSize: 19, textTransform: 'uppercase', letterSpacing: '0.02em' }}>
-                <Star size={20} strokeWidth={2.4} color={ARENA} fill={ARENA} style={{ flexShrink: 0 }} />
+                <Star size={20} strokeWidth={2.4} color={AMBAR} fill={AMBAR} style={{ flexShrink: 0 }} />
                 <span>Favoritos</span>
               </div>
               <div style={{ background: BLANCO }}>
@@ -339,31 +329,30 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
                         fontFamily: OSW, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.01em', fontSize: 16,
                         padding: '8px 16px 8px 18px', display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none',
                         borderTop: idx > 0 ? '1.5px solid rgba(11,21,36,.14)' : 'none',
-                        background: isActive ? INK : BLANCO, color: isActive ? AMBAR : INK,
+                        background: isActive ? NARANJA : BLANCO, color: isActive ? ARENA : INK,
                       })}>
                       {({ isActive }) => (<>
-                        <SubIcon size={15} strokeWidth={2.2} color={isActive ? AMBAR : INK} style={{ flexShrink: 0 }} />
+                        <SubIcon size={15} strokeWidth={2.2} color={isActive ? ARENA : INK} style={{ flexShrink: 0 }} />
                         <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nombreRuta(path)}</span>
                         <button type="button" title="Quitar de favoritos" onClick={e => { e.preventDefault(); e.stopPropagation(); fav.alternar(path) }}
                           style={{ background: 'none', border: 'none', padding: 2, cursor: 'pointer', display: 'flex' }}>
-                          <Star size={15} strokeWidth={2.2} color={isActive ? AMBAR : NARANJA} fill={isActive ? AMBAR : NARANJA} />
+                          <Star size={15} strokeWidth={2.2} color={isActive ? ARENA : NARANJA} fill={isActive ? ARENA : NARANJA} />
                         </button>
                       </>)}
                     </NavLink>
                   )
                 })}
-                <div style={{ padding: '8px 16px 4px', fontFamily: OSW, fontWeight: 800, fontSize: 13, letterSpacing: 2, textTransform: 'uppercase', color: INK, borderTop: `2px solid ${INK}` }}>
-                  Más usadas · 30 días
-                </div>
-                {masUsadas.length === 0 && (
-                  <div style={{ padding: '4px 16px 8px', fontFamily: OSW, fontSize: 13, color: INK, opacity: 0.7 }}>Aún no hay uso suficiente: se irá llenando solo.</div>
+                {masUsadas.length > 0 && (
+                  <div style={{ padding: '8px 16px 4px', fontFamily: OSW, fontWeight: 800, fontSize: 13, letterSpacing: 2, textTransform: 'uppercase', color: INK, borderTop: `2px solid ${INK}` }}>
+                    Más usadas · 30 días
+                  </div>
                 )}
                 {masUsadas.map(r => (
                   <NavLink key={`u-${r.ruta}`} to={r.ruta} end onClick={onClose}
                     style={({ isActive }) => ({
                       fontFamily: OSW, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.01em', fontSize: 15,
                       padding: '6px 16px 6px 18px', display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none',
-                      background: isActive ? INK : BLANCO, color: isActive ? AMBAR : INK,
+                      background: isActive ? NARANJA : BLANCO, color: isActive ? ARENA : INK,
                     })}>
                     <span aria-hidden="true">↻</span>
                     <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nombreRuta(r.ruta)}</span>
@@ -397,19 +386,19 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
               <div key={section.key}>
                 {collapsed ? (
                   <button type="button" onClick={() => toggleSection(section.key)} title={section.label}
-                    style={{ width: '100%', height: 46, background: section.headBg, border: 'none', borderBottom: `3px solid ${INK}`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Icon size={22} strokeWidth={2.4} color={section.headColor} />
+                    style={{ width: '100%', height: 46, background: MARINO, border: 'none', borderBottom: `3px solid ${INK}`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Icon size={22} strokeWidth={2.4} color={section.iconColor} />
                   </button>
                 ) : (
                   <button type="button" onClick={() => toggleSection(section.key)}
                     style={{
-                      width: '100%', background: section.headBg, color: section.headColor,
+                      width: '100%', background: isOpen ? INK : MARINO, color: ARENA,
                       border: 'none', borderBottom: `3px solid ${INK}`, cursor: 'pointer',
                       boxShadow: isOpen ? `inset 0 -5px 0 ${INK}` : 'none',
                       display: 'flex', alignItems: 'center', gap: 11, padding: '11px 16px',
                       fontFamily: OSW, fontWeight: 800, fontSize: 19, textTransform: 'uppercase', letterSpacing: '0.02em',
                     }}>
-                    <Icon size={20} strokeWidth={2.4} color={section.headColor} style={{ flexShrink: 0 }} />
+                    <Icon size={20} strokeWidth={2.4} color={section.iconColor} style={{ flexShrink: 0 }} />
                     <span style={{ flex: 1, textAlign: 'left' }}>{section.label}</span>
                     <span style={{ fontWeight: 800, fontSize: 17, transition: 'transform .2s', transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)', display: 'inline-block' }}>›</span>
                   </button>
@@ -426,11 +415,11 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
                             padding: '8px 16px 8px 18px', display: 'flex', alignItems: 'center', gap: 9,
                             cursor: 'pointer', textDecoration: 'none',
                             borderTop: idx > 0 ? '1.5px solid rgba(11,21,36,.14)' : 'none',
-                            background: isActive ? INK : BLANCO,
-                            color: isActive ? AMBAR : INK,
+                            background: isActive ? NARANJA : BLANCO,
+                            color: isActive ? ARENA : INK,
                           })}>
                           {({ isActive }) => (<>
-                            <SubIcon size={15} strokeWidth={2.2} color={isActive ? AMBAR : INK} style={{ flexShrink: 0 }} />
+                            <SubIcon size={15} strokeWidth={2.2} color={isActive ? ARENA : INK} style={{ flexShrink: 0 }} />
                             <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
                           </>)}
                         </NavLink>

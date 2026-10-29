@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { fmtEur, fmtDate } from '@/lib/format'
-import { CELESTE, OLIVA, TERRA, NARANJA, GRIS, ARENA_CL, BLANCO, OSW } from '@/styles/neobrutal'
+import { OLIVA, TERRA, NARANJA, GRIS, BLANCO, OSW } from '@/styles/neobrutal'
 import {
-  PageNeo, Banda, CabeceraNeo, HeroNeo, PillsNeo, KpiNeo, AvisoNeo, TabsNeo, usePestana,
+  PageNeo, Banda, CabeceraNeo, HeroNeo, PillsNeo, AvisoNeo, TabsNeo, usePestana,
   TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo, BotonNeo,
 } from '@/components/neo/NeoUI'
 import DocumentacionYTope from '@/components/facturacion/DocumentacionYTope'
@@ -111,6 +111,9 @@ export default function FacturacionEmitida() {
           : kpis.pendiente > 0 ? 'Pendiente de cobro y dentro de plazo. Nada que reclamar aún.' : 'Todo cobrado. Sin pendientes.'}
         color={loading || kpis.n === 0 ? undefined : kpis.nVencidas > 0 ? NARANJA : kpis.pendiente > 0 ? undefined : OLIVA}
         apoyo={kpis.n === 0 ? undefined : [
+          ciclo.diaLimite
+            ? { label: `Vencido · pasado día ${ciclo.diaLimite}`, valor: fmtEur(kpis.vencido) }
+            : { label: 'Plazo de cobro', valor: 'Sin confirmar' },
           { label: 'Cobrado', valor: fmtEur(kpis.total - kpis.pendiente) },
           { label: 'Facturado', valor: fmtEur(kpis.total) },
         ]}
@@ -134,17 +137,6 @@ export default function FacturacionEmitida() {
       )}
 
       {pestana === 'cobros' && (<>
-      {/* KPIs: ¿cuándo cobro de Cade? */}
-      <Banda bg={ARENA_CL}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 18 }}>
-          <KpiNeo label="Pendiente de cobro" valor={fmtEur(kpis.pendiente)} color={CELESTE} sub="Lo que te debe Cade hoy" />
-          {ciclo.diaLimite
-            ? <KpiNeo label={`Vencido · pasado día ${ciclo.diaLimite}`} valor={fmtEur(kpis.vencido)} color={kpis.vencido > 0 ? TERRA : OLIVA} sub={`${kpis.nVencidas} facturas`} />
-            : <KpiNeo label="Plazo de cobro" valor="Sin confirmar" color={GRIS} sub="Confírmalo en Liquidaciones Cade" />}
-          <KpiNeo label="Cobrado" valor={fmtEur(kpis.total - kpis.pendiente)} color={OLIVA} />
-          <KpiNeo label="Facturado total" valor={fmtEur(kpis.total)} sub={`${kpis.n} facturas`} />
-        </div>
-      </Banda>
 
       {/* Tabla Neobrutal */}
       <Banda bg={BLANCO}>

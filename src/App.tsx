@@ -34,7 +34,6 @@ const Mantenimiento = lazy(() => import('@/pages/operaciones/Mantenimiento'))
 const Informes = lazy(() => import('@/pages/informes/Informes'))
 const InformesEquipo = lazy(() => import('@/pages/informes/InformesEquipo'))
 const Usuarios = lazy(() => import('@/pages/configuracion/Usuarios'))
-const Placeholder = lazy(() => import('@/pages/Placeholder'))
 
 /* Cada pantalla se descarga la primera vez que se abre (antes iba toda la app en un bloque de 1,7 MB) */
 function Cargando() {
@@ -48,12 +47,6 @@ function ProtectedRoute({ children, solo }: { children: React.ReactNode; solo?: 
   if (solo && !solo.includes(usuario.perfil)) return <Navigate to="/" replace />
   return <>{children}</>
 }
-
-const PLACEHOLDERS = [
-  'libro-facturas',
-  'pedidos',
-  'inventarios',
-]
 
 function AppRoutes() {
   const { usuario } = useAuth()
@@ -102,19 +95,13 @@ function AppRoutes() {
         <Route path="informes"        element={<ProtectedRoute solo={['admin']}><Informes /></ProtectedRoute>} />
         <Route path="informes-equipo" element={<ProtectedRoute solo={['admin']}><InformesEquipo /></ProtectedRoute>} />
 
-        {/* Secciones en fases (placeholder navegable) */}
-        {PLACEHOLDERS.map(p => (
-          <Route key={p} path={p} element={<ProtectedRoute solo={['admin']}><Placeholder /></ProtectedRoute>} />
-        ))}
-
-        {/* Redirects de rutas antiguas */}
         <Route path="liquidacion-cade" element={<Navigate to="/finanzas/liquidaciones" replace />} />
 
         {/* Configuración */}
         <Route path="configuracion" element={<Navigate to="/configuracion/bancos" replace />} />
         <Route path="configuracion/bancos" element={<ProtectedRoute solo={['admin']}><BancosPage /></ProtectedRoute>} />
         <Route path="configuracion/usuarios" element={<ProtectedRoute solo={['admin']}><Usuarios /></ProtectedRoute>} />
-        <Route path="configuracion/:slug" element={<ProtectedRoute solo={['admin']}><Placeholder /></ProtectedRoute>} />
+        <Route path="configuracion/:slug" element={<Navigate to="/configuracion/bancos" replace />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
