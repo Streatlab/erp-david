@@ -5,6 +5,7 @@ import Layout from '@/components/Layout'
 import Login from '@/pages/Login'
 import PanelGlobal from '@/pages/PanelGlobal'
 const Entregas = lazy(() => import('@/pages/Entregas'))
+const Portal = lazy(() => import('@/pages/portal/Portal'))
 const Conciliacion = lazy(() => import('@/pages/Conciliacion'))
 const Flota = lazy(() => import('@/pages/Flota'))
 const FurgonetaDetalle = lazy(() => import('@/pages/FurgonetaDetalle'))
@@ -58,7 +59,8 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={usuario ? <Navigate to="/" replace /> : <Login />} />
       <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-        <Route index element={<PanelGlobal />} />
+        <Route index element={usuario?.perfil === 'repartidor' ? <Navigate to="/portal" replace /> : <PanelGlobal />} />
+        <Route path="portal" element={<Portal />} />
 
         <Route path="tareas" element={<ProtectedRoute solo={['admin']}><Tareas /></ProtectedRoute>} />
 

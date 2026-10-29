@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { usePeriodo } from '@/lib/periodoGlobal'
 import { marcarDocumentacionEnviada } from '@/lib/documentacionEnviada'
 import { useCicloPagoCade, TEXTO_SIN_CONFIRMAR } from '@/lib/configCade'
+import { desviacionesRepartidores, type DiaDesv, type Desviacion } from '@/lib/desviaciones'
 import { HeroNeo } from '@/components/neo/NeoUI'
 import { INK, ARENA, ARENA_CL, BLANCO, GRIS, OLIVA, TERRA, NARANJA, MARINO, AMBAR, CELESTE, OSW, LEX, BORDER, BORDER_CARD, SHADOW, PAD, eyebrow } from '@/styles/neobrutal'
 
@@ -67,6 +68,7 @@ export default function HoyTab() {
   const [robots, setRobots] = useState<Robot[]>([])
   const [sesiones, setSesiones] = useState<Sesion[]>([])
   const [vencimientos, setVencimientos] = useState<Venc[]>([])
+  const [desviaciones, setDesviaciones] = useState<Desviacion[]>([])
   const [cargando, setCargando] = useState(true)
   const [errEnviada, setErrEnviada] = useState<string | null>(null)
 
@@ -89,7 +91,9 @@ export default function HoyTab() {
       supabase.from('furgonetas_seguros').select('furgoneta_id, compania, fecha_renovacion, fecha_proximo_cobro'),
       supabase.from('furgonetas_prestamos').select('furgoneta_id, entidad, fecha_fin'),
       supabase.from('conductores').select('nombre, carnet_caducidad, activo'),
-    ]).then(([c, dc, t, fe, fh, cob, en, rs, bs, fg, itv, seg, pre, cond]) => {
+      supabase.from('v_dia_repartidor').select('fecha, transportista, repartidor, entregas, pagado, compensacion_minimo, cargo_cade').gte('fecha', iso(new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - 70))),
+    ]).then(([c, dc, t, fe, fh, cob, en, rs, bs, fg, itv, seg, pre, cond, dr]) => {
+      setDesviaciones(desviacionesRepartidores((dr.data ?? []) as DiaDesv[]))
       setRobots((rs.data ?? []) as Robot[])
       setSesiones((bs.data ?? []) as Sesion[])
       /* Vencimientos de flota y carnets: solo los que caen en los próximos 30 días o ya han pasado */
@@ -179,7 +183,7 @@ export default function HoyTab() {
   const ultimaDescarga = robots.find(r => r.fuente === 'banco_sync')?.ultima_ejecucion ?? null
   const primeraCaducidad = caducidadPorBanco.map(x => x.hasta).sort()[0] ?? null
   const fmtCorto = (f: string) => new Date(f).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
-  const hayAvisos = docs.length > 0 || sinEnviar > 0 || sinCategorizar > 0 || tareasHoy.length > 0 || robotsMal.length > 0 || sesionesCaducan.length > 0 || vencimientos.length > 0
+  const hayAvisos = docs.length > 0 || sinEnviar > 0 || sinCategorizar > 0 || tareasHoy.length > 0 || robotsMal.length > 0 || sesionesCaducan.length > 0 || vencimientos.length > 0 || desviaciones.length > 0
   const card = { background: BLANCO, border: BORDER_CARD, boxShadow: SHADOW, padding: '14px 16px' }
 
   return (
@@ -318,6 +322,9 @@ export default function HoyTab() {
                 </div>
               </div>
             )}
+            {desviaciones.map((x, i) => (
+              <Aviso key={`d${i}`} color={x.gravedad === 'alerta' ? TERRA : NARANJA} texto={x.texto} enlace={x.texto.includes('cargos') ? '/reclamaciones' : '/entregas'} boton={x.texto.includes('cargos') ? 'Reclamar' : 'Ver rutas'} />
+            ))}
             {vencimientos.length > 0 && (
               <div style={card}>
                 <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 15, textTransform: 'uppercase' }}>Vencimientos · próximos {DIAS_VENCIMIENTO} días</div>

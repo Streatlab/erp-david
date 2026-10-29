@@ -98,6 +98,7 @@ const SECTIONS: NavSection[] = [
       { path: '/presencia',   label: 'Presencia',   perfiles: ['admin'] },
       { path: '/calendario-laboral', label: 'Calendario laboral', perfiles: ['admin'] },
       { path: '/informes-equipo',  label: 'Informes equipo', perfiles: ['admin'] },
+      { path: '/portal',           label: 'Portal del repartidor', perfiles: ['admin'] },
     ],
   },
   {
@@ -134,6 +135,7 @@ const ICON_ROUTE: Record<string, LucideIcon> = {
   '/manuales': BookOpen,
   '/equipos': HardHat,
   '/libro-facturas': Library,
+  '/portal': User,
   '/personal': User,
   '/organigrama': Network,
   '/presencia': Clock,
