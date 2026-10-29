@@ -30,9 +30,11 @@ export default function Portal() {
   useEffect(() => { if (admin) getConductoresActivos().then(setConductores) }, [admin])
   useEffect(() => { if (usuario?.id && !admin) pantallasPermitidas(usuario.id).then(setPermitidas) }, [usuario?.id, admin])
   useEffect(() => {
-    if (!conductorId) { setConductor(null); setFurgoneta(null); return }
-    getConductor(conductorId).then(setConductor)
-    getFurgonetaDe(conductorId).then(setFurgoneta)
+    if (!conductorId) return
+    let vivo = true
+    getConductor(conductorId).then(c => { if (vivo) setConductor(c) })
+    getFurgonetaDe(conductorId).then(f => { if (vivo) setFurgoneta(f) })
+    return () => { vivo = false }
   }, [conductorId, tick])
 
   const tabs = PANTALLAS.filter(p => permitidas.has(p.key))
