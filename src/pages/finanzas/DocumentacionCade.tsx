@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { marcarDocumentacionEnviada, desmarcarDocumentacionEnviada } from '@/lib/documentacionEnviada'
+import { useSubidaDocumentacion } from '@/hooks/useSubidaDocumentacion'
+import { BotonSubirDocumentacion, ResultadoSubida, MarcaEnviadaCade } from '@/components/facturacion/SubidaDocumentacion'
 import { OLIVA, NARANJA, TERRA, GRIS, ARENA_CL, BLANCO, ARENA, INK, OSW } from '@/styles/neobrutal'
 import { PageNeo, Banda, CabeceraNeo, AvisoNeo, HeroNeo, TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo, BotonNeo } from '@/components/neo/NeoUI'
 
@@ -40,6 +41,7 @@ export default function DocumentacionCade() {
     setLoading(false)
   }
   useEffect(() => { cargar() }, [])
+  const subida = useSubidaDocumentacion(cargar)
 
   async function subir(p: Pend, file: File) {
     const clave = `${p.emisor}|${p.documento}`
@@ -66,20 +68,6 @@ export default function DocumentacionCade() {
 
   const mesCade = pend[0]?.mes_cade ?? null
 
-  async function marcarEnviada() {
-    if (!mesCade) return
-    const err = await marcarDocumentacionEnviada(mesCade)
-    setMsg(err ? 'No se pudo marcar: ' + err : 'Hecho: documentación marcada como enviada. Se acaban los avisos de este mes.')
-    cargar()
-  }
-
-  async function deshacerEnviada() {
-    if (!mesCade) return
-    const err = await desmarcarDocumentacionEnviada(mesCade)
-    setMsg(err ? 'No se pudo deshacer: ' + err : 'Marca quitada: vuelven los avisos si falta algo.')
-    cargar()
-  }
-
   const emisores = Array.from(new Set(pend.map(p => p.emisor)))
   const faltan = pend.filter(p => p.estado === 'pedir').length
 
@@ -87,7 +75,7 @@ export default function DocumentacionCade() {
     <PageNeo>
       <CabeceraNeo eyebrowTxt="Finanzas · Cade" titulo="Documentación Cade">
         <div style={{ fontSize: 13, fontWeight: 600, color: ARENA, opacity: 0.85, maxWidth: 440 }}>
-          Lo que hay que mandar a Cade cada mes con las facturas. Se saca con certificado digital: el ERP te lo pide por correo del 1 al 10 y aquí lo subes.
+          Lo que hay que mandar a Cade cada mes con las facturas. Se saca con certificado digital: el ERP te lo pide por correo cada mañana hasta que lo subas o lo des por enviado.
         </div>
       </CabeceraNeo>
 
@@ -102,22 +90,21 @@ export default function DocumentacionCade() {
       {msg && <AvisoNeo>{msg}</AvisoNeo>}
       {!loading && faltan > 0 && <AvisoNeo>FALTAN {faltan} DOCUMENTO{faltan > 1 ? 'S' : ''}. Las facturas de ese emisor no salen a Cade hasta completarlo.</AvisoNeo>}
 
-      {!loading && faltan > 0 && mesCade && (
+      {/* Subida única: todos los PDF de David y de Juan a la vez; el servidor los clasifica */}
+      {!loading && pend.length > 0 && (
         <Banda bg={ARENA_CL}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-            <BotonNeo bg={OLIVA} onClick={marcarEnviada}>Ya la tengo enviada</BotonNeo>
-            <span style={{ fontSize: 12, fontWeight: 600, color: GRIS }}>Pulsa si ya mandaste toda la documentación a Cade: paran los avisos de este mes.</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap' }}>
+            <BotonSubirDocumentacion subir={subida.subir} subiendo={subida.subiendo} />
+            <span style={{ fontSize: 13, fontWeight: 600, maxWidth: 520 }}>
+              Selecciona todos los PDF de David y de Juan juntos. El ERP reconoce de quién es cada uno y qué documento es. Si alguno no lo reconoce, súbelo a mano en su fila de abajo.
+            </span>
           </div>
-        </Banda>
-      )}
-
-      {!loading && enviada && (
-        <Banda bg={ARENA_CL}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-            <BadgeNeo color={OLIVA}>Enviada a Cade</BadgeNeo>
-            <span style={{ fontSize: 13, fontWeight: 600 }}>Este mes está marcado como enviado: no habrá más avisos.</span>
-            <BotonNeo bg={ARENA} onClick={deshacerEnviada}>Deshacer</BotonNeo>
-          </div>
+          <ResultadoSubida res={subida.res} err={subida.err} />
+          {mesCade && (
+            <div style={{ marginTop: 16 }}>
+              <MarcaEnviadaCade mes={mesCade} enviada={enviada} onCambio={async m => { setMsg(m); await cargar() }} />
+            </div>
+          )}
         </Banda>
       )}
 

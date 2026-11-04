@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { INK, ARENA, BLANCO, GRIS, OLIVA, TERRA, NARANJA, OSW, BORDER, BORDER_CARD, SHADOW, PAD, eyebrow, d } from '@/styles/neobrutal'
+import { useSubidaDocumentacion } from '@/hooks/useSubidaDocumentacion'
+import { BotonSubirDocumentacion, ResultadoSubida, MarcaEnviadaCade } from '@/components/facturacion/SubidaDocumentacion'
+import { INK, ARENA, BLANCO, GRIS, OLIVA, TERRA, NARANJA, OSW, BORDER, BORDER_CARD, PAD, eyebrow, d } from '@/styles/neobrutal'
 
 /* Facturación ▸ Documentación mensual para Cade (mes anterior) + tope de facturación anual por emisor.
    Rubén saca la documentación con certificado digital y la sube aquí de una vez, la de David y la de Juan
@@ -8,53 +10,32 @@ import { INK, ARENA, BLANCO, GRIS, OLIVA, TERRA, NARANJA, OSW, BORDER, BORDER_CA
 
 interface Pend { emisor: string; documento: string; mes_cade: string; ultimo_expedido: string | null; estado: 'ok' | 'pedir' }
 interface Tope { emisor: string; tope: number; facturado: number; margen_restante: number; pct_consumido: number }
-interface Res { fichero: string; ok: boolean; emisor?: string; documento?: string; motivo?: string }
-
 const NOMBRE: Record<string, string> = { DAVID: 'David', JUAN: 'Juan' }
 const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
 const eur = (n: number) => Number(n).toLocaleString('es-ES', { maximumFractionDigits: 0 }) + ' €'
 
-function aB64(f: File): Promise<string> {
-  return new Promise((res, rej) => {
-    const r = new FileReader()
-    r.onload = () => res(String(r.result).split(',')[1] ?? '')
-    r.onerror = () => rej(new Error('no se pudo leer ' + f.name))
-    r.readAsDataURL(f)
-  })
-}
-
 export default function DocumentacionYTope() {
   const [pend, setPend] = useState<Pend[]>([])
   const [topes, setTopes] = useState<Tope[]>([])
-  const [subiendo, setSubiendo] = useState(false)
-  const [res, setRes] = useState<Res[] | null>(null)
-  const [err, setErr] = useState<string | null>(null)
+  const [enviada, setEnviada] = useState(false)
+  const [aviso, setAviso] = useState<string | null>(null)
 
   async function cargar() {
-    const [p, t] = await Promise.all([
+    const [p, t, e] = await Promise.all([
       supabase.from('v_documentacion_pendiente').select('*'),
       supabase.from('v_tope_facturacion').select('*'),
+      supabase.from('documentacion_enviada').select('mes'),
     ])
-    setPend((p.data ?? []) as Pend[])
+    const lista = (p.data ?? []) as Pend[]
+    setPend(lista)
     setTopes((t.data ?? []) as Tope[])
+    setEnviada(((e.data ?? []) as { mes: string }[]).some(x => x.mes === lista[0]?.mes_cade))
   }
+  // Carga inicial: cargar() guarda el estado cuando responde la base, no de forma síncrona
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { cargar() }, [])
 
-  async function subir(files: FileList | null) {
-    if (!files || !files.length) return
-    setSubiendo(true); setErr(null); setRes(null)
-    try {
-      const ficheros = await Promise.all(Array.from(files).map(async f => ({ nombre: f.name, b64: await aB64(f) })))
-      const { data, error } = await supabase.functions.invoke('documentacion-subir', { body: { ficheros } })
-      if (error) throw error
-      setRes((data?.resultados ?? []) as Res[])
-      await cargar()
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e))
-    } finally {
-      setSubiendo(false)
-    }
-  }
+  const subida = useSubidaDocumentacion(cargar)
 
   if (!pend.length && !topes.length) return null
   const mes = pend[0]?.mes_cade ? new Date(pend[0].mes_cade + 'T00:00:00') : null
@@ -72,17 +53,17 @@ export default function DocumentacionYTope() {
           </div>
           <div style={{ fontSize: 13, fontWeight: 600, color: ARENA, marginTop: 4, maxWidth: 520 }}>
             Sube los PDF de David y de Juan a la vez: el ERP reconoce de quién es cada uno y qué documento es.
-            Cade paga el 10 o el 15 si la documentación está entregada el 9 o el 14.
           </div>
         </div>
-        <label style={{ cursor: subiendo ? 'wait' : 'pointer' }}>
-          <input type="file" multiple accept="application/pdf" style={{ display: 'none' }} disabled={subiendo}
-            onChange={e => { subir(e.target.files); e.currentTarget.value = '' }} />
-          <span style={{ display: 'inline-block', background: INK, color: ARENA, border: BORDER_CARD, boxShadow: SHADOW, padding: '12px 20px', fontFamily: OSW, fontWeight: 700, fontSize: 15, letterSpacing: 1, textTransform: 'uppercase' }}>
-            {subiendo ? 'Subiendo…' : 'Subir documentación'}
-          </span>
-        </label>
+        <BotonSubirDocumentacion subir={subida.subir} subiendo={subida.subiendo} />
       </div>
+
+      {pend[0]?.mes_cade && (
+        <div style={{ marginTop: 16 }}>
+          <MarcaEnviadaCade mes={pend[0].mes_cade} enviada={enviada} onCambio={async m => { setAviso(m); await cargar() }} />
+          {aviso && <div style={{ marginTop: 8, color: ARENA, fontSize: 13, fontWeight: 700 }}>{aviso}</div>}
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 14, marginTop: 16 }}>
         {emisores.map(em => (
@@ -128,17 +109,7 @@ export default function DocumentacionYTope() {
         </div>
       )}
 
-      {err && <div style={{ marginTop: 12, background: TERRA, color: ARENA, border: BORDER_CARD, padding: '8px 12px', fontWeight: 700 }}>{err}</div>}
-      {res && (
-        <div style={{ marginTop: 12, background: BLANCO, border: BORDER_CARD, padding: '10px 14px', fontSize: 13, fontWeight: 600, color: INK }}>
-          {res.map(r => (
-            <div key={r.fichero} style={{ padding: '3px 0', color: r.ok ? INK : TERRA }}>
-              {r.ok ? `✓ ${r.fichero} → ${NOMBRE[r.emisor ?? ''] ?? r.emisor}: ${r.documento}` : `✗ ${r.fichero}: ${r.motivo}`}
-            </div>
-          ))}
-          <div style={{ color: GRIS, fontSize: 12, marginTop: 4 }}>Si algo no lo reconoce, vuelve a sacarlo como PDF original de la sede o del banco.</div>
-        </div>
-      )}
+      <ResultadoSubida res={subida.res} err={subida.err} />
     </section>
   )
 }

@@ -21,7 +21,7 @@ export const PAPEL_MEDITERRANEO: CSSProperties = {
 /* Página full-bleed: escapa el padding del Layout y pone papel mediterráneo + cierre */
 export function PageNeo({ children }: { children: ReactNode }) {
   return (
-    <div className="-m-4 md:-m-6" style={{ fontFamily: LEX, color: INK, ...PAPEL_MEDITERRANEO }}>
+    <div className="-m-4 md:-m-6" style={{ fontFamily: LEX, color: INK, backgroundColor: ARENA }}>
       {children}
       <section style={{ background: MARINO, padding: `22px ${PAD}` }}>
         <div style={{ ...d('16px', ARENA), letterSpacing: '1px' }}>DAVID REPARTE. ALCOI · ONTINYENT.</div>
@@ -54,26 +54,35 @@ export function CabeceraNeo({ eyebrowTxt, titulo, children }: { eyebrowTxt: stri
 }
 
 
-/* Hero de pantalla: una cifra grande que resume lo importante, con frase de contexto y hasta 3 datos de apoyo.
-   color = tono de la cifra (OLIVA bien, NARANJA aviso, AMBAR neutro). Sin rojos. */
+/* Hero de pantalla: una banda compacta con la cifra que importa, una frase y hasta 4 datos de apoyo en línea.
+   Regla de la primera pantalla: el dato útil cabe sin hacer scroll, también en el móvil.
+   color = tono de la cifra (OLIVA bien, NARANJA coste/aviso, AMBAR neutro). Sin rojos.
+   Si no hay datos (cifra '—') no se pinta una raya suelta: se dice en una frase. */
 export function HeroNeo({ eyebrowTxt, cifra, frase, apoyo, color = AMBAR, children }: {
-  eyebrowTxt: string; cifra: string; frase: string; apoyo?: { label: string; valor: string }[]; color?: string; children?: ReactNode
+  eyebrowTxt: string; cifra: string; frase: string; apoyo?: { label: string; valor: string; color?: string }[]; color?: string; children?: ReactNode
 }) {
+  const vacio = cifra === '—'
   return (
-    <Banda bg={MARINO}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 24 }}>
-        <div style={{ minWidth: 0, flex: '1 1 320px' }}>
+    <Banda bg={MARINO} style={{ padding: `18px ${PAD}` }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px 28px' }}>
+        <div style={{ minWidth: 0, flex: '1 1 280px' }}>
           <span style={eyebrow(AMBAR)}>{eyebrowTxt}</span>
-          <div style={{ ...d('clamp(44px,8vw,96px)', color), lineHeight: 0.95, margin: '14px 0 10px' }}>{cifra}</div>
-          <div style={{ fontFamily: LEX, fontSize: 15, fontWeight: 600, color: ARENA, maxWidth: 560 }}>{frase}</div>
+          {vacio ? (
+            <div style={{ fontFamily: LEX, fontSize: 15, fontWeight: 600, color: ARENA, marginTop: 10, maxWidth: 560 }}>
+              {frase === 'Sin datos todavía' ? 'Aún no hay datos para este periodo.' : frase}
+            </div>
+          ) : (<>
+            <div style={{ ...d('clamp(30px,4.5vw,56px)', color), lineHeight: 1, margin: '10px 0 6px' }}>{cifra}</div>
+            <div style={{ fontFamily: LEX, fontSize: 14, fontWeight: 600, color: ARENA, maxWidth: 560 }}>{frase}</div>
+          </>)}
           {children}
         </div>
         {apoyo && apoyo.length > 0 && (
-          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-            {apoyo.slice(0, 3).map(a => (
-              <div key={a.label} style={{ border: `3px solid ${ARENA}`, padding: '10px 14px', minWidth: 120 }}>
-                <div style={{ fontFamily: OSW, fontWeight: 600, fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: ARENA, opacity: 0.85 }}>{a.label}</div>
-                <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 24, color: ARENA }}>{a.valor}</div>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            {apoyo.slice(0, 4).map(a => (
+              <div key={a.label} style={{ border: `2px solid ${ARENA}`, padding: '8px 12px', minWidth: 110 }}>
+                <div style={{ fontFamily: OSW, fontWeight: 600, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: ARENA, opacity: 0.85 }}>{a.label}</div>
+                <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 20, color: a.color ?? ARENA }}>{a.valor}</div>
               </div>
             ))}
           </div>
@@ -94,8 +103,8 @@ export function PillsNeo({ value, onChange, options }: { value: string; onChange
             style={{
               padding: '8px 14px', border: 'none', borderRight: `3px solid ${INK}`,
               background: active ? NARANJA : ARENA, color: active ? ARENA : INK,
-              fontFamily: OSW, fontSize: 12, fontWeight: 600, letterSpacing: 1,
-              textTransform: 'uppercase', cursor: 'pointer',
+              fontFamily: OSW, fontSize: 13, fontWeight: 600, letterSpacing: 0.3,
+              cursor: 'pointer',
             }}>
             {o}
           </button>
@@ -128,8 +137,8 @@ export function AvisoNeo({ children }: { children: ReactNode }) {
 /* ── Tabla Neobrutal (patrón P&L): cabecera INK texto arena, filas alternas,
      banda lateral de estado por fila ── */
 export const thNeo: CSSProperties = {
-  textAlign: 'left', padding: '10px 12px', fontFamily: OSW, fontSize: 12,
-  letterSpacing: 1.5, textTransform: 'uppercase', color: ARENA, fontWeight: 600,
+  textAlign: 'left', padding: '10px 12px', fontFamily: OSW, fontSize: 13,
+  letterSpacing: 0.5, color: ARENA, fontWeight: 600,
   background: INK, whiteSpace: 'nowrap', borderBottom: BORDER_CARD,
 }
 
@@ -165,7 +174,7 @@ export function BotonNeo({ onClick, disabled, children, bg = NARANJA }: { onClic
       style={{
         background: bg, color: claro ? INK : ARENA, border: `2px solid ${INK}`,
         boxShadow: `3px 3px 0 ${INK}`, padding: '5px 12px', cursor: disabled ? 'default' : 'pointer',
-        fontFamily: OSW, fontSize: 12, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase',
+        fontFamily: OSW, fontSize: 13, fontWeight: 700, letterSpacing: 0.3,
         opacity: disabled ? 0.5 : 1, whiteSpace: 'nowrap',
       }}>
       {children}
@@ -201,8 +210,8 @@ export function TabsNeo<T extends string>({ value, onChange, tabs }: { value: T;
         return (
           <button key={t.id} onClick={() => onChange(t.id)}
             style={{
-              fontFamily: OSW, fontWeight: 700, fontSize: 14, letterSpacing: 2, textTransform: 'uppercase', whiteSpace: 'nowrap',
-              padding: '12px 18px', border: 0, cursor: 'pointer', background: on ? AMBAR : INK, color: on ? INK : ARENA,
+              fontFamily: OSW, fontWeight: 700, fontSize: 15, letterSpacing: 0.5, whiteSpace: 'nowrap',
+              padding: '11px 18px', border: 0, cursor: 'pointer', background: on ? AMBAR : INK, color: on ? INK : ARENA,
             }}>
             {t.label}{t.badge ? <span style={{ marginLeft: 6, background: NARANJA, color: BLANCO, padding: '0 6px', fontSize: 12 }}>{t.badge}</span> : null}
           </button>

@@ -689,25 +689,3 @@ export const dividerStyle = (T: TokenSet): CSSProperties => ({
   margin: "12px 0",
 });
 
-// ——————————————————————————————————————————————————————
-// CANALES (compat Binagre) — datos estáticos para pantallas
-// de configuración portadas desde Binagre
-// ——————————————————————————————————————————————————————
-
-export interface CanalConfig {
-  id: string;
-  label: string;
-  color: string;
-  pedKey: string;
-  bruKey: string;
-  comisionPct: number;
-  comisionFijo: number;
-}
-
-export const CANALES: CanalConfig[] = [
-  { id: "uber",  label: "Uber Eats", color: "#06C167", pedKey: "uber_pedidos",    bruKey: "uber_bruto",    comisionPct: 0.30, comisionFijo: 0.82 },
-  { id: "glovo", label: "Glovo",     color: "#e8f442", pedKey: "glovo_pedidos",   bruKey: "glovo_bruto",   comisionPct: 0.25, comisionFijo: 0.75 },
-  { id: "je",    label: "Just Eat",  color: "#f5a623", pedKey: "je_pedidos",      bruKey: "je_bruto",      comisionPct: 0.20, comisionFijo: 0.75 },
-  { id: "web",   label: "Web",       color: "var(--terra-500)", pedKey: "web_pedidos", bruKey: "web_bruto", comisionPct: 0.07, comisionFijo: 0.50 },
-  { id: "dir",   label: "Directa",   color: "#66aaff", pedKey: "directa_pedidos", bruKey: "directa_bruto", comisionPct: 0.00, comisionFijo: 0.00 },
-];

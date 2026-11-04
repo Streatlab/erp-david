@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { usePeriodo } from '@/lib/periodoGlobal'
 import { marcarDocumentacionEnviada } from '@/lib/documentacionEnviada'
+import { useCicloPagoCade, TEXTO_SIN_CONFIRMAR } from '@/lib/configCade'
+import { desviacionesRepartidores, type DiaDesv, type Desviacion } from '@/lib/desviaciones'
 import { HeroNeo } from '@/components/neo/NeoUI'
-import { INK, ARENA, ARENA_CL, BLANCO, GRIS, OLIVA, TERRA, NARANJA, MARINO, AMBAR, CELESTE, OSW, LEX, BORDER, BORDER_CARD, SHADOW, PAD, eyebrow, d } from '@/styles/neobrutal'
+import { INK, ARENA, ARENA_CL, BLANCO, GRIS, OLIVA, TERRA, NARANJA, MARINO, AMBAR, CELESTE, OSW, LEX, BORDER, BORDER_CARD, SHADOW, PAD, eyebrow } from '@/styles/neobrutal'
 
 /* Pestaña HOY del Panel global: el dashboard de ahora, de un vistazo. Solo lo que importa hoy:
    1. Saldo de las cuentas (real, del banco)
@@ -17,6 +19,18 @@ interface Cuenta { id: string; banco: string; alias: string | null; iban: string
 interface Mov { fecha: string; importe: number; categoria: string | null }
 interface Doc { emisor: string; documento: string; como_obtenerlo: string; estado: string; mes_cade: string | null }
 interface Tarea { titulo: string; fecha_limite: string | null; prioridad: string | null; estado: string | null }
+interface Robot { fuente: string; estado: string; ultima_ejecucion: string | null; detalle: string | null }
+interface Sesion { banco: string; valida_hasta: string | null }
+interface Venc { que: string; quien: string; fecha: string; dias: number }
+const DIAS_VENCIMIENTO = 30
+
+/* Robots nocturnos: nombre que entiende David y días que pueden pasar sin ejecutarse antes de avisar */
+const ROBOT_NOMBRE: Record<string, string> = {
+  banco_sync: 'Descarga bancaria', cartero: 'Correo de David', cartero_juan: 'Correo de Juan',
+  banco_bbva: 'Conexión BBVA', banco_n26: 'Conexión N26', banco_caixabank: 'Conexión CaixaBank',
+}
+const DIAS_SIN_ROBOT = 2
+const DIAS_AVISO_CADUCIDAD = 15
 
 const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
 const MES_C = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']
@@ -42,6 +56,7 @@ function Aviso({ color, texto, enlace, boton }: { color: string; texto: ReactNod
 export default function HoyTab() {
   const hoy = new Date()
   const per = usePeriodo()
+  const ciclo = useCicloPagoCade()
   const txt = per.etiqueta
   const [cuentas, setCuentas] = useState<Cuenta[]>([])
   const [movs, setMovs] = useState<Mov[]>([])
@@ -50,10 +65,14 @@ export default function HoyTab() {
   const [cadeMes, setCadeMes] = useState({ previsto: 0, cobrado: 0, n: 0 })
   const [historico, setHistorico] = useState<{ mes: string; total: number }[]>([])
   const [sinEnviar, setSinEnviar] = useState(0)
+  const [robots, setRobots] = useState<Robot[]>([])
+  const [sesiones, setSesiones] = useState<Sesion[]>([])
+  const [vencimientos, setVencimientos] = useState<Venc[]>([])
+  const [desviaciones, setDesviaciones] = useState<Desviacion[]>([])
   const [cargando, setCargando] = useState(true)
   const [errEnviada, setErrEnviada] = useState<string | null>(null)
 
-  /* Cade del mes en curso: lo facturado el mes pasado se cobra entre el 10 y el 15 */
+  /* Cade del mes en curso: lo facturado el mes pasado es lo que toca cobrar este mes */
   useEffect(() => {
     const mesFact = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1)
     const ini6 = new Date(hoy.getFullYear(), hoy.getMonth() - 6, 1)
@@ -65,7 +84,31 @@ export default function HoyTab() {
       supabase.from('facturas_historico').select('fecha_factura, base_imponible').eq('cliente', 'CADE').gte('fecha_factura', iso(ini6)),
       supabase.from('conciliacion').select('importe').eq('categoria', 'cade').gt('importe', 0).gte('fecha', iso(primero(hoy))),
       supabase.from('envios_cade').select('id, estado').in('estado', ['borrador', 'borrador_gmail', 'borrador_eml']),
-    ]).then(([c, dc, t, fe, fh, cob, en]) => {
+      supabase.from('robot_salud').select('fuente, estado, ultima_ejecucion, detalle'),
+      supabase.from('banco_sesiones').select('banco, valida_hasta').eq('estado', 'autorizada'),
+      supabase.from('furgonetas').select('id, codigo, matricula'),
+      supabase.from('furgonetas_itv').select('furgoneta_id, proxima_fecha'),
+      supabase.from('furgonetas_seguros').select('furgoneta_id, compania, fecha_renovacion, fecha_proximo_cobro'),
+      supabase.from('furgonetas_prestamos').select('furgoneta_id, entidad, fecha_fin'),
+      supabase.from('conductores').select('nombre, carnet_caducidad, activo'),
+      supabase.from('v_dia_repartidor').select('fecha, transportista, repartidor, entregas, pagado, compensacion_minimo, cargo_cade').gte('fecha', iso(new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - 70))),
+    ]).then(([c, dc, t, fe, fh, cob, en, rs, bs, fg, itv, seg, pre, cond, dr]) => {
+      setDesviaciones(desviacionesRepartidores((dr.data ?? []) as DiaDesv[]))
+      setRobots((rs.data ?? []) as Robot[])
+      setSesiones((bs.data ?? []) as Sesion[])
+      /* Vencimientos de flota y carnets: solo los que caen en los próximos 30 días o ya han pasado */
+      const furgo = new Map(((fg.data ?? []) as { id: string; codigo: string | null; matricula: string | null }[]).map(f => [f.id, f.matricula ?? f.codigo ?? '']))
+      const dias = (f: string) => Math.floor((new Date(f + 'T00:00:00').getTime() - new Date(iso(hoy) + 'T00:00:00').getTime()) / 864e5)
+      const v: Venc[] = []
+      const add = (que: string, quien: string, fecha: string | null) => { if (fecha && dias(fecha) <= DIAS_VENCIMIENTO) v.push({ que, quien, fecha, dias: dias(fecha) }) }
+      for (const x of (itv.data ?? []) as { furgoneta_id: string; proxima_fecha: string | null }[]) add('ITV', furgo.get(x.furgoneta_id) ?? '', x.proxima_fecha)
+      for (const x of (seg.data ?? []) as { furgoneta_id: string; compania: string | null; fecha_renovacion: string | null; fecha_proximo_cobro: string | null }[]) {
+        add(`Renovación seguro${x.compania ? ` · ${x.compania}` : ''}`, furgo.get(x.furgoneta_id) ?? '', x.fecha_renovacion)
+        add(`Recibo seguro${x.compania ? ` · ${x.compania}` : ''}`, furgo.get(x.furgoneta_id) ?? '', x.fecha_proximo_cobro)
+      }
+      for (const x of (pre.data ?? []) as { furgoneta_id: string; entidad: string | null; fecha_fin: string | null }[]) add(`Fin del préstamo${x.entidad ? ` · ${x.entidad}` : ''}`, furgo.get(x.furgoneta_id) ?? '', x.fecha_fin)
+      for (const x of (cond.data ?? []) as { nombre: string; carnet_caducidad: string | null; activo: boolean | null }[]) if (x.activo !== false) add('Carnet de conducir', x.nombre, x.carnet_caducidad)
+      setVencimientos(v.sort((a, b) => a.dias - b.dias))
       setCuentas((c.data ?? []) as Cuenta[])
       setDocs(((dc.data ?? []) as Doc[]).filter(x => x.estado === 'pedir'))
       setTareas(((t.data ?? []) as Tarea[]).filter(x => !/hech|resuel|cerrad|complet|done/i.test(x.estado ?? '')))
@@ -127,7 +170,20 @@ export default function HoyTab() {
   const maxH = Math.max(1, ...historico.map(x => x.total))
   const diaMes = hoy.getDate()
   const tareasHoy = tareas.filter(t => !t.fecha_limite || t.fecha_limite <= iso(hoy)).slice(0, 8)
-  const hayAvisos = docs.length > 0 || sinEnviar > 0 || sinCategorizar > 0 || tareasHoy.length > 0
+  /* Robots: parados más de 2 días, con error, o conexión bancaria a punto de caducar */
+  const diasDesde = (f: string | null) => (f ? Math.floor((Date.now() - new Date(f).getTime()) / 864e5) : 999)
+  const robotsMal = robots.map(r => ({ ...r, nombre: ROBOT_NOMBRE[r.fuente] ?? r.fuente, dias: diasDesde(r.ultima_ejecucion) }))
+    .filter(r => r.dias >= DIAS_SIN_ROBOT || r.estado !== 'ok')
+  const caducidadPorBanco = (() => {
+    const m = new Map<string, string>()
+    for (const s of sesiones) if (s.valida_hasta && (!m.has(s.banco) || s.valida_hasta > (m.get(s.banco) as string))) m.set(s.banco, s.valida_hasta)
+    return [...m.entries()].map(([banco, hasta]) => ({ banco, hasta, dias: Math.floor((new Date(hasta).getTime() - Date.now()) / 864e5) }))
+  })()
+  const sesionesCaducan = caducidadPorBanco.filter(x => x.dias <= DIAS_AVISO_CADUCIDAD)
+  const ultimaDescarga = robots.find(r => r.fuente === 'banco_sync')?.ultima_ejecucion ?? null
+  const primeraCaducidad = caducidadPorBanco.map(x => x.hasta).sort()[0] ?? null
+  const fmtCorto = (f: string) => new Date(f).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+  const hayAvisos = docs.length > 0 || sinEnviar > 0 || sinCategorizar > 0 || tareasHoy.length > 0 || robotsMal.length > 0 || sesionesCaducan.length > 0 || vencimientos.length > 0 || desviaciones.length > 0
   const card = { background: BLANCO, border: BORDER_CARD, boxShadow: SHADOW, padding: '14px 16px' }
 
   return (
@@ -198,7 +254,7 @@ export default function HoyTab() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20, marginTop: 14 }}>
           <div style={{ ...card }}>
             <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 14, textTransform: 'uppercase' }}>Este mes ({MESES[hoy.getMonth()]})</div>
-            <div style={{ fontSize: 12, fontWeight: 600, color: GRIS }}>Lo facturado en {MESES[(hoy.getMonth() + 11) % 12]} ({cadeMes.n} facturas), con IVA. Cade paga entre el 10 y el 15.</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: GRIS }}>Lo facturado en {MESES[(hoy.getMonth() + 11) % 12]} ({cadeMes.n} facturas), con IVA. {ciclo.texto ?? TEXTO_SIN_CONFIRMAR}</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginTop: 10 }}>
               {[{ l: 'Previsto', v: cadeMes.previsto, c: INK }, { l: 'Cobrado', v: cadeMes.cobrado, c: OLIVA }, { l: 'Falta', v: falta, c: falta > 0 ? (diaMes > 15 ? TERRA : NARANJA) : OLIVA }].map(k => (
                 <div key={k.l}>
@@ -211,7 +267,7 @@ export default function HoyTab() {
               <div style={{ position: 'absolute', inset: 0, width: `${cadeMes.previsto > 0 ? Math.min(100, (cadeMes.cobrado / cadeMes.previsto) * 100) : 0}%`, background: OLIVA }} />
             </div>
             <div style={{ fontSize: 12, fontWeight: 700, marginTop: 8, color: falta > 0 ? (diaMes > 15 ? TERRA : INK) : OLIVA }}>
-              {cadeMes.previsto === 0 ? 'Aún no hay facturas del mes pasado.' : falta <= 0 ? 'Cade ya ha pagado todo lo previsto.' : diaMes > 15 ? `Cade se retrasa: faltan ${eur0(falta)} y ya pasó el 15.` : `Faltan ${eur0(falta)}: llegan entre el 10 y el 15.`}
+              {cadeMes.previsto === 0 ? 'Aún no hay facturas del mes pasado.' : falta <= 0 ? 'Cade ya ha pagado todo lo previsto.' : ciclo.diaLimite ? (diaMes > ciclo.diaLimite ? `Cade se retrasa: faltan ${eur0(falta)} y ya pasó el día ${ciclo.diaLimite}.` : `Faltan ${eur0(falta)}: el plazo acaba el día ${ciclo.diaLimite}.`) : `Faltan ${eur0(falta)}.`}
             </div>
           </div>
           <div style={{ ...card }}>
@@ -239,6 +295,14 @@ export default function HoyTab() {
         <Banda bg={ARENA}>
           <span style={eyebrow(NARANJA, ARENA)}>Para hoy</span>
           <div style={{ display: 'grid', gap: 12, marginTop: 14 }}>
+            {robotsMal.map(r => (
+              <Aviso key={r.fuente} color={TERRA} enlace="/configuracion/bancos" boton="Revisar"
+                texto={r.dias >= DIAS_SIN_ROBOT ? `${r.nombre}: ${r.dias >= 999 ? 'nunca se ha ejecutado' : `lleva ${r.dias} días sin ejecutarse`}` : `${r.nombre}: terminó con error`} />
+            ))}
+            {sesionesCaducan.map(s => (
+              <Aviso key={s.banco} color={NARANJA} enlace="/configuracion/bancos" boton="Renovar"
+                texto={s.dias < 0 ? `La conexión con ${s.banco} ha caducado` : `La conexión con ${s.banco} caduca el ${fmtCorto(s.hasta)}`} />
+            ))}
             {docs.length > 0 && (
               <div style={{ ...card, borderColor: INK, background: AMBAR }}>
                 <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 15, textTransform: 'uppercase' }}>
@@ -256,6 +320,26 @@ export default function HoyTab() {
                   <button onClick={marcarEnviada} style={{ fontFamily: OSW, fontWeight: 700, fontSize: 13, textTransform: 'uppercase', color: ARENA, background: OLIVA, border: `2px solid ${INK}`, padding: '5px 12px', cursor: 'pointer' }}>Ya la tengo enviada</button>
                   {errEnviada && <span style={{ fontSize: 12, fontWeight: 700, color: TERRA }}>No se pudo marcar: {errEnviada}</span>}
                 </div>
+              </div>
+            )}
+            {desviaciones.map((x, i) => (
+              <Aviso key={`d${i}`} color={x.gravedad === 'alerta' ? TERRA : NARANJA} texto={x.texto} enlace={x.texto.includes('cargos') ? '/reclamaciones' : '/entregas'} boton={x.texto.includes('cargos') ? 'Reclamar' : 'Ver rutas'} />
+            ))}
+            {vencimientos.length > 0 && (
+              <div style={card}>
+                <div style={{ fontFamily: OSW, fontWeight: 700, fontSize: 15, textTransform: 'uppercase' }}>Vencimientos · próximos {DIAS_VENCIMIENTO} días</div>
+                <div style={{ display: 'grid', gap: 4, marginTop: 8 }}>
+                  {vencimientos.map((x, i) => (
+                    <div key={i} style={{ fontSize: 13, fontWeight: 600, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'baseline' }}>
+                      <span style={{ fontFamily: OSW, fontWeight: 700, color: x.dias < 0 ? TERRA : x.dias <= 7 ? NARANJA : INK, minWidth: 92 }}>
+                        {x.dias < 0 ? `hace ${-x.dias} d` : x.dias === 0 ? 'hoy' : `en ${x.dias} d`}
+                      </span>
+                      <span>{x.que}</span>
+                      <span style={{ color: GRIS }}>{x.quien} · {new Date(x.fecha + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}</span>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ marginTop: 10 }}><Link to="/flota" style={{ fontFamily: OSW, fontWeight: 700, fontSize: 13, textTransform: 'uppercase', color: INK, background: ARENA, border: `2px solid ${INK}`, padding: '5px 12px', textDecoration: 'none' }}>Ver flota →</Link></div>
               </div>
             )}
             {sinEnviar > 0 && <Aviso color={NARANJA} texto={`${sinEnviar} factura${sinEnviar > 1 ? 's' : ''} de Cade sin enviar`} enlace="/finanzas/facturacion" boton="Enviar" />}
@@ -277,6 +361,13 @@ export default function HoyTab() {
 
       <section style={{ background: ARENA, borderBottom: BORDER, padding: `16px ${PAD}`, fontFamily: LEX, fontSize: 12, fontWeight: 600, color: GRIS }}>
         {hayAvisos ? 'Los avisos desaparecen solos cuando se resuelven.' : 'Nada pendiente hoy.'}
+        {robots.length > 0 && (
+          <span style={{ marginLeft: 10, color: robotsMal.length === 0 && sesionesCaducan.length === 0 ? OLIVA : TERRA }}>
+            Robots: {robotsMal.length === 0 ? 'todo en marcha' : `${robotsMal.length} con problemas`}
+            {ultimaDescarga ? ` · última descarga bancaria ${new Date(ultimaDescarga).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}` : ''}
+            {primeraCaducidad ? ` · conexiones bancarias hasta el ${fmtCorto(primeraCaducidad)}` : ''}
+          </span>
+        )}
       </section>
     </>
   )

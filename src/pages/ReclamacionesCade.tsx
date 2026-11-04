@@ -8,6 +8,7 @@ import {
   TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo, HeroNeo, TabsNeo, usePestana,
 } from '@/components/neo/NeoUI'
 import { usePeriodo } from '@/lib/periodoGlobal'
+import { textoReclamacion, asuntoReclamacion, emisorDe, type EmisorVigencia } from '@/lib/liquidacionCade'
 
 interface Reclamacion {
   id: string
@@ -158,14 +159,7 @@ type EstadoInc = typeof ESTADOS_INC[number]
 const TXT_ESTADO: Record<EstadoInc, string> = { propuesta: 'Por decidir', reclamada: 'Reclamadas', recuperada: 'Recuperadas', descartada: 'Descartadas' }
 const COLOR_INC: Record<EstadoInc, string> = { propuesta: TERRA, reclamada: AMBAR, recuperada: OLIVA, descartada: MARINO }
 
-function textoReclamacion(items: Incidencia[]): string {
-  const lineas = items
-    .slice()
-    .sort((a, b) => (a.fecha ?? '').localeCompare(b.fecha ?? ''))
-    .map(i => `- ${fmtDate(i.fecha ?? '')} · transportista ${i.transportista ?? '—'} · ${i.codigo} · ${fmtEur(Math.abs(i.importe))}`)
-  const total = items.reduce((s, i) => s + Math.abs(i.importe), 0)
-  return `Buenos días,\n\nRevisando las liquidaciones vemos los siguientes cargos que no son habituales y que solicitamos revisar:\n\n${lineas.join('\n')}\n\nTotal: ${fmtEur(total)}\n\nQuedamos a la espera de su respuesta.\n\nUn saludo`
-}
+interface ConfigEmisor { emisor: string; nombre: string | null; email_cade_facturas: string | null }
 
 const IDS_PESTANA = ['incidencias', 'historico'] as const
 
@@ -178,6 +172,9 @@ export default function ReclamacionesCade() {
   const [saving, setSaving] = useState<number | null>(null)
   const [vista, setVista] = useState<EstadoInc>('propuesta')
   const [copiado, setCopiado] = useState(false)
+  const [emisores, setEmisores] = useState<EmisorVigencia[]>([])
+  const [configEmisores, setConfigEmisores] = useState<ConfigEmisor[]>([])
+  const [msgReclamacion, setMsgReclamacion] = useState<string | null>(null)
 
   async function cargar() {
     const { data, error } = await supabase
@@ -189,6 +186,43 @@ export default function ReclamacionesCade() {
     setLoading(false)
   }
   useEffect(() => { cargar() }, [])
+  useEffect(() => {
+    supabase.from('emisores_transportistas').select('transportista, emisor, vigente_desde, vigente_hasta').then(({ data }) => setEmisores((data ?? []) as EmisorVigencia[]))
+    supabase.from('config_emisores').select('emisor, nombre, email_cade_facturas').then(({ data }) => setConfigEmisores((data ?? []) as ConfigEmisor[]))
+  }, [])
+
+  /* Reclamación en un clic: agrupa los cargos por quien factura ese código, deja el correo registrado como
+     borrador (envios_cade, tipo reclamacion), marca los cargos como reclamados y abre el correo en tu programa
+     con destinatario, asunto y texto ya puestos. Nada sale hacia Cade hasta que tú pulses Enviar allí. */
+  async function proponerReclamacion(items: Incidencia[]) {
+    if (!items.length) return
+    setMsgReclamacion(null)
+    const porEmisor = new Map<string, Incidencia[]>()
+    for (const i of items) {
+      const em = emisorDe(emisores, i.transportista ?? '', (i.fecha ?? '').slice(0, 10)) ?? (configEmisores[0]?.emisor ?? 'DAVID')
+      porEmisor.set(em, [...(porEmisor.get(em) ?? []), i])
+    }
+    const abiertos: string[] = []
+    for (const [em, lista] of porEmisor) {
+      const cfg = configEmisores.find(c => c.emisor === em)
+      const destinatario = cfg?.email_cade_facturas ?? ''
+      if (!destinatario) { setErrMsg(`Falta el correo de Cade para ${em} en la configuración de emisores.`); return }
+      const codigos = [...new Set(lista.map(i => i.transportista ?? '—'))]
+      const asunto = asuntoReclamacion(cfg?.nombre ?? em, codigos)
+      const cuerpo = textoReclamacion(lista, cfg?.nombre ?? undefined)
+      const { error: e1 } = await supabase.from('envios_cade').insert({
+        tipo: 'reclamacion', emisor: em, transportista: codigos.join(','), destinatario, asunto, cuerpo, estado: 'borrador', adjuntos: [],
+        detalle: `${lista.length} cargo(s) · ${lista.reduce((s, i) => s + Math.abs(i.importe), 0).toFixed(2)} €`,
+      })
+      if (e1) { setErrMsg(e1.message); return }
+      const { error: e2 } = await supabase.from('liquidaciones_cade_incidencias').update({ estado: 'reclamada', propuesta_correo: asunto }).in('id', lista.map(i => i.id))
+      if (e2) { setErrMsg(e2.message); return }
+      abiertos.push(`mailto:${encodeURIComponent(destinatario)}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`)
+    }
+    await cargar()
+    for (const url of abiertos) window.open(url, '_blank')
+    setMsgReclamacion(`${abiertos.length === 1 ? 'Correo preparado' : `${abiertos.length} correos preparados`} y cargos marcados como reclamados. Revisa el correo que se ha abierto y pulsa Enviar. Si no se abre, usa «Copiar texto para Cade».`)
+  }
 
   const incs = useMemo(
     () => incsTodas.filter(i => !!i.fecha && i.fecha.slice(0, 10) >= periodo.desdeIso && i.fecha.slice(0, 10) <= periodo.hastaIso),
@@ -282,12 +316,18 @@ export default function ReclamacionesCade() {
                 {TXT_ESTADO[e]} ({totales[e].n})
               </button>
             ))}
+            {visibles.length > 0 && vista === 'propuesta' && (
+              <button onClick={() => proponerReclamacion(visibles)} style={{ ...btn(TERRA, true), marginLeft: 'auto' }} disabled={saving !== null}>
+                Reclamar a Cade en un clic ({visibles.length})
+              </button>
+            )}
             {visibles.length > 0 && (
-              <button onClick={copiar} style={{ ...btn(NARANJA, true), marginLeft: 'auto' }}>
+              <button onClick={copiar} style={{ ...btn(NARANJA, true), marginLeft: vista === 'propuesta' ? 0 : 'auto' }}>
                 {copiado ? 'Texto copiado' : 'Copiar texto para Cade'}
               </button>
             )}
           </div>
+          {msgReclamacion && <div style={{ background: ARENA_CL, border: `2px solid ${OLIVA}`, padding: '8px 12px', fontSize: 13, fontWeight: 600, marginBottom: 14 }}>{msgReclamacion}</div>}
 
           {loading && <div style={{ color: GRIS, padding: 24, textAlign: 'center' }}>Cargando…</div>}
           {!loading && grupos.length === 0 && (
@@ -301,7 +341,8 @@ export default function ReclamacionesCade() {
                 <BadgeNeo color={COLOR_INC[vista]}>{g.items.length} cargos · {fmtEur(g.eur)}</BadgeNeo>
                 {vista === 'propuesta' && (
                   <>
-                    <button style={btn(AMBAR, true)} onClick={() => cambiar(g.items.map(i => i.id), 'reclamada')}>Reclamar todos</button>
+                    <button style={btn(TERRA, true)} onClick={() => proponerReclamacion(g.items)}>Reclamar en un clic</button>
+                    <button style={btn(AMBAR)} onClick={() => cambiar(g.items.map(i => i.id), 'reclamada')}>Marcar reclamados</button>
                     <button style={btn(MARINO)} onClick={() => cambiar(g.items.map(i => i.id), 'descartada')}>Descartar todos</button>
                   </>
                 )}
