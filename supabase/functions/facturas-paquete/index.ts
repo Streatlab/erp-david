@@ -53,14 +53,33 @@ async function relacionXlsx(tpl: Uint8Array, facturas: any[]): Promise<Uint8Arra
   const zip = await JSZip.loadAsync(tpl);
   let s = await zip.file('xl/worksheets/sheet1.xml')!.async('string');
   const ss = leerSS(await zip.file('xl/sharedStrings.xml')!.async('string'));
+  // Nº de factura de una fila: texto (t="s") o número directo. Antes un número directo se leía como índice de texto
+  // y la factura se volvía a añadir cada vez (filas repetidas).
+  // "15/17" (anotado a mano) cuenta como la factura 17.
+  const valF = (x: string) => { const m = x.match(/<c r="F\d+"([^>]*)>\s*<v>([^<]*)<\/v>/); return m ? (/t="s"/.test(m[1]) ? (ss.list[+m[2]] ?? '') : m[2]).split('/').pop()!.trim() : ''; };
+  const esDato = (x: string) => /<c r="A\d+"[^>]*t="s"/.test(x);
+  const zona: { n: number; xml: string }[] = [];
+  for (const m of s.matchAll(/<row r="(\d+)"[^>]*?(?<!\/)>[\s\S]*?<\/row>/g)) { if (+m[1] >= 5 && +m[1] <= 195) zona.push({ n: +m[1], xml: m[0] }); }
+  const vistos = new Set<string>(); const datos: string[] = []; const vacias: string[] = [];
+  for (const f of zona) {
+    if (esDato(f.xml)) { const k = valF(f.xml); if (k && vistos.has(k)) continue; if (k) vistos.add(k); datos.push(f.xml); } else vacias.push(f.xml);
+  }
+  if (datos.length + vacias.length < zona.length) { // había filas repetidas: se quitan y se compacta
+    while (datos.length + vacias.length < zona.length) vacias.push(vacias.length ? vacias[vacias.length - 1] : '<row r="0"></row>');
+    let nAlb = 0; // los albaranes siguen la numeración correlativa tras quitar las repetidas
+    const nuevas = [...datos.map(x => x.replace(/(<c r="C\d+"[^>]*><v>)\d+(<\/v>)/, (_m, a, b) => a + (++nAlb) + b)), ...vacias];
+    zona.forEach((o, i) => {
+      const x = nuevas[i].replace(/<row r="\d+"/, `<row r="${o.n}"`).replace(/<c r="([A-Z]+)\d+"/g, `<c r="$1${o.n}"`);
+      s = s.replace(o.xml, () => x);
+    });
+  }
   const ya = new Set<string>();
-  for (const m of s.matchAll(/<c r="F(\d+)"[^>]*><v>(\d+)<\/v><\/c>/g)) { if (+m[1] >= 5 && +m[1] <= 198) ya.add(ss.list[+m[2]] ?? m[2]); }
-  for (const m of s.matchAll(/<c r="F(\d+)"[^>]*t="s"[^>]*><v>(\d+)<\/v><\/c>/g)) { if (+m[1] >= 5 && +m[1] <= 198) ya.add(ss.list[+m[2]]); }
-  let fila = 5; while (fila < 198 && new RegExp(`<c r="A${fila}"[^>]*t="s"`).test(s)) fila++;
+  for (const x of datos) { const k = valF(x); if (k) ya.add(k); }
+  let fila = 5; while (fila < 196 && new RegExp(`<c r="A${fila}"[^>]*t="s"`).test(s)) fila++;
   let alb = 0; for (const m of s.matchAll(/<c r="C(\d+)"[^>]*><v>(\d+)<\/v>/g)) alb = Math.max(alb, +m[2]);
   for (const f of facturas) {
     const num = String(f.serie ?? '') + String(f.numero_factura);
-    if (ya.has(num) || fila >= 198) continue;
+    if (ya.has(num) || fila >= 196) continue;
     const bi = Number(f.base_imponible), iva = r4(bi * 0.21), tot = r4(bi + iva);
     const esCade = String(f.cliente).toUpperCase() === 'CADE';
     const conc = esCade ? `CADE ${f.transportista}` : 'Traslado mercancías Almacén Cocentaina';
