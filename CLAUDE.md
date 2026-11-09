@@ -59,7 +59,7 @@
 2. Reparto para Mercadona, Carrefour, Lidl y Día en Alcoi y Ontinyent: la rentabilidad se mide por supermercado y por ruta.
 3. Diseño: kit Marino+Fuego Mediterráneo, regla 60/30/10, sin rojos en gráficos.
 4. Mensaje a David sobre una liquidación: SOLO del mes en curso (sin comparar con meses anteriores ni citar incidencias de otros meses). Va redactado para copiar y pegar.
-5. Con cada liquidación nueva: factura + relación de facturas del emisor (David y Juan) + revisar por dentro los archivos antes de pasarlos. Nunca se envía nada a Cade sin orden del usuario.
+5. Con cada liquidación nueva: factura + relación de facturas del emisor (David y Juan) + revisar por dentro los archivos antes de pasarlos. Los PDF se renderizan a imagen y se miran antes de pasarlos (nada pisado ni cortado). Nunca se envía nada a Cade sin orden del usuario.
 
 ## Pendientes (Notion "99 Claude")
 - Track: DAVID-ERP. Estados: ACTIVO / EN_CURSO / PARADO / RESUELTO.

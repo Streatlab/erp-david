@@ -33,8 +33,14 @@ Deno.serve(async (req) => {
     t(em.nif, 55, 755); t(em.direccion ?? '', 55, 743);
     t((em.cp_ciudad ?? '').replace(/^(\d{5}) (.*)$/, '$2, $1'), 55, 731);
     t(em.email ?? '', 55, 719); t(em.telefono ?? '', 55, 707);
-    t('FECHA:', 375, 743, { f: B }); t(fechaLarga(f.fecha_factura), 445, 743);
-    t('N.º DE FACTURA', 375, 731, { f: B }); t(String(f.serie ?? '') + String(f.numero_factura), 445, 731);
+    // Cada rótulo va a la izquierda y su valor alineado a la derecha: nunca se pisan (se comprueba abajo).
+    const choques: string[] = [];
+    const par = (rotulo: string, valor: string, xl: number, xr: number, y: number, sz = 9, fv = R, fr = B) => {
+      t(rotulo, xl, y, { f: fr, s: sz }); tr(valor, xr, y, { f: fv, s: sz });
+      if (xl + fr.widthOfTextAtSize(rotulo, sz) + 8 > xr - fv.widthOfTextAtSize(valor, sz)) choques.push(`${rotulo} / ${valor}`);
+    };
+    par('FECHA:', fechaLarga(f.fecha_factura), 375, 545, 743);
+    par('N.º DE FACTURA', String(f.serie ?? '') + String(f.numero_factura), 375, 545, 731);
     if (f.transportista) {
       box(372, 695, 70, 20); box(442, 695, 103, 20);
       t('REPARTIDOR', 378, 702, { f: B, s: 8 });
@@ -50,18 +56,24 @@ Deno.serve(async (req) => {
     t('DESCRIPCIÓN', 150, y); t('UD', 365, y); t('SERVICIO', 412, y); tr('IMPORTE', 545, y);
     y -= 24;
     const base = Number(f.base_imponible);
-    t(f.concepto ?? 'Reparto a domicilio', 55, y); tr('1.00', 385, y); tr(base.toLocaleString('en-US', { minimumFractionDigits: 2 }), 455, y); tr(eur(base), 545, y);
+    const concepto = f.concepto ?? 'Reparto a domicilio';
+    t(concepto, 55, y); tr('1', 385, y); tr(base.toLocaleString('es-ES', { minimumFractionDigits: 2 }), 455, y); tr(eur(base), 545, y);
+    if (55 + R.widthOfTextAtSize(concepto, 9) + 8 > 385 - R.widthOfTextAtSize('1', 9) - 20) choques.push('concepto demasiado largo');
 
     const iva = Math.round(base * Number(f.iva_pct ?? 21)) / 100;
     const totl = Math.round((base + iva) * 100) / 100;
-    tr('BASE IMPONIBLE', 445, 205); tr(eur(base), 545, 205);
-    box(447, 180, 98, 17); tr('IVA', 445, 185); tr(`${(Number(f.iva_pct ?? 21)).toFixed(2)}%`, 541, 185);
-    box(447, 160, 98, 17, sombra); tr('CUOTA IVA', 445, 165); tr(eur(iva), 541, 165, { f: B });
-    box(447, 120, 98, 17, sombra); tr('TOTAL', 445, 125, { f: B }); tr(eur(totl), 541, 125, { f: B });
+    // Rótulos de totales alineados a la derecha en x=437, separados de las cajas (que empiezan en 447).
+    tr('BASE IMPONIBLE', 437, 205); tr(eur(base), 545, 205);
+    box(447, 180, 98, 17); tr('IVA', 437, 185); tr(`${Number(f.iva_pct ?? 21).toFixed(2).replace('.', ',')}%`, 541, 185);
+    box(447, 160, 98, 17, sombra); tr('CUOTA IVA', 437, 165); tr(eur(iva), 541, 165, { f: B });
+    box(447, 120, 98, 17, sombra); tr('TOTAL', 437, 125, { f: B }); tr(eur(totl), 541, 125, { f: B });
+    for (const [v, w] of [[eur(iva), 98], [eur(totl), 98]] as [string, number][]) if (B.widthOfTextAtSize(v, 9) > w - 8) choques.push('importe no cabe en su caja: ' + v);
 
     t(`Pagadera a nombre de ${em.nombre}.`, 55, 95);
     t(`Cuenta bancaria BBVA ${em.cuenta_iban}`, 55, 75, { s: 8 });
 
+    // Si algo se solapa o no cabe, NO se guarda un PDF mal renderizado: falla con un aviso claro.
+    if (choques.length) throw new Error('El PDF de la factura se renderizaría mal (' + choques.join('; ') + ')');
     const bytes = await pdf.save();
     const ruta = `facturas/${f.emisor}/${new Date(f.fecha_factura).getFullYear()}/factura-${f.numero_factura}-${f.transportista ?? 'servicio'}.pdf`;
     const up = await sb.storage.from('documentacion').upload(ruta, bytes, { upsert: true, contentType: 'application/pdf' });
