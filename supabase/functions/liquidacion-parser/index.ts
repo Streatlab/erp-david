@@ -47,7 +47,8 @@ function cabecera(texto: string, entregas: Entrega[]) {
   const t = texto.replace(/\s+/g, ' ');
   const cab = t.match(/Transportista:\s*(\d+)\s*,?\s*Fecha registro:\s*(\d\d)\/(\d\d)\/(\d\d)\s*\.\.\s*(\d\d)\/(\d\d)\/(\d\d)/);
   if (cab) return { codigo: cab[1], desde: `20${cab[4]}-${cab[3]}-${cab[2]}`, hasta: `20${cab[7]}-${cab[6]}-${cab[5]}` };
-  const c = t.match(/Transportista:\s*(\d{3,4})/) ?? t.match(/TOTAL CONDUCTOR (\d{3,4})/);
+  // El código real es el del conductor de cada fila; la cabecera puede traer un rango ("Transportista: 9711..972").
+  const c = t.match(/TOTAL CONDUCTOR (\d{3,4})/) ?? t.match(/Transportista:\s*(?:\d{3,4}\.\.)?(\d{3,4})/);
   if (!c || !entregas.length) return null;
   const fs = entregas.map(e => e.fecha).sort();
   const m = fs[Math.floor(fs.length / 2)].slice(0, 7);
