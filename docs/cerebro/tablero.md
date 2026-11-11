@@ -1,7 +1,7 @@
 # Tablero David
 | # | Tarea | Estado | Nota |
 |---|---|---|---|
-| 1 | Corregir RULES.md (publicar directo + PINs) | ACTIVO | Necesita sí de Rubén (toca candados) |
+| 1 | Corregir RULES.md (publicar directo + PINs) | RESUELTO | Hecho 11-nov |
 | 2 | Cambio real de PINs | ACTIVO | Lo decide Rubén |
 | 3 | Confirmar ciclo de pago de Cade | ACTIVO | Pendiente Rubén |
 | 4 | Datos reales de pólizas y préstamos (hoy Mockup) | ACTIVO | |

@@ -6,6 +6,5 @@
 - 11-nov: un solo Cerebro para el ecosistema; la base es común, lo específico va en copia propia (`manuales/equipo-david.md`).
 - 11-nov: publica solo el Publicador común.
 ## Notas
-- `.claude/rules/RULES.md` manda push a master y vercel --prod: choca con la constitución (art. 4b). Vale la constitución. Pedir a Rubén permiso para corregir ese archivo.
-- `.claude/rules/RULES.md` lleva PINs de usuarios: retirar. Cambiarlos lo decide Rubén.
+- RULES.md ya corregido (11-nov): publica solo el Publicador y sin PINs. Falta que Rubén cambie los PINs reales.
 - Ciclo de pago de Cade: sin confirmar. No asumir.
