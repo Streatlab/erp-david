@@ -13,10 +13,11 @@
 - Nunca hardcodear hex fuera de estos archivos
 
 ## 3. Cadena de deploy obligatoria
-Todo prompt o tarea de fix termina con:
+Todo prompt o tarea de fix termina con un commit y push a la rama `trabajo`:
 ```bash
-git add . && git commit -m "..." && git push origin master && npx vercel --prod && git pull origin master
+git add . && git commit -m "..." && git push origin trabajo
 ```
+Publicar a producción (`master` y Vercel) lo hace SOLO el Publicador cuando Rubén dice «publica» (decisión de Rubén, 11-nov-2026). Ningún otro chat ni ayudante sube a `master`.
 
 ## 4. Migración desde patrones Binagre
 Conciliación + Bancos fueron copiados de Binagre. Reglas de migración:
@@ -31,7 +32,7 @@ Si encuentras `theme.T` o `theme.fonts` → migrar antes de cualquier otro cambi
 - David reparte para Mercadona, Carrefour, Lidl, Día en Alcoi y Ontinyent
 - Flota: 4 furgonetas eléctricas, 3 fijos + extras
 - David es autónomo subcontratista de Cade
-- Usuarios: Rubén 2056, David 0604
+- Usuarios: entran con un PIN propio personal (no se escribe en ningún archivo).
 
 ## 6. Pipeline obligatorio para fixes grandes
 1. `pm-spec` genera `.claude/plans/spec.md`

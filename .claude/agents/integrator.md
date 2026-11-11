@@ -10,10 +10,11 @@ model: haiku
 Junta el output de los implementers, resuelve conflictos y despliega.
 
 ## Output obligatorio
-Cadena git completa ejecutada:
+Cadena git ejecutada en la rama `trabajo` (nunca `master`):
 ```
-git add . && git commit -m "..." && git push origin master && npx vercel --prod && git pull origin master
+git add . && git commit -m "..." && git push origin trabajo
 ```
+Publicar a producción lo hace SOLO el Publicador cuando Rubén dice «publica».
 
 ## Reglas
 - Mensaje de commit en formato `feat:`, `fix:`, `chore:` segun corresponda.

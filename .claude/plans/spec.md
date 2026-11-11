@@ -5,7 +5,7 @@
 - Path local: C:\erp-david
 - Supabase project: idclhnxttdbwayxeowrm (separado de Binagre)
 - URL: davidparte.vercel.app
-- Login actual: PIN propio (Rubén 2056, David 0604) contra tabla `usuarios`. Mantener funcionando 100%.
+- Login actual: PIN propio (los PIN personales de Rubén y David) contra tabla `usuarios`. Mantener funcionando 100%.
 - Aislamiento absoluto vs binagre. Skills aplicables: david-erp, david-kit-visual.
 
 ## Objetivo
@@ -66,7 +66,7 @@ Añadir login Google Auth como segunda opción en pantalla de login, con whiteli
 2. Worktree: `claude -w david-google-auth`.
 3. Subagentes: pm-spec → architect-review → implementer (worktree) → qa-reviewer.
 4. Cada etapa produce su archivo en `.claude/plans/`.
-5. QA: PIN sigue funcionando (Rubén 2056, David 0604), Google rechaza emails fuera de whitelist.
+5. QA: PIN sigue funcionando (los PIN personales de Rubén y David), Google rechaza emails fuera de whitelist.
 
 ## Cierre obligatorio
 ```
