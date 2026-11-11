@@ -32,7 +32,7 @@ Añadir login Google Auth como segunda opción en pantalla de login, con whiteli
 
 **DADO** el login PIN funcionaba antes
 **CUANDO** se despliega esta feature
-**ENTONCES** sigue funcionando exactamente igual con Rubén 2056 y David 0604.
+**ENTONCES** sigue funcionando exactamente igual con los PIN personales de Rubén y David.
 
 **DADO** un usuario tiene sesión Supabase Auth Y sesión PIN
 **CUANDO** la app verifica autenticación
@@ -70,7 +70,7 @@ Añadir login Google Auth como segunda opción en pantalla de login, con whiteli
 
 ## Cierre obligatorio
 ```
-git add . && git commit -m "feat: Google Auth + whitelist 3 usuarios en paralelo a PIN" && git push origin master && npx vercel --prod && git pull origin master
+git add . && git commit -m "feat: Google Auth + whitelist 3 usuarios en paralelo a PIN" && git push origin trabajo (publicar lo hace solo el Publicador)
 ```
 
 ## Notas
