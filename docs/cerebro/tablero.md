@@ -2,7 +2,7 @@
 | # | Tarea | Estado | Nota |
 |---|---|---|---|
 | 1 | Corregir RULES.md (publicar directo + PINs) | RESUELTO | Hecho 11-nov |
-| 2 | Cambio real de PINs | ACTIVO | Lo decide Rubén |
+| 2 | Cambio real de PINs | RESUELTO | Hecho 11-nov; PINs cambiados, fecha |
 | 3 | Confirmar ciclo de pago de Cade | ACTIVO | Pendiente Rubén |
 | 4 | Datos reales de pólizas y préstamos (hoy Mockup) | ACTIVO | |
 | 5 | Lector de liquidaciones Cade (T6) y Entregas (T12) | ACTIVO | Ver MAPA-CONTEXTO |
