@@ -8,7 +8,7 @@
 
 ## Git y deploy (obligatorio)
 1. TODO commit va a la rama `trabajo`. PROHIBIDO commitear a la rama principal.
-2. Publicar a producción (merge) lo hace SOLO el usuario, nunca Claude.
+2. Publicar a producción lo hace SOLO el Publicador común de todos los proyectos, cuando Rubén dice «publica».
 3. Vercel cobra por build: agrupar todos los cambios de la sesión en 1 commit. Objetivo 1-3 commits/sesión.
 4. Tras publicar el usuario, verificar estado en Vercel (1 sola verificación) y reportar READY o fallo.
 
