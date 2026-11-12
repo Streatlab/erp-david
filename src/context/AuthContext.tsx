@@ -13,6 +13,7 @@ export interface Usuario {
   nombre: string
   perfil: string
   email: string
+  conductor_id?: string | null
 }
 
 /* cargando → fuera (pantalla de entrada) → crear-pin (primera vez en el dispositivo)
@@ -64,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       let fallo = false
       for (const pausa of [0, 500, 1500]) {
         if (pausa) await espera(pausa)
-        const { data, error: e } = await supabase.rpc('mi_usuario')
+        const { data, error: e } = await supabase.rpc('mi_perfil')
         if (e) { fallo = true; continue }
         fallo = false
         fila = (Array.isArray(data) ? data[0] : data) ?? null

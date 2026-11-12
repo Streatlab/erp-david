@@ -3,7 +3,7 @@ import { Plus } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { fmtDate } from '@/lib/format'
 import { INK, ARENA, BLANCO, GRIS, OLIVA, TERRA, NARANJA, CELESTE, AMBAR, OSW, BORDER_CARD } from '@/styles/neobrutal'
-import { PageNeo, CabeceraNeo, Banda, KpiNeo, BotonNeo, AvisoNeo, HeroNeo } from '@/components/neo/NeoUI'
+import { PageNeo, CabeceraNeo, Banda, BotonNeo, AvisoNeo, HeroNeo } from '@/components/neo/NeoUI'
 import { campo, Etiqueta } from '@/components/flota/FormFlota'
 
 /* Tareas reales (tabla tareas). Clic en una tarea avanza su estado: pendiente → en curso → hecha. */
@@ -54,7 +54,7 @@ export default function Tareas() {
         cifra={tareas.length === 0 ? '—' : String(abiertas.length)}
         color={tareas.length === 0 ? AMBAR : vencidas > 0 ? NARANJA : OLIVA}
         frase={tareas.length === 0 ? 'Sin datos todavía' : vencidas > 0 ? `${vencidas} con la fecha límite pasada: empieza por esas.` : abiertas.length === 0 ? 'Todo al día, no queda nada pendiente.' : 'Ninguna vencida, vas al día.'}
-        apoyo={tareas.length === 0 ? undefined : [{ label: 'Vencidas', valor: String(vencidas) }, { label: 'En curso', valor: String(cuenta('EN_CURSO')) }, { label: 'Hechas', valor: String(cuenta('HECHA')) }]}
+        apoyo={tareas.length === 0 ? undefined : [{ label: 'Pendientes', valor: String(cuenta('PENDIENTE')) }, { label: 'En curso', valor: String(cuenta('EN_CURSO')) }, { label: 'Vencidas', valor: String(vencidas) }, { label: 'Hechas', valor: String(cuenta('HECHA')) }]}
       />
       {error && <AvisoNeo>ERROR: {error}</AvisoNeo>}
 
@@ -78,11 +78,6 @@ export default function Tareas() {
       )}
 
       <Banda bg={BLANCO}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 20 }}>
-          <KpiNeo label="Pendientes" valor={String(cuenta('PENDIENTE'))} color={AMBAR} />
-          <KpiNeo label="En curso" valor={String(cuenta('EN_CURSO'))} color={CELESTE} />
-          <KpiNeo label="Hechas" valor={String(cuenta('HECHA'))} color={OLIVA} />
-        </div>
         {tareas.length === 0 ? (
           <div style={{ fontFamily: OSW, fontWeight: 700, textTransform: 'uppercase', color: GRIS, padding: 18, background: ARENA }}>Sin tareas. Crea la primera con «Nueva tarea».</div>
         ) : (

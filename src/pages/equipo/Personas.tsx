@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Archive, ArchiveRestore } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { INK, MARINO, ARENA, BLANCO, GRIS, OLIVA, AMBAR, OSW } from '@/styles/neobrutal'
-import { PageNeo, CabeceraNeo, Banda, TablaWrap, thNeo, tdNeo, tdEstado, BotonNeo, BadgeNeo, KpiNeo, AvisoNeo, HeroNeo } from '@/components/neo/NeoUI'
+import { PageNeo, CabeceraNeo, Banda, TablaWrap, thNeo, tdNeo, tdEstado, BotonNeo, BadgeNeo, AvisoNeo, HeroNeo } from '@/components/neo/NeoUI'
 import { useEquipo, hoyISO } from '@/hooks/useEquipo'
 import { codigosDe } from '@/lib/equipo'
 
@@ -36,14 +36,13 @@ export default function Personas() {
       {(error || errGuardar) && <AvisoNeo>ERROR: {error ?? errGuardar}</AvisoNeo>}
       <HeroNeo eyebrowTxt="Equipo hoy" cifra={cargando || activas.length === 0 ? '—' : String(activas.length)}
         frase={activas.length === 0 ? 'Sin datos todavía' : `${activas.length === 1 ? 'persona en plantilla' : 'personas en plantilla'}, ${conCodigo.length} con código Cade`}
-        color={activas.length > 0 ? OLIVA : AMBAR} />
+        color={activas.length > 0 ? OLIVA : AMBAR}
+        apoyo={activas.length === 0 ? undefined : [
+          { label: 'Con código Cade', valor: String(conCodigo.length) },
+          { label: 'Archivadas', valor: String(personas.length - activas.length) },
+        ]} />
 
       <Banda bg={BLANCO}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 20 }}>
-          <KpiNeo label="Personas activas" valor={String(activas.length)} color={MARINO} />
-          <KpiNeo label="Repartidores con código Cade" valor={String(conCodigo.length)} color={OLIVA} />
-          <KpiNeo label="Archivadas" valor={String(personas.length - activas.length)} color={GRIS} />
-        </div>
         <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
           <BotonNeo bg={verArchivo ? BLANCO : AMBAR} onClick={() => setVerArchivo(false)}>Activas</BotonNeo>
           <BotonNeo bg={verArchivo ? AMBAR : BLANCO} onClick={() => setVerArchivo(true)}>Archivo</BotonNeo>

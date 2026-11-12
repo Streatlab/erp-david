@@ -1,0 +1,14 @@
+-- S1 · Blindar la base de datos (28-oct-2026). Aplicado en producción vía conector Supabase.
+-- 1) Las 22 vistas v_* pasan a security_invoker = true (permisos del usuario que consulta, no del creador).
+-- 2) RLS activado en festivos, asignaciones_vehiculo, codigos_equivalencias (política authenticated) y _staging_pdf (solo robots).
+-- 3) Toda política abierta a anon/PUBLIC pasa a authenticated (excepto _keepalive). Los robots usan service_role.
+-- 4) Funciones SECURITY DEFINER sin EXECUTE para anon: admin_guardar_usuario, admin_listar_usuarios, aviso_calendario_laboral,
+--    generar_facturas_cade, login_google, login_pin, marcar_aviso_leido, revisar_dias_no_pagados. email_autorizado se queda abierta (se usa antes de entrar).
+-- 5) search_path = public en 9 funciones que no lo tenían.
+-- 6) Índices idx_fk_* para todas las claves foráneas sin índice.
+-- 7) Función aviso_robots(p_enviar) + cron aviso-robots-diario (07:15 UTC): WhatsApp si un robot lleva ≥2 días parado,
+--    terminó con error o una conexión bancaria caduca en ≤10 días. Mismo mecanismo que aviso_calendario_laboral.
+-- 8) Claves de configuración cade_ciclo_pago_texto y cade_dia_cobro_limite (vacías hasta que Rubén confirme el ciclo).
+-- PENDIENTE (requiere confirmación en el conector): borrar políticas duplicadas (full_access_* / *_anon_*) e índices duplicados
+--    (conciliacion_dedup_unique, liq_cade_unq). Solo afectan a rendimiento, no a seguridad.
+select 1;

@@ -13,6 +13,7 @@ import {
   d, eyebrow, card, EUR, E, ES, P0, DELTA,
 } from '@/styles/neobrutal'
 import HoyTab from '@/components/panel/HoyTab'
+import CicloPagoCade from '@/components/facturacion/CicloPagoCade'
 
 /* ── Pestañas del panel: overview (Operaciones y Finanzas viven ahora como
    secciones propias en el menú lateral) ── */
@@ -476,7 +477,7 @@ export default function PanelGlobal() {
             <span style={eyebrow(BLANCO)}>¿Cuándo cobras de Cade?</span>
             <h2 style={{ ...d('clamp(22px,2.6vw,32px)', ARENA), margin: '12px 0 20px' }}>Liquidaciones Cade · histórico</h2>
             {liqs.length === 0 ? (
-              <div style={{ fontSize: 13, fontWeight: 600, color: ARENA }}>Sin liquidaciones cargadas todavía. Cade paga el 10–15 del mes siguiente.</div>
+              <CicloPagoCade prefijo="Sin liquidaciones cargadas todavía. " />
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 18 }}>
                 {[

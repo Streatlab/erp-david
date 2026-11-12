@@ -251,7 +251,6 @@ export default function Conciliacion() {
           cifra={movimientosFiltrados.length > 0 ? fmtEur(datos.balance) : '—'}
           frase={movimientosFiltrados.length > 0 ? (datos.balance >= 0 ? 'Entra más dinero del que sale en el periodo' : 'Sale más dinero del que entra en el periodo') : 'Sin datos todavía'}
           color={movimientosFiltrados.length > 0 ? (datos.balance >= 0 ? OLIVA : NARANJA) : undefined}
-          apoyo={movimientosFiltrados.length > 0 ? [{ label: 'Ingresos', valor: fmtEur(datos.sumIng) }, { label: 'Gastos', valor: fmtEur(datos.sumGst) }, { label: 'Sin categorizar', valor: String(datos.pendientes) }] : undefined}
         />
       </Banda>
 

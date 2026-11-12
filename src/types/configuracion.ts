@@ -90,15 +90,6 @@ export interface CuentaCategoria {
   categoria_codigo: string
 }
 
-export interface ParametrosEscandallo {
-  id: string
-  margen_deseado_pct: number
-  estructura_pct: number
-  merma_default_pct: number
-  semaforo_verde_pct: number
-  semaforo_amarillo_pct: number
-}
-
 export type TipoProveedor = 'externo' | 'interno'
 export type FrecuenciaCompra = 'diario' | 'semanal' | '2x_semana' | 'quincenal' | 'mensual'
 export type GrupoFormato = 'solido' | 'liquido' | 'pieza'
