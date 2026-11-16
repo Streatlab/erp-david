@@ -46,6 +46,7 @@
 - Portal del repartidor (`/portal`, `src/pages/portal/Portal.tsx`): perfil `repartidor` solo ve su portal (Layout sin menú); admin lo ve "como" cualquier conductor; pantallas por persona en Configuración ▸ Usuarios. RLS por rol en la base (migración 20261029_s6). Los repartidores necesitan correo en `usuarios` para poder entrar.
 - Hoy avisa de desviaciones por repartidor (lib `desviaciones.ts`: última semana vs 8 anteriores).
 - Robots (Supabase Edge Functions): copia en `supabase/functions/` con README de qué hace cada uno y su cron. Fuente de verdad: lo desplegado. Fuera del repo a propósito: plantillas-montar/cargar/prior (cargas únicas con datos fiscales embebidos) y banco-diag.
+- Factura Prior automática: robot `factura-prior` días 1 y 16 (fecha 15 o último día del mes, nº siguiente de Juan). Avisos WhatsApp por temas en `avisos_whatsapp.temas` (Rubén todo; David solo facturas).
 - Mantener este mapa actualizado.
 
 ## Errores ya cometidos — PROHIBIDO repetir

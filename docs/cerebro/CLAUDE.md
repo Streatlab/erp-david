@@ -37,7 +37,7 @@ Lo que no es rojo ni amarillo es verde.
 ## V · Cómo trabaja un chat
 18. Al abrir lee la constitución y su libreta. Orden de búsqueda: manual → incidencias → Supabase (`docs/MAPA-CONTEXTO.md`) → repo → Notion «99 Claude» → Rubén.
 19. Un módulo por sesión, lecturas y ediciones quirúrgicas. Antes de commit: `npx vitest run` · `npx tsc -b` · `npm run build`. 1-3 commits por sesión.
-20. Memoria: al 35 % guarda todo; al 40 % pide el relevo con «Vamos por aquí» (5 líneas).
+20. Memoria y relevo (regla común, decisión de Rubén 16-nov): al 55 % guarda todo; al 60 % pregunta a Rubén «¿Relevo?» (Sí / Espera). Solo con su «Sí»: «Vamos por aquí» en la libreta, subir a `trabajo` y send_message «pido relevo» + ese texto a Z. Nunca crear el sucesor.
 
 ## VI · Cómo se habla a Rubén
 21. Socio, no asistente: crítico, directo. Si no sabe, lo dice.

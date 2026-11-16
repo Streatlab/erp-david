@@ -15,6 +15,7 @@ Copia en el repositorio de lo que está desplegado en Supabase (proyecto rribmlu
 | factura-pdf | PDF de una factura emitida | Desde Facturación |
 | facturas-paquete | Excel + PDF de facturas y relación; ZIP o borrador de correo (nunca envía) | Desde Facturación |
 | documentacion-subir | Clasifica los certificados que se suben para Cade | Desde Documentación Cade |
+| factura-prior | Factura de Juan a Muestrarios Prior (4×600 € + IVA): la registra, hace el PDF, crea tarea en Hoy y avisa por WhatsApp (PDF a Rubén, texto a David) | Días 1 y 16 a las 8:30/9:30 (cron factura-prior-quincenal) |
 | aviso-documentacion | Correo diario a Rubén si falta documentación (días 1-10) | Cada mañana (cron aviso-documentacion-diario) |
 
 No están copiados aquí (siguen solo en Supabase): `plantillas-montar`, `plantillas-cargar`, `plantillas-prior` (cargas únicas ya ejecutadas; llevan las plantillas Excel con datos fiscales embebidos) y `banco-diag` (diagnóstico puntual).
@@ -22,4 +23,4 @@ No están copiados aquí (siguen solo en Supabase): `plantillas-montar`, `planti
 Las claves y credenciales no están en el código: viven en la tabla `robot_credenciales` (solo accesible por los robots).
 
 ## Llaves de acceso
-Las funciones que se llaman por URL piden `?llave=`. En el repositorio la llave sale de una variable de entorno (`LLAVE_BANCO`, `LLAVE_CORREO`, `LLAVE_LIQ`, `LLAVE_DOCS`) y no se guarda el valor. Lo desplegado en Supabase lleva la llave real. Antes de volver a desplegar una función desde aquí, crear ese secreto en Supabase con el mismo valor que usan los crons; si falta, la función rechaza todas las llamadas.
+Las funciones que se llaman por URL piden `?llave=`. En el repositorio la llave sale de una variable de entorno (`LLAVE_BANCO`, `LLAVE_CORREO`, `LLAVE_LIQ`, `LLAVE_DOCS`, `LLAVE_PRIOR`) y no se guarda el valor. Lo desplegado en Supabase lleva la llave real. Antes de volver a desplegar una función desde aquí, crear ese secreto en Supabase con el mismo valor que usan los crons; si falta, la función rechaza todas las llamadas.
