@@ -10,7 +10,8 @@
       "Glob(*)",
       "Grep(*)",
       "WebFetch(*)",
-      "WebSearch(*)"
+      "WebSearch(*)",
+      "mcp__Supabase_David_Nuevo"
     ]
   },
   "worktree": {
