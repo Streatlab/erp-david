@@ -1,7 +1,12 @@
 # Libreta David
 ## Vamos por aquí
-- Cerebro v1 hecho. Pendiente de Rubén: cambio real de PINs (no hecho), ciclo de pago de Cade. Siguiente: manuales de sector.
+- 16-nov: Factura 19 de Juan a Muestrarios Prior (15-nov, 2.904 €) hecha con plantilla FACTURA_17 y registrada PENDIENTE en facturas_emitidas. Siguiente nº libre de Juan: 20.
+- Siguiente: montar factura automática Prior días 1 y 16 (4×600 €, emisor Juan, nº siguiente, fecha 15 o último día del mes). Rubén ya dijo SÍ. Falta: guardar plantilla en la base, tarea programada, aviso ERP + WhatsApp (Green API ya activa, destino solo Rubén).
+- Móvil para avisos de David: Rubén dio 647651052, pero es el que sale en la factura de Juan → confirmar antes de añadir.
+- Permisos: base de David añadida a ajustes del proyecto (orden Rubén); este chat seguía preguntando → seguir en chat nuevo.
 ## Decisiones de Rubén
+- 16-nov: facturas Juan 16-17 (Muestrarios oct, ya enviadas) se dejan como están aunque choquen con las 16-18 de Cade.
+- 16-nov: las facturas de los días 1 y 16 son de Muestrarios Prior (no Cade); automatizar.
 - 11-nov: un solo Cerebro para el ecosistema; la base es común, lo específico va en copia propia (`manuales/equipo-david.md`).
 - 11-nov: publica solo el Publicador común.
 ## Notas

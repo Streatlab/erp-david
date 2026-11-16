@@ -8,3 +8,4 @@
 | 5 | Lector de liquidaciones Cade (T6) y Entregas (T12) | ACTIVO | Ver MAPA-CONTEXTO |
 | 6 | Limpiar documentación contaminada de Binagre | ACTIVO | |
 | 7 | Rellenar manuales de sector de David | ACTIVO | Tras aprobar el Cerebro |
+| 8 | Factura automática Prior días 1 y 16 + avisos | ACTIVO | Rubén dijo sí; ver libreta |
