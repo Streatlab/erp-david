@@ -5,6 +5,7 @@
 - Siguiente: montar factura automática Prior días 1 y 16 (4×600 €, emisor Juan, nº siguiente, fecha 15 o último día del mes). Rubén ya dijo SÍ. Falta: guardar plantilla en la base, tarea programada, aviso ERP + WhatsApp (Green API ya activa, destino solo Rubén).
 - Móvil para avisos de David: Rubén dio 647651052, pero es el que sale en la factura de Juan → confirmar antes de añadir.
 - Permisos: base de David añadida a ajustes del proyecto (orden Rubén); este chat seguía preguntando → seguir en chat nuevo.
+- Relevo (Z_9, 16-nov): al 60 % preguntar a Rubén Sí/Espera; con su sí, «Vamos por aquí» aquí, subir a trabajo y send_message «pido relevo» a Z (session_01BRB4rrGQFdbMW8BKtHfwkA). Nunca crear sucesor. Constitución aún dice 35/40 %: pedir sí a Rubén para cambiarla.
 ## Decisiones de Rubén
 - 16-nov: facturas Juan 16-17 (Muestrarios oct, ya enviadas) se dejan como están aunque choquen con las 16-18 de Cade.
 - 16-nov: las facturas de los días 1 y 16 son de Muestrarios Prior (no Cade); automatizar.
