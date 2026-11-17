@@ -7,6 +7,7 @@
 3. Siguiente: tarea programada + registro en facturas_emitidas + aviso ERP y WhatsApp (Green API activa; destino hoy solo Rubén). Confirmar con Rubén si 647651052 es el móvil de David (sale en la factura de Juan).
 4. Ayudantes: ninguno. Ojo: DAVID_1 creó por error «9. DAVID_2» (session_01BRB4rnsvKLiY8z3Yp6Ltoi); Z_9 dijo mantenerlo.
 5. Revisar: permiso de la base de David en ajustes del proyecto (orden Rubén, incidencia anotada); constitución aún dice relevo 35/40 %, pendiente sí de Rubén para pasar a 55/60 %.
+- 17-nov 20:40: tablero revisado (orden Rubén vía Z_10): 4 hechas movidas, 6 pendientes con prioridad. Regla nueva: lo verde baja a «Hechas».
 ## Decisiones de Rubén
 - 16-nov: 647651052 es el móvil de David. Relevo 55/60 % igual que el resto de chats (constitución art. 20 cambiada).
 - 16-nov: facturas Juan 16-17 (Muestrarios oct, ya enviadas) se dejan como están aunque choquen con las 16-18 de Cade.

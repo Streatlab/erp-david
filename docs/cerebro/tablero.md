@@ -1,11 +1,21 @@
 # Tablero David
-| # | Tarea | Estado | Nota |
+Regla (Rubén 17-nov): lo verde se duplica en «Hechas» (fila tNNh, hecha_en en hora de España) y se quita de arriba.
+Prioridad: 🔴 urgente · 🟡 media · 🟢 baja.
+
+## Pendientes
+| n | Prioridad | Tarea | Estado | Nota |
+|---|---|---|---|---|
+| 1 | 🔴 | Datos reales de pólizas y préstamos (hoy Mockup) | PENDIENTE | Hay 4 seguros y 4 préstamos cargados sin verificar; Hoy avisa de vencimientos con ellos |
+| 2 | 🟡 | Rubén revisa el formato del PDF de la factura Prior (llegó por WhatsApp, factura 19) | PENDIENTE | Antes del 1-dic, primera automática |
+| 3 | 🟡 | Confirmar ciclo de pago de Cade | PENDIENTE | Lo decide Rubén |
+| 4 | 🟡 | Limpiar documentación contaminada de Binagre | LATENTE | |
+| 5 | 🟡 | Entregas (T12) | LATENTE | Ver MAPA-CONTEXTO |
+| 6 | 🟢 | Rellenar manuales de sector de David | LATENTE | Tras aprobar el Cerebro |
+
+## Hechas
+| n | Tarea | hecha_en | Nota |
 |---|---|---|---|
-| 1 | Corregir RULES.md (publicar directo + PINs) | RESUELTO | Hecho 11-nov |
-| 2 | Cambio real de PINs | RESUELTO | Hecho 11-nov; PINs cambiados, fecha |
-| 3 | Confirmar ciclo de pago de Cade | ACTIVO | Pendiente Rubén |
-| 4 | Datos reales de pólizas y préstamos (hoy Mockup) | ACTIVO | |
-| 5 | Lector de liquidaciones Cade (T6) y Entregas (T12) | ACTIVO | Ver MAPA-CONTEXTO |
-| 6 | Limpiar documentación contaminada de Binagre | ACTIVO | |
-| 7 | Rellenar manuales de sector de David | ACTIVO | Tras aprobar el Cerebro |
-| 8 | Factura automática Prior días 1 y 16 + avisos | RESUELTO | 16-nov; primera real 1-dic |
+| t01h | Corregir RULES.md (publicar directo + PINs) | 11-nov-2026 (hora no anotada) | |
+| t02h | Cambio real de PINs | 11-nov-2026 (hora no anotada) | |
+| t05h | Lector de liquidaciones Cade (T6) | comprobado 17-nov-2026 20:40 | 42 liquidaciones y 1.021 líneas leídas; última 10-nov |
+| t08h | Factura automática Prior días 1 y 16 + avisos | 16-nov-2026 (hora no anotada) | Publicado 17-nov; primera real 1-dic |
