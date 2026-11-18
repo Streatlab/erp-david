@@ -1,4 +1,5 @@
 # Libreta David
+Relevo → DAVID_2: https://claude.ai/code/session_01BRB4rnsvKLiY8z3Yp6Ltoi (de DAVID_1, puesto por DAVID_2 el 18-nov)
 ## Vamos por aquí (DAVID_2, 16-nov)
 - HECHO: factura automática Prior montada (robot factura-prior, días 1 y 16 a las 8:30). Próxima: 1-dic → factura 20 fecha 30-nov. PDF de la 19 hecho y enviado a Rubén. David (647651052) añadido a avisos, solo facturas.
 ## Relevo anterior (DAVID_1)
