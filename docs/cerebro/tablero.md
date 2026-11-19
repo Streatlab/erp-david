@@ -6,11 +6,12 @@ Prioridad: 🔴 urgente · 🟡 media · 🟢 baja.
 | n | Prioridad | Tarea | Estado | Nota |
 |---|---|---|---|---|
 | 1 | 🔴 | Datos reales de pólizas y préstamos (hoy Mockup) | PENDIENTE | Hay 4 seguros y 4 préstamos cargados sin verificar; Hoy avisa de vencimientos con ellos |
-| 2 | 🟡 | Rubén revisa el formato del PDF de la factura Prior (llegó por WhatsApp, factura 19) | PENDIENTE | Antes del 1-dic, primera automática |
+| 2 | 🟡 | Rubén valida el PDF de la factura Prior (19, por WhatsApp) y confirma cliente Prior (no Cade) | PENDIENTE | Antes del 1-dic, primera automática |
 | 3 | 🟡 | Confirmar ciclo de pago de Cade | PENDIENTE | Lo decide Rubén |
-| 4 | 🟡 | Limpiar documentación contaminada de Binagre | LATENTE | |
-| 5 | 🟡 | Entregas (T12) | LATENTE | Ver MAPA-CONTEXTO |
-| 6 | 🟢 | Rellenar manuales de sector de David | LATENTE | Tras aprobar el Cerebro |
+| 4 | 🟡 | Turnos partidos: ¿1.500 € netos o brutos? y convenio de David (gestoría) | PENDIENTE | Cálculo en libreta 17-nov |
+| 5 | 🟡 | Limpiar documentación contaminada de Binagre | LATENTE | |
+| 6 | 🟡 | Entregas (T12) | LATENTE | Ver MAPA-CONTEXTO |
+| 7 | 🟢 | Rellenar manuales de sector de David | LATENTE | Tras aprobar el Cerebro |
 
 ## Hechas
 | n | Tarea | hecha_en | Nota |
