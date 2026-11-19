@@ -4,7 +4,7 @@
 // tarea en Hoy y WhatsApp (texto a los destinos con tema 'facturas'; PDF solo a Rubén).
 // GET ?llave=…            → modo automático (no duplica si ya existe la de esa fecha)
 // GET ?llave=…&fecha=AAAA-MM-DD   → fuerza esa fecha de factura
-// GET ?llave=…&pdf=<id>   → rehace el PDF de una factura Prior existente y se lo manda a Rubén
+// GET ?llave=…&pdf=<id>   → rehace el PDF de una factura Prior existente y se lo manda a Rubén (&silencio=1: sin WhatsApp)
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { PDFDocument, StandardFonts, rgb } from 'npm:pdf-lib@1.17.1';
 
@@ -13,7 +13,8 @@ const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SE
 const PRECIO = 600, SERVICIOS = 4, IVA = 21, CLIENTE = 'MUESTRARIOS', EMISOR = 'JUAN';
 const CONCEPTO = 'Traslado mercancías Almacén Cocentaina';
 const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-const eur = (n: number) => n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+// Miles con punto siempre (el formateador del sistema no agrupa los importes de 4 cifras)
+const eur = (n: number) => { const [e, d] = Math.abs(n).toFixed(2).split('.'); return (n < 0 ? '-' : '') + e.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',' + d + ' €'; };
 const fechaLarga = (d: string) => { const [y, m, dd] = d.split('-'); return `${+dd} de ${MESES[+m - 1]} de ${y}`; };
 const fechaCorta = (d: string) => { const [y, m, dd] = d.split('-'); return `${dd}/${m}/${y}`; };
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -46,8 +47,8 @@ async function hacerPdf(f: Record<string, any>) {
   t(em.nif, 55, 755); t(em.direccion ?? '', 55, 743);
   t((em.cp_ciudad ?? '').replace(/^(\d{5}) (.*)$/, '$2, $1'), 55, 731);
   t(em.email ?? '', 55, 719); t(em.telefono ?? '', 55, 707);
-  t('FECHA:', 375, 743, { f: B }); t(fechaLarga(f.fecha_factura), 445, 743);
-  t('N.º DE FACTURA', 375, 731, { f: B }); t(String(f.serie ?? '') + String(f.numero_factura), 445, 731);
+  t('FECHA:', 375, 743, { f: B }); tr(fechaLarga(f.fecha_factura), 545, 743);
+  t('N.º DE FACTURA', 375, 731, { f: B }); tr(String(f.serie ?? '') + String(f.numero_factura), 545, 731);
 
   let y = 672; t('FACTURAR A:', 55, y, { f: B });
   for (const l of [cl.razon_social, cl.direccion, cl.cp_ciudad, cl.provincia, 'CIF ' + cl.cif]) { y -= 12; t(l ?? '', 55, y, { s: 8.5 }); }
@@ -112,7 +113,7 @@ Deno.serve(async (req) => {
       const { data: f } = await sb.from('facturas_emitidas').select('*').eq('id', pid).eq('cliente', CLIENTE).single();
       if (!f) throw new Error('factura no encontrada');
       const p = await hacerPdf(f);
-      const w = await whatsapp(`📄 Factura ${f.numero_factura} de Juan a Muestrarios Prior · ${fechaCorta(f.fecha_factura)} · ${eur(Number(f.total))}`, { bytes: p.bytes, nombre: `Factura ${f.numero_factura} Prior.pdf` });
+      const w = u.searchParams.get('silencio') ? 'sin aviso' : await whatsapp(`📄 Factura ${f.numero_factura} de Juan a Muestrarios Prior · ${fechaCorta(f.fecha_factura)} · ${eur(Number(f.total))}`, { bytes: p.bytes, nombre: `Factura ${f.numero_factura} Prior.pdf` });
       return Response.json({ ok: true, ruta: p.ruta, whatsapp: w });
     }
 

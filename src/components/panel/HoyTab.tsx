@@ -88,8 +88,8 @@ export default function HoyTab() {
       supabase.from('banco_sesiones').select('banco, valida_hasta').eq('estado', 'autorizada'),
       supabase.from('furgonetas').select('id, codigo, matricula'),
       supabase.from('furgonetas_itv').select('furgoneta_id, proxima_fecha'),
-      supabase.from('furgonetas_seguros').select('furgoneta_id, compania, fecha_renovacion, fecha_proximo_cobro'),
-      supabase.from('furgonetas_prestamos').select('furgoneta_id, entidad, fecha_fin'),
+      supabase.from('furgonetas_seguros').select('furgoneta_id, compania, fecha_renovacion, fecha_proximo_cobro').not('compania', 'ilike', '%mockup%'), // los datos de relleno no avisan
+      supabase.from('furgonetas_prestamos').select('furgoneta_id, entidad, fecha_fin').not('entidad', 'ilike', '%mockup%'),
       supabase.from('conductores').select('nombre, carnet_caducidad, activo'),
       supabase.from('v_dia_repartidor').select('fecha, transportista, repartidor, entregas, pagado, compensacion_minimo, cargo_cade').gte('fecha', iso(new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - 70))),
     ]).then(([c, dc, t, fe, fh, cob, en, rs, bs, fg, itv, seg, pre, cond, dr]) => {

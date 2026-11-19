@@ -36,7 +36,7 @@
 ## Mapa de módulos (orientarse SIN explorar el repo)
 - Flota (furgonetas): en rediseño — eliminar cards "Furgonetas activas" y "Alertas priorizadas"; cada elemento clicable navega a su detalle: seguro (póliza, contacto, coberturas, PDFs póliza/condiciones/recibo, precio recibo, fecha pago), conductor (ficha completa empleado), ITV (fecha, taller, último informe).
 - 6 módulos mapeados desde Binagre pendientes de adaptar: facturas+OCR · liquidación Cade · rentabilidad por supermercado/ruta · conciliación bancaria · dashboard KPI · importación extractos. Orden de arranque: pendiente de decisión del usuario.
-- Documentación contaminada de Binagre en este repo: pendiente de limpieza.
+- Restos de Binagre: limpiados el 20-nov (queda Running con rótulos de canales heredados, pendiente de decisión).
 - Drive David: carpeta "00 CORRECAMINOS" (subcarpetas: pólizas seguros, ITV, empleados, fotos furgonetas). IDs en Notion 99 Claude.
 - Ciclo de pago de Cade: NO está escrito en código. Vive en la tabla `configuracion` (claves `cade_ciclo_pago_texto`, `cade_dia_cobro_limite`), se edita desde Liquidaciones Cade y lo leen Panel, Liquidaciones y Facturación (`src/lib/configCade.ts`).
 - Robots nocturnos (banco, cartero, saldos): salud en `robot_salud`/`robot_log`; la pestaña Hoy avisa si uno lleva ≥2 días parado o una conexión bancaria caduca en ≤15 días; función `aviso_robots()` manda WhatsApp a las 09:15 (cron `aviso-robots-diario`).

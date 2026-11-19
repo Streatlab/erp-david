@@ -54,7 +54,7 @@ Al portar código entre repos, verificar con grep que NO queda rastro del origen
 - Tokens: `#B01D23` `#1e2233` `#e8f442` `#484f66` → tokens Marino+Fuego de David
 - Textos: Uber Eats / Glovo / Just Eat → Cade / Prior / Portes
 - Dominio: escandallo / EPS / recetas / platos / marcas → eliminar, no traducir
-- Supabase: `eryauogxcpbgdryeimdq` → `idclhnxttdbwayxeowrm`
+- Supabase: `eryauogxcpbgdryeimdq` → `rribmludsuirmyprfkop`
 
 Si un grep encuentra rastro tras el port, la fase no está cerrada.
 

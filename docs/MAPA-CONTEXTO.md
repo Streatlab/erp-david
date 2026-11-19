@@ -1,6 +1,6 @@
 # Mapa de contexto — ERP David Reparte
 
-Orientarse sin explorar el repo. Actualizado: 2 oct 2026 (tren T1–T15).
+Orientarse sin explorar el repo. Actualizado: 19 nov 2026.
 
 ## Negocio
 - David: autónomo subcontratista de Cade. Reparte para Mercadona, Carrefour, Lidl y Día en Alcoi y Ontinyent.
@@ -42,7 +42,7 @@ Orientarse sin explorar el repo. Actualizado: 2 oct 2026 (tren T1–T15).
 | Pagos y cobros | `/finanzas/pagos-cobros` | `facturas_emitidas` (+cobro_conciliacion_id), `conciliacion`, `v_facturacion_total_david` |
 | Punto de equilibrio / Escenarios | `/punto-equilibrio`, `/finanzas/escenarios` | `conciliacion` (media 3 meses cerrados), facturas, `liquidaciones_cade` |
 | Running / Running Familia | `/running`, `/finanzas/running-familia` | `v_pyg_*`, `presupuestos_hogar` |
-| Liquidaciones | `/finanzas/liquidaciones` | `liquidaciones_cade`, `liquidaciones_cade_lineas` (lector pendiente, T6) |
+| Liquidaciones | `/finanzas/liquidaciones` | `liquidaciones_cade`, `liquidaciones_cade_lineas` (lector `liquidacion-parser` en marcha) |
 | Papeleo | `/papeleo` | `correo_entrante`, `correo_reglas` |
 | Reclamaciones Cade | `/reclamaciones` | `reclamaciones_cade` |
 | Flota / ficha | `/flota`, `/flota/:codigo` | `furgonetas`, `furgonetas_seguros`, `furgonetas_itv`, `furgonetas_fotos`, `conductores` |
@@ -56,4 +56,4 @@ Orientarse sin explorar el repo. Actualizado: 2 oct 2026 (tren T1–T15).
 - `furgonetas_prestamos` y `furgonetas_seguros` con entidad/compañía «Mockup»: pendientes de pólizas y préstamos reales.
 
 ## Pendientes fuera del tren
-- T6 lector de liquidaciones Cade (ya hay PDFs reales en Storage `correo`, jun–ago 2026) y T12 Entregas.
+- Nada: T6 (lector de liquidaciones) y T12 (Entregas, `/entregas`) están hechos. Running (`/running`) sigue con rótulos de canales heredados: pendiente de decidir si se adapta o se retira.

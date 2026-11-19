@@ -3,7 +3,7 @@
 ## Contexto
 - Repo: Streatlab/erp-david
 - Path local: C:\erp-david
-- Supabase project: idclhnxttdbwayxeowrm (separado de Binagre)
+- Supabase project: rribmludsuirmyprfkop (separado de Binagre)
 - URL: davidparte.vercel.app
 - Login actual: PIN propio (los PIN personales de Rubén y David) contra tabla `usuarios`. Mantener funcionando 100%.
 - Aislamiento absoluto vs binagre. Skills aplicables: david-erp, david-kit-visual.
@@ -44,7 +44,7 @@ Añadir login Google Auth como segunda opción en pantalla de login, con whiteli
 
 ## Tareas técnicas
 
-1. **Google Provider en Supabase.** Habilitar Google OAuth en proyecto `idclhnxttdbwayxeowrm`. Si faltan credenciales, generar `SETUP_GOOGLE_OAUTH.md` en raíz del repo con pasos para Google Cloud Console y URL de redirect específica de este proyecto Supabase de David.
+1. **Google Provider en Supabase.** Habilitar Google OAuth en proyecto `rribmludsuirmyprfkop`. Si faltan credenciales, generar `SETUP_GOOGLE_OAUTH.md` en raíz del repo con pasos para Google Cloud Console y URL de redirect específica de este proyecto Supabase de David.
 
 2. **Migration whitelist.** Nueva migration en `supabase/migrations/` que cree `public.usuarios_autorizados` con columnas: `id` (uuid PK), `email` (text unique), `nombre`, `rol` (default 'admin'), `activo` (default true), `created_at`. RLS activada. Política `service_role_only` (FOR ALL TO service_role). Política `auth_read_self` (FOR SELECT TO authenticated USING auth.email() = email). Insertar los 3 emails con rol admin.
 

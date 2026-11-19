@@ -16,6 +16,7 @@ Relevo → DAVID_2: https://claude.ai/code/session_01BRB4rnsvKLiY8z3Yp6Ltoi (de 
 - Turnos 6 h (36 h) + 5 h (30 h) con SMI 1.286: mañana bruto 1.350 / neto 1.263 / SS empresa 504 / coste 1.855; tarde bruto 1.125 / neto 1.052 / SS 420 / coste 1.545; total coste 3.400 €/mes (última tabla enviada). Tabla anterior de 2.935 € (SMI viejo, tarde 4 h) quedó desfasada.
 - Pendiente Rubén: si los 1.500 € son netos o brutos; qué convenio le toca a David (gestoría).
 - 18-nov · cotejo chats: 6 faltaban, guardados (4 de DAVID_1, 2 de DAVID_2).
+- 19/20-nov: orden Rubén «arregla los pendientes sin pausas». Hechas 7 (ver tablero t09h-t15h). Factura 19 Prior ya COBRADA. Robot factura-prior v2 desplegado (PDF corregido; &silencio=1 rehace PDF sin WhatsApp). Ciclo Cade cargado como dato del banco, sin confirmar. Quedan 5 pendientes, 3 dependen de Rubén.
 ## Decisiones de Rubén
 - 16-nov: Rubén ha emitido facturas de Prior fuera del chat; antes de facturar a mano, revisar el nº siguiente de Juan (el robot ya lo hace solo).
 - 16-nov: facturas de Cadela (David) y de Juan a Cade emitidas por el asistente; revisar numeración antes de la siguiente.

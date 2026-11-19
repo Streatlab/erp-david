@@ -46,7 +46,7 @@ export default function PortalFurgoneta({ conductorId, furgoneta }: { conductorI
     if (!furgoneta) return
     const [i, s, m, n] = await Promise.all([
       supabase.from('furgonetas_itv').select('proxima_fecha, ultima_fecha, ultima_resultado, estacion').eq('furgoneta_id', furgoneta.id).order('proxima_fecha', { ascending: false }).limit(1),
-      supabase.from('furgonetas_seguros').select('compania, numero_poliza, telefono, fecha_renovacion').eq('furgoneta_id', furgoneta.id).order('fecha_renovacion', { ascending: false }).limit(1),
+      supabase.from('furgonetas_seguros').select('compania, numero_poliza, telefono, fecha_renovacion').eq('furgoneta_id', furgoneta.id).not('compania', 'ilike', '%mockup%').order('fecha_renovacion', { ascending: false }).limit(1),
       supabase.from('furgonetas_mantenimientos_hist').select('fecha, km, tipo, taller, descripcion').eq('furgoneta_id', furgoneta.id).order('fecha', { ascending: false }).limit(5),
       supabase.from('furgonetas_incidencias').select('id, tipo, fecha, descripcion, estado').eq('furgoneta_id', furgoneta.id).order('fecha', { ascending: false }).limit(10),
     ])
