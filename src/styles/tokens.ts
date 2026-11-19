@@ -39,7 +39,7 @@ export function useThemeMode(): Theme {
 }
 
 // ——————————————————————————————————————————————————————
-// TOKEN SET (forma Binagre: { T, isDark })
+// TOKEN SET (forma { T, isDark })
 // ——————————————————————————————————————————————————————
 
 export interface TokenSet {
@@ -625,7 +625,7 @@ export function fmtDateFull(fecha: Date | string | null | undefined): string {
 }
 
 // ——————————————————————————————————————————————————————
-// COMPAT HELPERS BINAGRE (consumen TokenSet) — NEOBRUTAL
+// HELPERS DE COMPATIBILIDAD (consumen TokenSet) — NEOBRUTAL
 // ——————————————————————————————————————————————————————
 
 export const kpiLabelStyle = (T: TokenSet): CSSProperties => ({

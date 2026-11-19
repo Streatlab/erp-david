@@ -17,9 +17,6 @@ interface Props {
   movimientos: Movimiento[]
   movimientosAnterior: Movimiento[]
   categorias: Categoria[]
-  mesNombre: string
-  anio: number
-  diasRestantes: number
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -58,17 +55,6 @@ const CANALES_DAVID = ['Mercadona', 'Carrefour', 'Lidl', 'Día'] as const
 const normTxt = (s: string) =>
   (s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 
-/* ═══════════════════════════════════════════════════════════
-   MOCKS TESORERÍA / PRESUPUESTOS (pendiente conectar a BD)
-   ═══════════════════════════════════════════════════════════ */
-
-const MOCK_PRESUPUESTOS = [
-  { categoria: 'compras',     nombre: 'COMPRAS',     consumido: 4448, tope: 6000 },
-  { categoria: 'rrhh',        nombre: 'RRHH',        consumido: 4850, tope: 5000 },
-  { categoria: 'marketing',   nombre: 'MARKETING',   consumido:  530, tope: 1000 },
-  { categoria: 'suministros', nombre: 'SUMINISTROS', consumido: 1028, tope: 1000 },
-] as const
-
 interface TesoreriaData {
   balanceActual: number
   balanceHace30d: number
@@ -95,15 +81,6 @@ const TESORERIA_VACIA: TesoreriaData = {
   hayProvisiones: false,
 }
 
-const PALETA_PRESUPUESTO = {
-  compras:     { bg: '#EAF3DE', border: '#C0DD97', text: '#173404', subtext: '#3B6D11', valor: '#1D9E75', barra: '#1D9E75' },
-  rrhh:        { bg: '#FAEEDA', border: '#FAC775', text: '#412402', subtext: '#854F0B', valor: '#BA7517', barra: '#BA7517' },
-  marketing:   { bg: '#FBEAF0', border: '#F4C0D1', text: '#4B1528', subtext: '#993556', valor: '#D4537E', barra: '#D4537E' },
-  suministros: { bg: '#FAECE7', border: '#F5C4B3', text: '#4A1B0C', subtext: '#993C1D', valor: '#D85A30', barra: '#D85A30' },
-} as const
-
-type CategoriaPresupuesto = keyof typeof PALETA_PRESUPUESTO
-
 /* ═══════════════════════════════════════════════════════════
    HELPERS
    ═══════════════════════════════════════════════════════════ */
@@ -120,21 +97,6 @@ function calcularPosicionIndicador(ratio: number): number {
   return Math.max(0, Math.min(100, pos))
 }
 
-function calcularEstadoPresupuesto(pct: number) {
-  if (pct > 100) return { label: 'Superado',  bg: '#FCEBEB', fg: '#A32D2D' }
-  if (pct >= 90) return { label: 'Al límite', bg: '#FAEEDA', fg: '#854F0B' }
-  if (pct >= 50) return { label: 'En ritmo',  bg: '#EAF3DE', fg: '#3B6D11' }
-  return              { label: 'Holgado',   bg: '#E6F1FB', fg: '#0C447C' }
-}
-
-function calcularDiasTranscurridosMes(): number {
-  return new Date().getDate()
-}
-
-function diasEnMesActual(): number {
-  const hoy = new Date()
-  return new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).getDate()
-}
 
 function getWeekNumber(dateStr: string): number {
   const d = new Date(dateStr + 'T12:00:00')
@@ -279,9 +241,6 @@ function FilaDistribucion({ color, nombre, importe, deltaPct, porcentaje, esIngr
 export function ResumenDashboard({
   movimientos,
   movimientosAnterior,
-  mesNombre,
-  anio,
-  diasRestantes,
 }: Props) {
   const { T } = useTheme()
   const isMobile = useIsMobile()
@@ -793,130 +752,6 @@ export function ResumenDashboard({
               {balanceDeltaTxt}
             </span>
           </div>
-        </div>
-      </div>
-
-      {/* ═══ FILA 3 — PRESUPUESTOS (FIX 11) ═══ */}
-      <div>
-        <div style={{
-          fontFamily: FONT.heading,
-          fontSize: 12,
-          color: T.pri,
-          letterSpacing: 1.3,
-          textTransform: 'uppercase',
-          marginBottom: 12,
-          fontWeight: 500,
-        }}>
-          PRESUPUESTOS · {mesNombre.toUpperCase()} {anio} · {diasRestantes} DÍAS RESTANTES
-        </div>
-
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, minmax(0, 1fr))',
-          gap: 14,
-          marginBottom: 16,
-        }}>
-          {MOCK_PRESUPUESTOS.map(p => {
-            const cat = p.categoria as CategoriaPresupuesto
-            const pal = PALETA_PRESUPUESTO[cat]
-            const pct = Math.round((p.consumido / p.tope) * 100)
-            const superado = p.consumido > p.tope
-            const pctDisplay = superado ? 100 : pct
-            const colorBarra = superado ? ROJO : pal.barra
-
-            const diasTranscurridos = calcularDiasTranscurridosMes()
-            const diasRestMes = diasEnMesActual() - diasTranscurridos
-            const ritmoDiario = diasTranscurridos > 0 ? p.consumido / diasTranscurridos : 0
-            const estado = calcularEstadoPresupuesto(pct)
-
-            return (
-              <div key={p.categoria} style={{
-                backgroundColor: pal.bg,
-                borderRadius: 12,
-                padding: '16px 18px',
-                border: `1px solid ${pal.border}`,
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                  <div style={{
-                    fontFamily: FONT.heading,
-                    fontSize: 12,
-                    color: pal.text,
-                    textTransform: 'uppercase',
-                    letterSpacing: 0.8,
-                    fontWeight: 500,
-                  }}>
-                    {p.nombre}
-                  </div>
-                  <span style={{
-                    fontSize: 9,
-                    padding: '2px 7px',
-                    borderRadius: 8,
-                    fontFamily: FONT.heading,
-                    letterSpacing: 0.5,
-                    textTransform: 'uppercase',
-                    fontWeight: 500,
-                    backgroundColor: estado.bg,
-                    color: estado.fg,
-                  }}>
-                    {estado.label}
-                  </span>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                  <span style={{ fontFamily: FONT.heading, fontSize: 22, fontWeight: 500, color: pal.text }}>
-                    {fmtEur(p.consumido)}
-                  </span>
-                  <span style={{ fontFamily: FONT.body, fontSize: 11, color: pal.subtext }}>bruto</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 2 }}>
-                  <span style={{ fontFamily: FONT.heading, fontSize: 18, fontWeight: 500, color: pal.valor }}>
-                    {fmtEur(p.tope)}
-                  </span>
-                  <span style={{ fontFamily: FONT.body, fontSize: 11, color: pal.subtext }}>tope</span>
-                </div>
-
-                <div style={{ height: 1, backgroundColor: pal.border, margin: '10px 0' }} />
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontFamily: FONT.body, fontSize: 11, color: pal.subtext }}>
-                    {superado ? 'Superado' : 'Consumido'}
-                  </span>
-                  <span style={{
-                    fontFamily: FONT.heading,
-                    fontSize: 13,
-                    fontWeight: 500,
-                    color: superado ? ROJO : pal.text,
-                  }}>
-                    {pct}%
-                  </span>
-                </div>
-
-                <div style={{
-                  height: 4,
-                  backgroundColor: 'rgba(255, 255, 255, 0.6)',
-                  borderRadius: 2,
-                  marginTop: 6,
-                  overflow: 'hidden',
-                }}>
-                  <div style={{
-                    width: `${pctDisplay}%`,
-                    height: '100%',
-                    backgroundColor: colorBarra,
-                  }} />
-                </div>
-
-                <div style={{
-                  fontFamily: FONT.body,
-                  fontSize: 10,
-                  color: pal.subtext,
-                  marginTop: 6,
-                  textAlign: 'right',
-                }}>
-                  Ritmo: {fmtEur(ritmoDiario)}/día · quedan {diasRestMes}d
-                </div>
-              </div>
-            )
-          })}
         </div>
       </div>
 

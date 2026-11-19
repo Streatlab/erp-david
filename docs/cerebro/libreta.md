@@ -17,6 +17,7 @@ Relevo → DAVID_2: https://claude.ai/code/session_01BRB4rnsvKLiY8z3Yp6Ltoi (de 
 - Pendiente Rubén: si los 1.500 € son netos o brutos; qué convenio le toca a David (gestoría).
 - 18-nov · cotejo chats: 6 faltaban, guardados (4 de DAVID_1, 2 de DAVID_2).
 - 19/20-nov: orden Rubén «arregla los pendientes sin pausas». Hechas 7 (ver tablero t09h-t15h). Factura 19 Prior ya COBRADA. Robot factura-prior v2 desplegado (PDF corregido; &silencio=1 rehace PDF sin WhatsApp). Ciclo Cade cargado como dato del banco, sin confirmar. Quedan 5 pendientes, 3 dependen de Rubén.
+- 20-nov 01:30: segundo lote «sin bloqueo» (Rubén pidió 30; salieron 6 reales, tablero t16h-t21h). Índices duplicados: la base pidió confirmación y caducó; reintentar cuando Rubén esté delante. Contexto alto: preguntar relevo.
 ## Decisiones de Rubén
 - 16-nov: Rubén ha emitido facturas de Prior fuera del chat; antes de facturar a mano, revisar el nº siguiente de Juan (el robot ya lo hace solo).
 - 16-nov: facturas de Cadela (David) y de Juan a Cade emitidas por el asistente; revisar numeración antes de la siguiente.

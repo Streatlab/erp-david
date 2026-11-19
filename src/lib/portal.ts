@@ -1,6 +1,6 @@
 /**
  * portal.ts — Datos del Portal del empleado (repartidores).
- * Mecanismo calcado de Binagre: pantallas por persona, ficha vinculada
+ * Mecanismo: pantallas por persona, ficha vinculada
  * (conductor_id), todo filtrado por el repartidor en pantalla.
  */
 import { supabase } from './supabase'

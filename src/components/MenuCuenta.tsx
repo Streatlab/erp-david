@@ -1,6 +1,6 @@
 /**
  * Menú de la cuenta (círculo con las iniciales, arriba a la derecha).
- * Igual que Binagre: quién está dentro, rol, último acceso, PIN y huella de este
+ * Quién está dentro, rol, último acceso, PIN y huella de este
  * aparato, cambiar de ERP, cambiar de cuenta y cerrar sesión (aquí o en todos).
  */
 import { useEffect, useRef, useState } from 'react'

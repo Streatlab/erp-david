@@ -1,4 +1,4 @@
-/* Pantalla de acceso (Login) — misma estructura que la de Binagre (teclado de PIN grande,
+/* Pantalla de acceso (Login) — estructura: (teclado de PIN grande,
    cuentas recordadas, Huella / Enlace / Google) con el estilo de David: papel arena, tinta,
    bordes gruesos y sombra dura. Colores = constantes de src/styles/neobrutal.ts. */
 .acc{min-height:100dvh; display:flex; align-items:center; justify-content:center; padding:20px; background:#16355C; font-family:'Lexend',sans-serif; color:#0B1524;}

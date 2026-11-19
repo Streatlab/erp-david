@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { fmtEur, fmtPct } from '@/lib/format'
-import { OLIVA, TERRA, AMBAR, CELESTE, GRIS, ARENA_CL, BLANCO, ARENA, INK, OSW } from '@/styles/neobrutal'
+import { fmtEur } from '@/lib/format'
+import { OLIVA, TERRA, AMBAR, GRIS, ARENA_CL, ARENA, INK, OSW } from '@/styles/neobrutal'
 import {
   PageNeo, Banda, CabeceraNeo, KpiNeo, AvisoNeo, TabsNeo,
   TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo, BotonNeo,

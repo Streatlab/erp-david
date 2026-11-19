@@ -210,7 +210,7 @@ export default function PanelGlobal() {
   return (
     <div className="-m-4 md:-m-6" style={{ fontFamily: LEX, color: INK, background: ARENA }}>
 
-      {/* CABECERA + PESTAÑAS (arena, patrón Binagre: título en bloque + tabs) */}
+      {/* CABECERA + PESTAÑAS (arena: título en bloque + tabs) */}
       <Banda bg={ARENA} style={{ paddingTop: 24, paddingBottom: 18 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
           <div style={{ ...card(MARINO), padding: '12px 20px' }}>

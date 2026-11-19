@@ -1,5 +1,5 @@
 /**
- * favoritos.tsx — Favoritos y Más usadas (mismo sistema que el ERP de Streat Lab, adaptado a David).
+ * favoritos.tsx — Favoritos y Más usadas.
  *  - ★ en la barra de arriba marca o desmarca la pantalla en la que estás (favoritos_usuario).
  *  - Cada vez que alguien entra en una pantalla se suma 1 en uso_pantallas (persona, pantalla, día de Madrid).
  *  - «Más usadas» = lo que más ha abierto esa persona en los últimos 30 días. Se recalcula solo.

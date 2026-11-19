@@ -28,10 +28,10 @@ function parseFechaISO(raw: unknown): string {
   const s = String(raw).trim()
   if (!s) return ''
   // DD/MM/YYYY o DD-MM-YYYY
-  let m = /^(\d{2})[\/-](\d{2})[\/-](\d{4})$/.exec(s)
+  let m = /^(\d{2})[/-](\d{2})[/-](\d{4})$/.exec(s)
   if (m) return `${m[3]}-${m[2]}-${m[1]}`
   // DD/MM/YY
-  m = /^(\d{2})[\/-](\d{2})[\/-](\d{2})$/.exec(s)
+  m = /^(\d{2})[/-](\d{2})[/-](\d{2})$/.exec(s)
   if (m) return `20${m[3]}-${m[2]}-${m[1]}`
   // YYYY-MM-DD (ISO)
   m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s)

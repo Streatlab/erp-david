@@ -110,7 +110,7 @@ const SECTIONS: NavSection[] = [
   },
 ]
 
-/* Icono propio para CADA módulo (como en Binagre). */
+/* Icono propio para CADA módulo. */
 const ICON_ROUTE: Record<string, LucideIcon> = {
   '/papeleo': FileText,
   '/finanzas/cierre': CheckCheck,
@@ -175,7 +175,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
   const masUsadas = (fav?.masUsadas ?? []).filter(r => nombreRuta(r.ruta) && !favoritos.includes(r.ruta)).slice(0, 6)
   const perfil = usuario?.perfil ?? ''
 
-  // Detección de móvil (equivalente a useEsMovil de Binagre)
+  // Detección de móvil
   const [esMovil, setEsMovil] = useState(false)
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -192,7 +192,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
     try { localStorage.setItem(OPEN_SECTIONS_LS_KEY, JSON.stringify(openSections)) } catch { /* noop */ }
   }, [openSections])
 
-  // Colapso Binagre: hover/clic ABRE y queda 20s; luego autocolapsa
+  // Colapso: hover/clic ABRE y queda 20s; luego autocolapsa
   const [abierto, setAbierto] = useState(false)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const OPEN_MS = 20000

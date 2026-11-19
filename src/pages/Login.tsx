@@ -1,5 +1,5 @@
 /**
- * Acceso al ERP de David. Misma pantalla que la de Binagre, con el estilo de David:
+ * Acceso al ERP de David. Con el estilo de David:
  *   · PIN (teclado grande, arriba: lo que más se usa)
  *   · Huella · Enlace por email · Google (tres botones iguales, debajo)
  *   · El aparato recuerda las cuentas que han entrado: se elige con un toque y se saluda por el nombre.

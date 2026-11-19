@@ -9,3 +9,4 @@
 - 2026-11-18 · Cotejo de chats DAVID_1 y DAVID_2 (orden Rubén vía Z_10): faltaban 6 cosas de Rubén en la libreta (facturas fuera de chat, numeración, formato PDF, permisos Supabase, análisis turnos y SMI) · debía estar todo guardado · FALLO corregido, guardado.
 - 2026-11-20 · PDF de la factura Prior salía con el nº pisado por su rótulo y sin punto de miles (lo mandé a Rubén el 16-nov sin haberlo visto) · debía comprobarse renderizado antes de enviar · FALLO corregido: robot v2, PDF 19 rehecho y comparado con la plantilla.
 - 2026-11-20 · Lote de pendientes (orden Rubén): 7 cerrados, gate verde (54 pruebas, tipos, build) · OK.
+- 2026-11-20 · Rubén pidió 30 pendientes sin bloqueo; solo había 6 reales que pudiera cerrar solo (hechos) · debía decirse claro en vez de inflar la lista · OK, dicho. Migración de índices sin ejecutar (pidió confirmación y caducó).

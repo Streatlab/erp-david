@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
-import { ResponsiveContainer, LineChart, Line, BarChart, Bar, Cell, Tooltip, ReferenceLine, AreaChart, Area } from 'recharts';
+import { ResponsiveContainer, BarChart, Bar, Cell, Tooltip, ReferenceLine, AreaChart, Area } from 'recharts';
 import { useTheme, FONT } from '@/styles/tokens';
 import { fmtEur } from '@/utils/format';
 import { supabase } from '@/lib/supabase';

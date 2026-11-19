@@ -45,7 +45,7 @@ export default function Mantenimiento() {
     () => mantsTodos.filter(m => m.fecha.slice(0, 10) >= periodo.desdeIso && m.fecha.slice(0, 10) <= periodo.hastaIso),
     [mantsTodos, periodo.desdeIso, periodo.hastaIso],
   )
-  const vinculados = useMemo(() => new Set(mantsTodos.map(m => m.conciliacion_id).filter(Boolean)), [mants])
+  const vinculados = useMemo(() => new Set(mantsTodos.map(m => m.conciliacion_id).filter(Boolean)), [mantsTodos])
   const sinVincular = gastos.filter(g => !vinculados.has(g.id))
   const porId = useMemo(() => Object.fromEntries(furgos.map(f => [f.id, f])), [furgos])
   const costePeriodo = mants.reduce((s, m) => s + Number(m.coste_eur ?? 0), 0)

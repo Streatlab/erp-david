@@ -215,13 +215,6 @@ export default function Conciliacion() {
 
   const periodoLabel = pg.etiqueta.toUpperCase()
 
-  /* — Mes/año/días restantes (presupuestos) — */
-  const hoyDate = new Date()
-  const mesNombreRaw = hoyDate.toLocaleDateString('es-ES', { month: 'long' })
-  const mesNombre = mesNombreRaw.charAt(0).toUpperCase() + mesNombreRaw.slice(1)
-  const anioActual = hoyDate.getFullYear()
-  const ultimoDiaMes = new Date(anioActual, hoyDate.getMonth() + 1, 0).getDate()
-  const diasRestantes = Math.max(0, ultimoDiaMes - hoyDate.getDate())
 
   /* ═══ ESTILOS NEOBRUTAL ═══ */
 
@@ -273,9 +266,6 @@ export default function Conciliacion() {
             movimientos={movimientosFiltrados}
             movimientosAnterior={movimientosAnterior}
             categorias={[]}
-            mesNombre={mesNombre}
-            anio={anioActual}
-            diasRestantes={diasRestantes}
           />
         </Banda>
       )}
