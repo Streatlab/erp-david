@@ -3,7 +3,7 @@ Relevo → DAVID_3: https://claude.ai/code/session_01BRB4rp7FmsFxoC9WjkREEZ (de 
 ## DAVID_3 (20-nov)
 - Relevo recibido: todo leído; enlace comprobado arriba; «leído» enviado a DAVID_2. Aviso programado el 1-dic 8:45 para comprobar la factura Prior.
 ## Vamos por aquí (DAVID_2 → relevo, 20-nov)
-1. En curso: nada a medias. Todo en trabajo (último sha del lote: 61e10e8), Publicador avisado; falta que Rubén diga «publica».
+1. PUBLICADO 20-nov (master 86f3c4e, Vercel READY, 54 pruebas verdes; lote 61e10e8 dentro; comprobado en producción por DAVID_2).
 2. Pendiente tecnico: quitar 2 índices duplicados (conciliación y liquidaciones). La base pide confirmación de Rubén al ejecutarlo; relanzar con él delante.
 3. Pendiente Rubén: pólizas y préstamos reales (no están en Drive) · confirmar ciclo Cade 11-20 (cargado del banco) · 1.500 € netos o brutos + convenio (gestoría) · Running: adaptar o retirar (recomendada adaptar) · validar formato PDF factura Prior antes del 1-dic.
 4. 1-dic 8:30: primera factura automática Prior (nº 20, fecha 30-nov). Comprobar que salió (robot_log fuente factura_prior) y avisar a Rubén.
