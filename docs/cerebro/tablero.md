@@ -1,6 +1,6 @@
 # Tablero David
 Chat a cargo: DAVID_3 (desde 20-nov-2026, relevo de DAVID_2).
-Tablero publicado (página de Rubén): https://claude.ai/artifact/VenNTdawcEWqdTXrfUB5t1 — mantener al día con el tablero.md
+Tablero publicado (página de Rubén): https://claude.ai/artifact/VenNTdawcEWqdTXrfUB5t1 — formato del tablero de Z, filas en su base (colección tareas). NO republicar la página: solo escribir filas. Cada fila: título + 1 línea + «· Chat: NOMBRE». Máx 3 en curso y 3 latentes (con qué vigila, de qué depende, cuándo se revisa).
 Regla (Rubén 17-nov): lo verde se duplica en «Hechas» (fila tNNh, hecha_en en hora de España) y se quita de arriba.
 Prioridad: 🔴 urgente · 🟡 media · 🟢 baja.
 
@@ -11,7 +11,7 @@ Prioridad: 🔴 urgente · 🟡 media · 🟢 baja.
 | 2 | 🟡 | Rubén confirma el ciclo de pago de Cade (apuntado: del 11 al 20 del mes siguiente) | PENDIENTE | Dato del banco ya cargado como «pendiente de confirmar» |
 | 3 | 🟡 | Turnos partidos: ¿1.500 € netos o brutos? y convenio de David (gestoría) | PENDIENTE | Cálculo en libreta 17-nov |
 | 4 | 🟡 | Running (`/running`): rótulos de canales heredados de otro negocio; adaptar o retirar | PENDIENTE | Módulo vivo (Cierre de mes lo enlaza); decide Rubén |
-| 5 | 🟡 | Comprobar la primera factura automática de Prior (nº 20, fecha 30-nov) | PENDIENTE | Aviso programado 1-dic 8:45; avisar a Rubén con el resultado |
+| 5 | 🟡 | Comprobar la primera factura automática de Prior (nº 20, fecha 30-nov) | LATENTE | Aviso programado 1-dic 8:45; avisar a Rubén con el resultado |
 | 6 | 🟢 | Quitar 2 índices duplicados de la base (conciliación y liquidaciones) | PENDIENTE | Preparado; la base pide confirmación de Rubén al ejecutarlo |
 | 7 | 🟢 | Aviso keepalive de GitHub apunta a la base antigua de David | LATENTE | Sin efecto en la web |
 | 8 | 🟢 | Avisos del revisor de código: quedan 144 (eran 176), la mayoría de estilo | LATENTE | Sin efecto en la web |
@@ -35,4 +35,5 @@ Prioridad: 🔴 urgente · 🟡 media · 🟢 baja.
 | t18h | Mantenimiento: la lista de gastos sin vincular no se refrescaba bien | 20-nov-2026 01:30 | |
 | t19h | Comentarios del código sin menciones a otros proyectos (12) | 20-nov-2026 01:30 | |
 | t20h | Importador de extractos y avisos del revisor: 176 → 144 | 20-nov-2026 01:30 | |
+| t22h | Lote de DAVID_2 publicado y comprobado en producción | 20-nov-2026 09:44 | Vercel READY, 54 pruebas verdes |
 | t21h | Copia en el repo del robot `factura-pdf` igualada a lo desplegado (v3) | 20-nov-2026 01:30 | |
