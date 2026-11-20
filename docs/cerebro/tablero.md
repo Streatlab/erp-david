@@ -1,4 +1,5 @@
 # Tablero David
+Chat a cargo: DAVID_3 (desde 20-nov-2026, relevo de DAVID_2).
 Regla (Rubén 17-nov): lo verde se duplica en «Hechas» (fila tNNh, hecha_en en hora de España) y se quita de arriba.
 Prioridad: 🔴 urgente · 🟡 media · 🟢 baja.
 

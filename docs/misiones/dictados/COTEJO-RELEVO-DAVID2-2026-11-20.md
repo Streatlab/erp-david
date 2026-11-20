@@ -39,3 +39,7 @@ VEREDICTO: FALTAN 2
 - Punto 1 (Sí de Rubén al relevo): guardado en libreta, Decisiones de Rubén.
 - Punto 2 (enlace de DAVID_3): no puede existir hasta que el Portero cree el chat; se pondrá arriba de la libreta y en el último mensaje a Rubén en cuanto Z pase el enlace.
 - VEREDICTO FINAL: TODO GUARDADO salvo el enlace de DAVID_3 (depende del Portero).
+
+## Cierre (DAVID_3, 20-nov)
+- Enlace de DAVID_3 puesto arriba de la libreta: https://claude.ai/code/session_01BRB4rp7FmsFxoC9WjkREEZ
+- VEREDICTO: TODO GUARDADO.

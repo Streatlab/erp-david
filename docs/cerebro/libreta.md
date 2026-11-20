@@ -1,5 +1,7 @@
 # Libreta David
 Relevo → DAVID_3: https://claude.ai/code/session_01BRB4rp7FmsFxoC9WjkREEZ (de DAVID_2, puesto el 20-nov)
+## DAVID_3 (20-nov)
+- Relevo recibido: todo leído; enlace comprobado arriba; «leído» enviado a DAVID_2. Aviso programado el 1-dic 8:45 para comprobar la factura Prior.
 ## Vamos por aquí (DAVID_2 → relevo, 20-nov)
 1. En curso: nada a medias. Todo en trabajo (último sha del lote: 61e10e8), Publicador avisado; falta que Rubén diga «publica».
 2. Pendiente tecnico: quitar 2 índices duplicados (conciliación y liquidaciones). La base pide confirmación de Rubén al ejecutarlo; relanzar con él delante.
