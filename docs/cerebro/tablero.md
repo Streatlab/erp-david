@@ -10,9 +10,10 @@ Prioridad: 🔴 urgente · 🟡 media · 🟢 baja.
 | 2 | 🟡 | Rubén confirma el ciclo de pago de Cade (apuntado: del 11 al 20 del mes siguiente) | PENDIENTE | Dato del banco ya cargado como «pendiente de confirmar» |
 | 3 | 🟡 | Turnos partidos: ¿1.500 € netos o brutos? y convenio de David (gestoría) | PENDIENTE | Cálculo en libreta 17-nov |
 | 4 | 🟡 | Running (`/running`): rótulos de canales heredados de otro negocio; adaptar o retirar | PENDIENTE | Módulo vivo (Cierre de mes lo enlaza); decide Rubén |
-| 5 | 🟢 | Quitar 2 índices duplicados de la base (conciliación y liquidaciones) | PENDIENTE | Preparado; la base pide confirmación de Rubén al ejecutarlo |
-| 6 | 🟢 | Aviso keepalive de GitHub apunta a la base antigua de David | LATENTE | Sin efecto en la web |
-| 7 | 🟢 | Avisos del revisor de código: quedan 144 (eran 176), la mayoría de estilo | LATENTE | Sin efecto en la web |
+| 5 | 🟡 | Comprobar la primera factura automática de Prior (nº 20, fecha 30-nov) | PENDIENTE | Aviso programado 1-dic 8:45; avisar a Rubén con el resultado |
+| 6 | 🟢 | Quitar 2 índices duplicados de la base (conciliación y liquidaciones) | PENDIENTE | Preparado; la base pide confirmación de Rubén al ejecutarlo |
+| 7 | 🟢 | Aviso keepalive de GitHub apunta a la base antigua de David | LATENTE | Sin efecto en la web |
+| 8 | 🟢 | Avisos del revisor de código: quedan 144 (eran 176), la mayoría de estilo | LATENTE | Sin efecto en la web |
 
 ## Hechas
 | n | Tarea | hecha_en | Nota |
