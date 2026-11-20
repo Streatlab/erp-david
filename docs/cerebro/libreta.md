@@ -1,5 +1,5 @@
 # Libreta David
-Relevo → DAVID_2: https://claude.ai/code/session_01BRB4rnsvKLiY8z3Yp6Ltoi (de DAVID_1, puesto por DAVID_2 el 18-nov)
+Relevo → DAVID_3: https://claude.ai/code/session_01BRB4rp7FmsFxoC9WjkREEZ (de DAVID_2, puesto el 20-nov)
 ## Vamos por aquí (DAVID_2 → relevo, 20-nov)
 1. En curso: nada a medias. Todo en trabajo (último sha del lote: 61e10e8), Publicador avisado; falta que Rubén diga «publica».
 2. Pendiente tecnico: quitar 2 índices duplicados (conciliación y liquidaciones). La base pide confirmación de Rubén al ejecutarlo; relanzar con él delante.
