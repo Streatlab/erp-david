@@ -1,5 +1,6 @@
 # Tablero David
 Chat a cargo: DAVID_3 (desde 20-nov-2026, relevo de DAVID_2).
+Tablero publicado (página de Rubén): https://claude.ai/artifact/VenNTdawcEWqdTXrfUB5t1 — mantener al día con el tablero.md
 Regla (Rubén 17-nov): lo verde se duplica en «Hechas» (fila tNNh, hecha_en en hora de España) y se quita de arriba.
 Prioridad: 🔴 urgente · 🟡 media · 🟢 baja.
 
