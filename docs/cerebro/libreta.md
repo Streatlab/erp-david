@@ -1,5 +1,11 @@
 # Libreta David
 Relevo → DAVID_2: https://claude.ai/code/session_01BRB4rnsvKLiY8z3Yp6Ltoi (de DAVID_1, puesto por DAVID_2 el 18-nov)
+## Vamos por aquí (DAVID_2 → relevo, 20-nov)
+1. En curso: nada a medias. Todo en trabajo (último sha del lote: 61e10e8), Publicador avisado; falta que Rubén diga «publica».
+2. Pendiente tecnico: quitar 2 índices duplicados (conciliación y liquidaciones). La base pide confirmación de Rubén al ejecutarlo; relanzar con él delante.
+3. Pendiente Rubén: pólizas y préstamos reales (no están en Drive) · confirmar ciclo Cade 11-20 (cargado del banco) · 1.500 € netos o brutos + convenio (gestoría) · Running: adaptar o retirar (recomendada adaptar) · validar formato PDF factura Prior antes del 1-dic.
+4. 1-dic 8:30: primera factura automática Prior (nº 20, fecha 30-nov). Comprobar que salió (robot_log fuente factura_prior) y avisar a Rubén.
+5. Detalle en tablero (pendientes 1-7, hechas t01h-t21h), manuales facturación/robots/flota-y-gente e incidencias.
 ## Vamos por aquí (DAVID_2, 16-nov)
 - HECHO: factura automática Prior montada (robot factura-prior, días 1 y 16 a las 8:30). Próxima: 1-dic → factura 20 fecha 30-nov. PDF de la 19 hecho y enviado a Rubén. David (647651052) añadido a avisos, solo facturas.
 ## Relevo anterior (DAVID_1)
