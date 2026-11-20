@@ -1,5 +1,5 @@
 # Libreta David
-Relevo → DAVID_3: https://claude.ai/code/session_01BRB4rp7FmsFxoC9WjkREEZ (de DAVID_2, puesto el 20-nov)
+Relevo → DAVID_3: https://claude.ai/code/session_01BRB4rp7FmsFxoC9WjkREEZ (saliente: DAVID_2, session_01BRB4rnsvKLiY8z3Yp6Ltoi)
 ## DAVID_3 (20-nov)
 - Relevo recibido: todo leído; enlace comprobado arriba; «leído» enviado a DAVID_2. Aviso programado el 1-dic 8:45 para comprobar la factura Prior.
 ## Vamos por aquí (DAVID_2 → relevo, 20-nov)
