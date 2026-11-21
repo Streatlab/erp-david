@@ -1,6 +1,7 @@
 # Libreta David
 Relevo → DAVID_3: https://claude.ai/code/session_01BRB4rp7FmsFxoC9WjkREEZ (saliente: DAVID_2, session_01BRB4rnsvKLiY8z3Yp6Ltoi)
 ## DAVID_3 (20-nov)
+- 21-nov: tanda «sin Rubén» hecha (keepalive a base actual, en curso hasta publicar; 5 avisos del revisor menos). Orden Rubén vía Z_11: parado el gasto a tope; modo normal. Nada a medias.
 - Relevo recibido: todo leído; enlace comprobado arriba; «leído» enviado a DAVID_2. Aviso programado el 1-dic 8:45 para comprobar la factura Prior.
 ## Vamos por aquí (DAVID_2 → relevo, 20-nov)
 1. PUBLICADO 20-nov (master 86f3c4e, Vercel READY, 54 pruebas verdes; lote 61e10e8 dentro; comprobado en producción por DAVID_2).
