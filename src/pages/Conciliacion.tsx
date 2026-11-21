@@ -7,7 +7,7 @@ import {
   OSW, LEX, SHADOW, BORDER_CARD, OPERADOR, card,
 } from '@/styles/neobrutal'
 import {
-  PageNeo, Banda, CabeceraNeo, AvisoNeo, HeroNeo, TabsNeo, usePestana,
+  PageNeo, Banda, CabeceraNeo, HeroNeo, TabsNeo, usePestana,
   TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo, BotonNeo,
 } from '@/components/neo/NeoUI'
 import { ResumenDashboard } from '@/components/conciliacion/ResumenDashboard'

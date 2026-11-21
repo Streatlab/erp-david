@@ -206,7 +206,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
   useEffect(() => {
     abrir20s()
     return () => { if (timer.current) clearTimeout(timer.current) }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [])
 
   const collapsed = esMovil ? false : !abierto

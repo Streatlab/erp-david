@@ -138,7 +138,7 @@ export default function HoyTab() {
   useEffect(() => {
     supabase.from('conciliacion').select('fecha, importe, categoria').gte('fecha', per.desdeIso).lte('fecha', per.hastaIso).limit(5000)
       .then(({ data }) => setMovs(((data ?? []) as Mov[]).filter(m => !(m.categoria ?? '').startsWith('pendiente-personal'))))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [per.desdeIso, per.hastaIso])
 
   /* "Ya la tengo enviada": marca el mes de Cade como enviado y el aviso desaparece */

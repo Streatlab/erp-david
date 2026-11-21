@@ -15,8 +15,8 @@ jobs:
     steps:
       - name: Ping Supabase David
         env:
-          SUPABASE_URL: https://idclhnxttdbwayxeowrm.supabase.co
-          SUPABASE_PUBLISHABLE_KEY: sb_publishable_91jz2GP6JMNFh19sAUwdAg_RVu1NUe7
+          SUPABASE_URL: https://rribmludsuirmyprfkop.supabase.co
+          SUPABASE_PUBLISHABLE_KEY: sb_publishable_GN-seW-mVW7FmbM16lVvZA_06hInEL8
         run: |
           echo "Pinging Supabase David project..."
           response=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST \

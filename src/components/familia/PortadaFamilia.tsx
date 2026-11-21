@@ -8,7 +8,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
 import { supabase } from '@/lib/supabase'
 import {
   INK, MARINO, ARENA, ARENA_CL, BLANCO, GRIS, OLIVA, TERRA, NARANJA, CELESTE, AMBAR, BERENJENA, VERDEMAR,
-  OSW, LEX, BORDER_CARD, card, EUR, E, E2, P0,
+  OSW, BORDER_CARD, card, EUR, E, E2, P0,
 } from '@/styles/neobrutal'
 import { Banda, KpiNeo, HeroNeo, TablaWrap, thNeo, tdNeo, tdEstado, BadgeNeo } from '@/components/neo/NeoUI'
 import { usePeriodo } from '@/lib/periodoGlobal'
