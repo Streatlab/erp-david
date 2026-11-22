@@ -28,6 +28,7 @@ Relevo → DAVID_3: https://claude.ai/code/session_01BRB4rp7FmsFxoC9WjkREEZ (sal
 - 19/20-nov: orden Rubén «arregla los pendientes sin pausas». Hechas 7 (ver tablero t09h-t15h). Factura 19 Prior ya COBRADA. Robot factura-prior v2 desplegado (PDF corregido; &silencio=1 rehace PDF sin WhatsApp). Ciclo Cade cargado como dato del banco, sin confirmar. Quedan 5 pendientes, 3 dependen de Rubén.
 - 20-nov 01:30: segundo lote «sin bloqueo» (Rubén pidió 30; salieron 6 reales, tablero t16h-t21h). Índices duplicados: la base pidió confirmación y caducó; reintentar cuando Rubén esté delante. Contexto alto: preguntar relevo.
 ## Decisiones de Rubén
+- 22-nov: lo que pida a cualquier chat va SIEMPRE dentro de la conversación (tablas y resultados incluidos). Solo .md, artefacto u otro formato si él lo pide (vía Z, manual común «Siempre así 14»).
 - 20-nov: Rubén dijo «Sí» al relevo DAVID_2 → DAVID_3 (09:32, hora de España); cotejo previo en docs/misiones/dictados/COTEJO-RELEVO-DAVID2-2026-11-20.md (falta solo el enlace de DAVID_3, se pone cuando exista).
 - 16-nov: Rubén ha emitido facturas de Prior fuera del chat; antes de facturar a mano, revisar el nº siguiente de Juan (el robot ya lo hace solo).
 - 16-nov: facturas de Cadela (David) y de Juan a Cade emitidas por el asistente; revisar numeración antes de la siguiente.
