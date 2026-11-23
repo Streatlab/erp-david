@@ -13,8 +13,7 @@ Prioridad: 🔴 urgente · 🟡 media · 🟢 baja.
 | 4 | 🟡 | Running (`/running`): rótulos de canales heredados de otro negocio; adaptar o retirar | PENDIENTE | Módulo vivo (Cierre de mes lo enlaza); decide Rubén |
 | 5 | 🟡 | Comprobar la primera factura automática de Prior (nº 20, fecha 30-nov) | LATENTE | Aviso programado 1-dic 8:45; avisar a Rubén con el resultado |
 | 6 | 🟢 | Quitar 2 índices duplicados de la base (conciliación y liquidaciones) | PENDIENTE | Preparado; la base pide confirmación de Rubén al ejecutarlo |
-| 7 | 🟢 | Aviso keepalive de GitHub apunta a la base antigua de David | EN CURSO | Corregido en trabajo 21-nov (base actual, ping probado en la base); falta publicar y ver la primera ejecución |
-| 8 | 🟢 | Avisos del revisor de código: quedan 206 con la cuenta completa (antes 211) | LATENTE | Sin efecto en la web; resto toca Running (decisión de Rubén), copias de robots o tipos |
+| 7 | 🟢 | Avisos del revisor de código: quedan 206 con la cuenta completa (antes 211) | LATENTE | Sin efecto en la web; resto toca Running (decisión de Rubén), copias de robots o tipos |
 
 ## Hechas
 | n | Tarea | hecha_en | Nota |
@@ -35,5 +34,6 @@ Prioridad: 🔴 urgente · 🟡 media · 🟢 baja.
 | t18h | Mantenimiento: la lista de gastos sin vincular no se refrescaba bien | 20-nov-2026 01:30 | |
 | t19h | Comentarios del código sin menciones a otros proyectos (12) | 20-nov-2026 01:30 | |
 | t20h | Importador de extractos y avisos del revisor: 176 → 144 | 20-nov-2026 01:30 | |
+| t23h | Aviso keepalive apunta a la base actual | 23-nov-2026 11:42 | Publicado; ejecución OK 22-nov 15:22 (antes fallaba) |
 | t22h | Lote de DAVID_2 publicado y comprobado en producción | 20-nov-2026 09:44 | Vercel READY, 54 pruebas verdes |
 | t21h | Copia en el repo del robot `factura-pdf` igualada a lo desplegado (v3) | 20-nov-2026 01:30 | |
